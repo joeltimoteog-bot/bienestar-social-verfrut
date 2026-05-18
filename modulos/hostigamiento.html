@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hostigamiento Sexual · Bienestar Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <!-- TOPBAR -->
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon" style="background: var(--bs-mod-hostigamiento);">🔒</div>
+          <span>Bienestar Social · <strong>Hostigamiento Sexual</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+
+      <!-- Banner de privacidad (Ley 29733) -->
+      <div class="bs-alert bs-alert-warning bs-mb">
+        🔐 <strong>Información Confidencial.</strong> El acceso a este módulo está protegido por la <strong>Ley N° 29733</strong> (Protección de Datos Personales) y la <strong>Ley N° 27942</strong> (Prevención y Sanción del Hostigamiento Sexual). El uso indebido de esta información constituye falta grave.
+      </div>
+
+      <!-- Header -->
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h1 style="color: var(--bs-mod-hostigamiento);">🔒 Hostigamiento Sexual</h1>
+          <p class="bs-text-subtle" style="margin: 0;">Denuncias formales bajo el marco de la Ley N° 27942 y el Código de Conducta Unifrutti.</p>
+        </div>
+        <button class="bs-btn" style="background: var(--bs-mod-hostigamiento); color: white;" onclick="openModal()">+ Nueva Denuncia</button>
+      </div>
+
+      <!-- Filtros -->
+      <div class="bs-card bs-mb">
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Empresa</label>
+            <select class="bs-select" id="filterEmpresa" onchange="cargar()">
+              <option value="">Todas</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Estado</label>
+            <select class="bs-select" id="filterStatus" onchange="cargar()">
+              <option value="">Todos</option>
+              <option value="En investigación">En investigación</option>
+              <option value="Medidas dictadas">Medidas dictadas</option>
+              <option value="Resuelto">Resuelto</option>
+              <option value="Archivado">Archivado</option>
+              <option value="Sin lugar">Sin lugar</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Fundo</label>
+            <input type="text" class="bs-input" id="filterFundo" placeholder="Buscar fundo..." onchange="cargar()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Toggle de privacidad -->
+      <div class="bs-flex bs-items-center bs-gap-sm bs-mb">
+        <input type="checkbox" id="togglePrivacy" checked onchange="cargar()">
+        <label for="togglePrivacy" class="bs-text-sm bs-text-muted bs-cursor-pointer">🔐 Ocultar nombres y DNIs en la tabla (modo discreto)</label>
+      </div>
+
+      <!-- Tabla -->
+      <div id="tablaContainer">
+        <div class="bs-text-center" style="padding: 2rem;">
+          <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="bs-footer">
+      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0
+    </footer>
+  </div>
+
+  <!-- MODAL FORM -->
+  <div class="bs-modal-overlay" id="formModal">
+    <div class="bs-modal" style="max-width: 820px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="formTitle">Nueva Denuncia</h3>
+        <button class="bs-modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <input type="hidden" id="denunciaId">
+
+        <div class="bs-alert bs-alert-info bs-mb">
+          ⚠️ <strong>Confidencialidad estricta.</strong> Los datos registrados solo podrán ser consultados por el Comité de Intervención y personal autorizado.
+        </div>
+
+        <h4 style="color: var(--bs-mod-hostigamiento); margin-bottom: 0.5rem;">📋 Información general</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Fecha de denuncia <span class="bs-required">*</span></label>
+            <input type="date" id="fecha_denuncia" class="bs-input" required>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Empresa <span class="bs-required">*</span></label>
+            <select id="empresa" class="bs-select" required>
+              <option value="">Seleccionar...</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Fundo / Sede</label>
+            <input type="text" id="fundo" class="bs-input" placeholder="Ej: Mala, Cañete, Chincha">
+          </div>
+        </div>
+
+        <h4 style="color: var(--bs-mod-hostigamiento); margin: 1rem 0 0.5rem;">👤 Datos de la persona denunciante</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">DNI</label>
+            <input type="text" id="denunciante_dni" class="bs-input" maxlength="8" placeholder="8 dígitos">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Nombre completo <span class="bs-required">*</span></label>
+            <input type="text" id="denunciante_nombre" class="bs-input" required>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Puesto / Cargo</label>
+            <input type="text" id="denunciante_puesto" class="bs-input">
+          </div>
+        </div>
+
+        <div class="bs-form-group">
+          <label class="bs-label">Medida de protección dictada</label>
+          <textarea id="medida_proteccion" class="bs-textarea" placeholder="Cambio de área, restricción de contacto, acompañamiento psicológico, etc."></textarea>
+        </div>
+
+        <h4 style="color: var(--bs-mod-hostigamiento); margin: 1rem 0 0.5rem;">⚖️ Datos de la persona denunciada</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">DNI</label>
+            <input type="text" id="denunciado_dni" class="bs-input" maxlength="8" placeholder="8 dígitos">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Nombre completo</label>
+            <input type="text" id="denunciado_nombre" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Puesto / Cargo</label>
+            <input type="text" id="denunciado_puesto" class="bs-input">
+          </div>
+        </div>
+
+        <h4 style="color: var(--bs-mod-hostigamiento); margin: 1rem 0 0.5rem;">📑 Decisión y estado</h4>
+        <div class="bs-grid bs-grid-2 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Estado del caso</label>
+            <select id="status" class="bs-select">
+              <option value="En investigación">En investigación</option>
+              <option value="Medidas dictadas">Medidas dictadas</option>
+              <option value="Resuelto">Resuelto</option>
+              <option value="Archivado">Archivado</option>
+              <option value="Sin lugar">Sin lugar</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Decisión final</label>
+            <input type="text" id="decision" class="bs-input" placeholder="Sanción / Despido / Capacitación / Sin medida">
+          </div>
+        </div>
+
+        <div id="formAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="bs-btn" id="btnSubmit" onclick="submitForm()" style="background: var(--bs-mod-hostigamiento); color: white;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+
+    // ===== AUTH =====
+    const session = localStorage.getItem('bienestarSocialAuth');
+    if (!session) window.location.href = '../index.html';
+    let user;
+    try {
+      user = JSON.parse(session);
+      if (!user || !user.usuario) throw new Error();
+    } catch(e) {
+      window.location.href = '../index.html';
+    }
+    if (!user.permisos || !user.permisos.hostigamiento) {
+      alert('No tienes permiso para acceder a este módulo');
+      window.location.href = '../portal.html';
+    }
+    document.getElementById('userName').textContent = user.nombre || user.usuario;
+
+    // ===== API HELPER =====
+    async function api(action, payload) {
+      const res = await fetch(BS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+      });
+      return await res.json();
+    }
+
+    // ===== Helper: enmascarar =====
+    function mask(txt, mode) {
+      if (!txt) return '-';
+      if (!mode) return txt;
+      // Mostrar solo primeras 2 letras + asteriscos
+      if (txt.length <= 3) return '***';
+      return txt.substring(0, 2) + '***';
+    }
+    function maskDni(dni, mode) {
+      if (!dni) return '-';
+      if (!mode) return dni;
+      return '****' + String(dni).slice(-2);
+    }
+
+    // ===== LISTAR =====
+    async function cargar() {
+      const filtros = {
+        empresa: document.getElementById('filterEmpresa').value,
+        status: document.getElementById('filterStatus').value,
+        fundo: document.getElementById('filterFundo').value
+      };
+      const privacyMode = document.getElementById('togglePrivacy').checked;
+      const cont = document.getElementById('tablaContainer');
+      cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+
+      try {
+        const res = await api('bs_listarHostigamiento', { filtros: filtros });
+        if (!res.ok) {
+          cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
+          return;
+        }
+        if (res.items.length === 0) {
+          cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay denuncias registradas con esos filtros.</p></div>';
+          return;
+        }
+
+        let html = '<div class="bs-table-wrap"><table class="bs-table">';
+        html += '<thead><tr><th>ID</th><th>Fecha</th><th>Denunciante</th><th>Denunciado</th><th>Fundo</th><th>Empresa</th><th>Estado</th><th></th></tr></thead><tbody>';
+        res.items.forEach(function(d) {
+          const fecha = d.fecha_denuncia ? new Date(d.fecha_denuncia).toLocaleDateString('es-PE') : '-';
+          const denunciante = mask(d.denunciante_nombre, privacyMode);
+          const denunciado = mask(d.denunciado_nombre, privacyMode);
+          const statusBadge = d.status === 'Resuelto' ? 'bs-badge-success'
+            : d.status === 'Archivado' || d.status === 'Sin lugar' ? 'bs-badge-info'
+            : d.status === 'Medidas dictadas' ? 'bs-badge-primary'
+            : 'bs-badge-warning';
+          html += '<tr>' +
+            '<td><strong>#' + d.id + '</strong></td>' +
+            '<td>' + fecha + '</td>' +
+            '<td>' + denunciante + '</td>' +
+            '<td>' + denunciado + '</td>' +
+            '<td>' + (d.fundo || '-') + '</td>' +
+            '<td>' + (d.empresa || '-') + '</td>' +
+            '<td><span class="bs-badge ' + statusBadge + '">' + (d.status || '-') + '</span></td>' +
+            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + d.id + ')">Ver / Editar</button></td>' +
+          '</tr>';
+        });
+        html += '</tbody></table></div>';
+        if (privacyMode) {
+          html += '<p class="bs-text-xs bs-text-muted bs-mt" style="text-align:right;">🔐 Modo discreto activo. Los nombres están parcialmente ocultos.</p>';
+        }
+        cont.innerHTML = html;
+      } catch(err) {
+        cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
+      }
+    }
+
+    // ===== MODAL =====
+    const ALL_FIELDS = ['fecha_denuncia','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','fundo','decision','status','empresa'];
+    const DATE_FIELDS = ['fecha_denuncia'];
+
+    function openModal() {
+      document.getElementById('formTitle').textContent = 'Nueva Denuncia';
+      document.getElementById('denunciaId').value = '';
+      ALL_FIELDS.forEach(function(f) {
+        const el = document.getElementById(f);
+        if (el) el.value = '';
+      });
+      const hoy = new Date().toISOString().split('T')[0];
+      document.getElementById('fecha_denuncia').value = hoy;
+      document.getElementById('status').value = 'En investigación';
+      document.getElementById('formAlert').innerHTML = '';
+      document.getElementById('formModal').classList.add('bs-active');
+    }
+
+    function closeModal() {
+      document.getElementById('formModal').classList.remove('bs-active');
+    }
+
+    async function editar(id) {
+      const res = await api('bs_listarHostigamiento', {});
+      if (!res.ok) return alert('Error: ' + res.message);
+      const d = res.items.find(function(x) { return parseInt(x.id) === parseInt(id); });
+      if (!d) return alert('No encontrado');
+
+      document.getElementById('formTitle').textContent = 'Denuncia #' + d.id;
+      document.getElementById('denunciaId').value = d.id;
+      ALL_FIELDS.forEach(function(f) {
+        const el = document.getElementById(f);
+        if (el) {
+          let v = d[f];
+          if (v === null || v === undefined) v = '';
+          if (DATE_FIELDS.indexOf(f) >= 0 && v) {
+            try { v = new Date(v).toISOString().split('T')[0]; } catch(e) { v = ''; }
+          }
+          el.value = v;
+        }
+      });
+      document.getElementById('formAlert').innerHTML = '';
+      document.getElementById('formModal').classList.add('bs-active');
+    }
+
+    async function submitForm() {
+      const datos = {};
+      ALL_FIELDS.forEach(function(f) {
+        datos[f] = document.getElementById(f).value;
+      });
+
+      if (!datos.fecha_denuncia || !datos.empresa || !datos.denunciante_nombre) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Completa los campos obligatorios (*)</div>';
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+
+      try {
+        const id = document.getElementById('denunciaId').value;
+        const action = id ? 'bs_actualizarHostigamiento' : 'bs_crearHostigamiento';
+        const payload = id
+          ? { usuario: user.usuario, id: parseInt(id), datos: datos }
+          : { usuario: user.usuario, datos: datos };
+
+        const res = await api(action, payload);
+        if (res.ok) {
+          closeModal();
+          cargar();
+        } else {
+          document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
+        }
+      } catch(err) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+      }
+    }
+
+    // ===== LOGOUT =====
+    function logout() {
+      if (confirm('¿Cerrar sesión?')) {
+        localStorage.removeItem('bienestarSocialAuth');
+        window.location.href = '../index.html';
+      }
+    }
+
+    // ===== INIT =====
+    cargar();
+  </script>
+</body>
+</html>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subsidios · Bienestar Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <!-- TOPBAR -->
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon" style="background: var(--bs-mod-subsidios);">💰</div>
+          <span>Bienestar Social · <strong>Subsidios</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+
+      <!-- Header -->
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h1 style="color: var(--bs-mod-subsidios);">💰 Subsidios</h1>
+          <p class="bs-text-subtle" style="margin: 0;">Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, lactancia, sepelio).</p>
+        </div>
+        <button class="bs-btn" style="background: var(--bs-mod-subsidios); color: white;" onclick="openModal()">+ Nuevo Subsidio</button>
+      </div>
+
+      <!-- Filtros -->
+      <div class="bs-card bs-mb">
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Empresa</label>
+            <select class="bs-select" id="filterEmpresa" onchange="cargarSubsidios()">
+              <option value="">Todas</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Tipo</label>
+            <select class="bs-select" id="filterTipo" onchange="cargarSubsidios()">
+              <option value="">Todos</option>
+              <option value="Incapacidad Temporal">Incapacidad Temporal</option>
+              <option value="Maternidad">Maternidad</option>
+              <option value="Lactancia">Lactancia</option>
+              <option value="Sepelio">Sepelio</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Año</label>
+            <select class="bs-select" id="filterAnio" onchange="cargarSubsidios()">
+              <option value="">Todos</option>
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Estado</label>
+            <select class="bs-select" id="filterEstado" onchange="cargarSubsidios()">
+              <option value="">Todos</option>
+              <option value="En proceso">En proceso</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Pagado">Pagado</option>
+              <option value="Recuperado">Recuperado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div id="tablaContainer">
+        <div class="bs-text-center" style="padding: 2rem;">
+          <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
+          <p class="bs-mt">Cargando subsidios...</p>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="bs-footer">
+      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0
+    </footer>
+  </div>
+
+  <!-- MODAL FORM -->
+  <div class="bs-modal-overlay" id="formModal">
+    <div class="bs-modal" style="max-width: 880px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="formTitle">Nuevo Subsidio</h3>
+        <button class="bs-modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <input type="hidden" id="subsidioId">
+
+        <h4 style="color: var(--bs-mod-subsidios); margin-bottom: 0.5rem;">Datos del trabajador</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Número / DNI</label>
+            <input type="text" id="numero" class="bs-input" placeholder="DNI o N° expediente">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Empresa <span class="bs-required">*</span></label>
+            <select id="empresa" class="bs-select" required>
+              <option value="">Seleccionar...</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Expediente EsSalud</label>
+            <input type="text" id="expediente" class="bs-input" placeholder="N° de expediente">
+          </div>
+        </div>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Apellido Paterno</label>
+            <input type="text" id="apellido_paterno" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Apellido Materno</label>
+            <input type="text" id="apellido_materno" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Nombres</label>
+            <input type="text" id="nombres" class="bs-input">
+          </div>
+        </div>
+
+        <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Datos del subsidio</h4>
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Año <span class="bs-required">*</span></label>
+            <input type="number" id="anio" class="bs-input" required min="2020" max="2030">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Mes</label>
+            <select id="mes" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="Enero">Enero</option>
+              <option value="Febrero">Febrero</option>
+              <option value="Marzo">Marzo</option>
+              <option value="Abril">Abril</option>
+              <option value="Mayo">Mayo</option>
+              <option value="Junio">Junio</option>
+              <option value="Julio">Julio</option>
+              <option value="Agosto">Agosto</option>
+              <option value="Septiembre">Septiembre</option>
+              <option value="Octubre">Octubre</option>
+              <option value="Noviembre">Noviembre</option>
+              <option value="Diciembre">Diciembre</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Tipo <span class="bs-required">*</span></label>
+            <select id="tipo" class="bs-select" required>
+              <option value="">Seleccionar...</option>
+              <option value="Incapacidad Temporal">Incapacidad Temporal</option>
+              <option value="Maternidad">Maternidad</option>
+              <option value="Lactancia">Lactancia</option>
+              <option value="Sepelio">Sepelio</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Periodo</label>
+            <input type="text" id="periodo" class="bs-input" placeholder="Ej: 01/01-31/01">
+          </div>
+        </div>
+
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Inicio</label>
+            <input type="date" id="inicio" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Término</label>
+            <input type="date" id="termino" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Días</label>
+            <input type="number" id="dias" class="bs-input" min="0" step="1">
+          </div>
+        </div>
+
+        <div class="bs-form-group">
+          <label class="bs-label">Descripción / Diagnóstico</label>
+          <textarea id="descripcion" class="bs-textarea" placeholder="Detalle del subsidio..."></textarea>
+        </div>
+
+        <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Datos económicos (S/)</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Cálculo por día</label>
+            <input type="number" id="calculo_por_dia" class="bs-input" min="0" step="0.01">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Pago empresa</label>
+            <input type="number" id="pago_empresa" class="bs-input" min="0" step="0.01">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Reembolso por mes</label>
+            <input type="number" id="reembolso_por_mes" class="bs-input" min="0" step="0.01">
+          </div>
+        </div>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Recuperado EsSalud</label>
+            <input type="number" id="recuperado_essalud" class="bs-input" min="0" step="0.01">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Monto total</label>
+            <input type="number" id="monto_total" class="bs-input" min="0" step="0.01">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Diferencias</label>
+            <input type="number" id="diferencias" class="bs-input" step="0.01">
+          </div>
+        </div>
+
+        <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Estado</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Estado documento</label>
+            <input type="text" id="estado" class="bs-input" placeholder="Ej: Presentado, Observado, Aprobado">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Tipo pago planilla</label>
+            <select id="tipo_pago_planilla" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="Recuperado">Recuperado</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Compensado">Compensado</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Estado general</label>
+            <select id="estado_general" class="bs-select">
+              <option value="En proceso">En proceso</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Pagado">Pagado</option>
+              <option value="Recuperado">Recuperado</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bs-form-group">
+          <label class="bs-label">Observaciones</label>
+          <textarea id="observaciones" class="bs-textarea"></textarea>
+        </div>
+
+        <div id="formAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="bs-btn" id="btnSubmit" onclick="submitForm()" style="background: var(--bs-mod-subsidios); color: white;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+
+    // ===== AUTH =====
+    const session = localStorage.getItem('bienestarSocialAuth');
+    if (!session) window.location.href = '../index.html';
+    let user;
+    try {
+      user = JSON.parse(session);
+      if (!user || !user.usuario) throw new Error();
+    } catch(e) {
+      window.location.href = '../index.html';
+    }
+    if (!user.permisos || !user.permisos.subsidios) {
+      alert('No tienes permiso para acceder a este módulo');
+      window.location.href = '../portal.html';
+    }
+    document.getElementById('userName').textContent = user.nombre || user.usuario;
+
+    // ===== API HELPER =====
+    async function api(action, payload) {
+      const res = await fetch(BS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+      });
+      return await res.json();
+    }
+
+    // ===== FORMATO MONEDA =====
+    function fmtMoney(n) {
+      if (n === '' || n === null || n === undefined || isNaN(parseFloat(n))) return '-';
+      return 'S/ ' + parseFloat(n).toFixed(2);
+    }
+
+    // ===== LISTAR =====
+    async function cargarSubsidios() {
+      const filtros = {
+        empresa: document.getElementById('filterEmpresa').value,
+        tipo: document.getElementById('filterTipo').value,
+        anio: document.getElementById('filterAnio').value,
+        estado_general: document.getElementById('filterEstado').value
+      };
+      const cont = document.getElementById('tablaContainer');
+      cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+
+      try {
+        const res = await api('bs_listarSubsidios', { filtros: filtros });
+        if (!res.ok) {
+          cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
+          return;
+        }
+        if (res.items.length === 0) {
+          cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay subsidios registrados con esos filtros.</p></div>';
+          return;
+        }
+
+        let html = '<div class="bs-table-wrap"><table class="bs-table">';
+        html += '<thead><tr><th>ID</th><th>Año-Mes</th><th>Trabajador</th><th>Empresa</th><th>Tipo</th><th>Días</th><th>Monto Total</th><th>Estado</th><th></th></tr></thead><tbody>';
+        res.items.forEach(function(s) {
+          const trabajador = [s.apellido_paterno, s.apellido_materno, s.nombres].filter(Boolean).join(' ') || '-';
+          const periodo = (s.anio || '-') + (s.mes ? ' ' + s.mes : '');
+          const estadoBadge = s.estado_general === 'Pagado' || s.estado_general === 'Recuperado' ? 'bs-badge-success'
+            : s.estado_general === 'Pendiente' ? 'bs-badge-danger'
+            : 'bs-badge-warning';
+          html += '<tr>' +
+            '<td><strong>#' + s.id + '</strong></td>' +
+            '<td>' + periodo + '</td>' +
+            '<td>' + trabajador + '</td>' +
+            '<td>' + (s.empresa || '-') + '</td>' +
+            '<td>' + (s.tipo || '-') + '</td>' +
+            '<td style="text-align: right;">' + (s.dias || 0) + '</td>' +
+            '<td style="text-align: right;"><strong>' + fmtMoney(s.monto_total) + '</strong></td>' +
+            '<td><span class="bs-badge ' + estadoBadge + '">' + (s.estado_general || '-') + '</span></td>' +
+            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + s.id + ')">Editar</button></td>' +
+          '</tr>';
+        });
+        html += '</tbody></table></div>';
+        cont.innerHTML = html;
+      } catch(err) {
+        cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
+      }
+    }
+
+    // ===== MODAL =====
+    const ALL_FIELDS = ['anio','mes','tipo','numero','apellido_paterno','apellido_materno','nombres','descripcion','estado','dias','calculo_por_dia','pago_empresa','reembolso_por_mes','recuperado_essalud','monto_total','periodo','expediente','inicio','termino','observaciones','diferencias','tipo_pago_planilla','estado_general','empresa'];
+    const DATE_FIELDS = ['inicio','termino'];
+
+    function openModal() {
+      document.getElementById('formTitle').textContent = 'Nuevo Subsidio';
+      document.getElementById('subsidioId').value = '';
+      ALL_FIELDS.forEach(function(f) {
+        const el = document.getElementById(f);
+        if (el) el.value = '';
+      });
+      document.getElementById('anio').value = new Date().getFullYear();
+      document.getElementById('estado_general').value = 'En proceso';
+      document.getElementById('formAlert').innerHTML = '';
+      document.getElementById('formModal').classList.add('bs-active');
+    }
+
+    function closeModal() {
+      document.getElementById('formModal').classList.remove('bs-active');
+    }
+
+    async function editar(id) {
+      const res = await api('bs_listarSubsidios', {});
+      if (!res.ok) return alert('Error: ' + res.message);
+      const s = res.items.find(function(x) { return parseInt(x.id) === parseInt(id); });
+      if (!s) return alert('Subsidio no encontrado');
+
+      document.getElementById('formTitle').textContent = 'Editar Subsidio #' + s.id;
+      document.getElementById('subsidioId').value = s.id;
+      ALL_FIELDS.forEach(function(f) {
+        const el = document.getElementById(f);
+        if (el) {
+          let v = s[f];
+          if (v === null || v === undefined) v = '';
+          if (DATE_FIELDS.indexOf(f) >= 0 && v) {
+            try { v = new Date(v).toISOString().split('T')[0]; } catch(e) { v = ''; }
+          }
+          el.value = v;
+        }
+      });
+      document.getElementById('formAlert').innerHTML = '';
+      document.getElementById('formModal').classList.add('bs-active');
+    }
+
+    async function submitForm() {
+      const datos = {};
+      ALL_FIELDS.forEach(function(f) {
+        datos[f] = document.getElementById(f).value;
+      });
+
+      if (!datos.anio || !datos.tipo || !datos.empresa) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Completa los campos obligatorios (*)</div>';
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+
+      try {
+        const id = document.getElementById('subsidioId').value;
+        const action = id ? 'bs_actualizarSubsidio' : 'bs_crearSubsidio';
+        const payload = id
+          ? { usuario: user.usuario, id: parseInt(id), datos: datos }
+          : { usuario: user.usuario, datos: datos };
+
+        const res = await api(action, payload);
+        if (res.ok) {
+          closeModal();
+          cargarSubsidios();
+        } else {
+          document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
+        }
+      } catch(err) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+      }
+    }
+
+    // ===== LOGOUT =====
+    function logout() {
+      if (confirm('¿Cerrar sesión?')) {
+        localStorage.removeItem('bienestarSocialAuth');
+        window.location.href = '../index.html';
+      }
+    }
+
+    // ===== INIT =====
+    cargarSubsidios();
+  </script>
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quejas y Sugerencias · Bienestar Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <!-- TOPBAR -->
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon" style="background: var(--bs-mod-quejas);">📋</div>
+          <span>Bienestar Social · <strong>Quejas</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+
+      <!-- Header -->
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h1 style="color: var(--bs-mod-quejas);">📋 Quejas y Sugerencias</h1>
+          <p class="bs-text-subtle" style="margin: 0;">Registro y seguimiento de quejas, reclamos y sugerencias del personal.</p>
+        </div>
+        <button class="bs-btn" style="background: var(--bs-mod-quejas); color: white;" onclick="openModal()">+ Nueva Queja</button>
+      </div>
+
+      <!-- Filtros -->
+      <div class="bs-card bs-mb">
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Empresa</label>
+            <select class="bs-select" id="filterEmpresa" onchange="cargarQuejas()">
+              <option value="">Todas</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Clasificación</label>
+            <select class="bs-select" id="filterClasif" onchange="cargarQuejas()">
+              <option value="">Todas</option>
+              <option value="Queja">Queja</option>
+              <option value="Reclamo">Reclamo</option>
+              <option value="Sugerencia">Sugerencia</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Estado</label>
+            <select class="bs-select" id="filterEstado" onchange="cargarQuejas()">
+              <option value="">Todos</option>
+              <option value="En proceso">En proceso</option>
+              <option value="Resuelto">Resuelto</option>
+              <option value="Cerrado">Cerrado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div id="tablaContainer">
+        <div class="bs-text-center" style="padding: 2rem;">
+          <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
+          <p class="bs-mt">Cargando quejas...</p>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="bs-footer">
+      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0
+    </footer>
+  </div>
+
+  <!-- MODAL FORM -->
+  <div class="bs-modal-overlay" id="formModal">
+    <div class="bs-modal" style="max-width: 760px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="formTitle">Nueva Queja</h3>
+        <button class="bs-modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <input type="hidden" id="quejaId">
+
+        <div class="bs-grid bs-grid-2 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Fecha Recepción <span class="bs-required">*</span></label>
+            <input type="date" id="fecha_recepcion" class="bs-input" required>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Empresa <span class="bs-required">*</span></label>
+            <select id="empresa" class="bs-select" required>
+              <option value="">Seleccionar...</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Clasificación <span class="bs-required">*</span></label>
+            <select id="clasificacion" class="bs-select" required>
+              <option value="">Seleccionar...</option>
+              <option value="Queja">Queja</option>
+              <option value="Reclamo">Reclamo</option>
+              <option value="Sugerencia">Sugerencia</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Canal</label>
+            <select id="canal" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="Buzón">Buzón</option>
+              <option value="Email">Email</option>
+              <option value="Teléfono">Teléfono</option>
+              <option value="Presencial">Presencial</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Categoría</label>
+            <input type="text" id="categoria" class="bs-input" placeholder="Bienestar, RRHH, Operaciones...">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Sector / Lugar</label>
+            <input type="text" id="sector" class="bs-input" placeholder="Campo, Planta, Oficinas...">
+          </div>
+        </div>
+
+        <div class="bs-form-group">
+          <label class="bs-label">Detalle <span class="bs-required">*</span></label>
+          <textarea id="detalle" class="bs-textarea" required placeholder="Describir la queja, reclamo o sugerencia..."></textarea>
+        </div>
+
+        <div class="bs-form-group">
+          <label class="bs-label">Acción Correctiva</label>
+          <textarea id="accion_correctiva" class="bs-textarea" placeholder="¿Qué se hizo para corregir?"></textarea>
+        </div>
+
+        <div class="bs-form-group">
+          <label class="bs-label">Acción de Mejora</label>
+          <textarea id="accion_mejora" class="bs-textarea" placeholder="¿Qué se hará para mejorar a futuro?"></textarea>
+        </div>
+
+        <div class="bs-grid bs-grid-2 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Coordinación con</label>
+            <input type="text" id="coordinacion" class="bs-input" placeholder="Área / persona responsable">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Estado / Resultado</label>
+            <select id="resultado" class="bs-select">
+              <option value="En proceso">En proceso</option>
+              <option value="Resuelto">Resuelto</option>
+              <option value="Cerrado">Cerrado</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bs-form-group">
+          <label class="bs-label">Observaciones</label>
+          <textarea id="observaciones" class="bs-textarea"></textarea>
+        </div>
+
+        <div id="formAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="bs-btn" id="btnSubmit" onclick="submitForm()" style="background: var(--bs-mod-quejas); color: white;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+
+    // ===== AUTH =====
+    const session = localStorage.getItem('bienestarSocialAuth');
+    if (!session) window.location.href = '../index.html';
+    let user;
+    try {
+      user = JSON.parse(session);
+      if (!user || !user.usuario) throw new Error();
+    } catch(e) {
+      window.location.href = '../index.html';
+    }
+    if (!user.permisos || !user.permisos.quejas) {
+      alert('No tienes permiso para acceder a este módulo');
+      window.location.href = '../portal.html';
+    }
+    document.getElementById('userName').textContent = user.nombre || user.usuario;
+
+    // ===== API HELPER =====
+    async function api(action, payload) {
+      const res = await fetch(BS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+      });
+      return await res.json();
+    }
+
+    // ===== LISTAR =====
+    async function cargarQuejas() {
+      const filtros = {
+        empresa: document.getElementById('filterEmpresa').value,
+        clasificacion: document.getElementById('filterClasif').value,
+        resultado: document.getElementById('filterEstado').value
+      };
+      const cont = document.getElementById('tablaContainer');
+      cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+
+      try {
+        const res = await api('bs_listarQuejas', { filtros: filtros });
+        if (!res.ok) {
+          cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
+          return;
+        }
+        if (res.items.length === 0) {
+          cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay quejas registradas con esos filtros.</p></div>';
+          return;
+        }
+
+        let html = '<div class="bs-table-wrap"><table class="bs-table">';
+        html += '<thead><tr><th>ID</th><th>Fecha</th><th>Clasif.</th><th>Empresa</th><th>Sector</th><th>Detalle</th><th>Estado</th><th></th></tr></thead><tbody>';
+        res.items.forEach(function(q) {
+          const fecha = q.fecha_recepcion ? new Date(q.fecha_recepcion).toLocaleDateString('es-PE') : '-';
+          const det = (q.detalle || '').replace(/</g,'&lt;');
+          const detalleCorto = det.substring(0, 80) + (det.length > 80 ? '...' : '');
+          const estadoBadge = q.resultado === 'Resuelto' ? 'bs-badge-success' : q.resultado === 'Cerrado' ? 'bs-badge-info' : 'bs-badge-warning';
+          html += '<tr>' +
+            '<td><strong>#' + q.id + '</strong></td>' +
+            '<td>' + fecha + '</td>' +
+            '<td>' + (q.clasificacion || '-') + '</td>' +
+            '<td>' + (q.empresa || '-') + '</td>' +
+            '<td>' + (q.sector || '-') + '</td>' +
+            '<td style="max-width: 280px;">' + detalleCorto + '</td>' +
+            '<td><span class="bs-badge ' + estadoBadge + '">' + (q.resultado || '-') + '</span></td>' +
+            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + q.id + ')">Editar</button></td>' +
+          '</tr>';
+        });
+        html += '</tbody></table></div>';
+        cont.innerHTML = html;
+      } catch(err) {
+        cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
+      }
+    }
+
+    // ===== MODAL =====
+    function openModal() {
+      document.getElementById('formTitle').textContent = 'Nueva Queja';
+      document.getElementById('quejaId').value = '';
+      ['fecha_recepcion','clasificacion','canal','categoria','sector','detalle','accion_correctiva','accion_mejora','coordinacion','observaciones','empresa'].forEach(function(f) {
+        const el = document.getElementById(f);
+        if (el) el.value = '';
+      });
+      const hoy = new Date().toISOString().split('T')[0];
+      document.getElementById('fecha_recepcion').value = hoy;
+      document.getElementById('resultado').value = 'En proceso';
+      document.getElementById('formAlert').innerHTML = '';
+      document.getElementById('formModal').classList.add('bs-active');
+    }
+
+    function closeModal() {
+      document.getElementById('formModal').classList.remove('bs-active');
+    }
+
+    async function editar(id) {
+      const res = await api('bs_listarQuejas', {});
+      if (!res.ok) return alert('Error: ' + res.message);
+      const q = res.items.find(function(x) { return parseInt(x.id) === parseInt(id); });
+      if (!q) return alert('Queja no encontrada');
+
+      document.getElementById('formTitle').textContent = 'Editar Queja #' + q.id;
+      document.getElementById('quejaId').value = q.id;
+      ['fecha_recepcion','clasificacion','canal','categoria','sector','detalle','accion_correctiva','accion_mejora','coordinacion','resultado','observaciones','empresa'].forEach(function(f) {
+        const el = document.getElementById(f);
+        if (el) {
+          let v = q[f] || '';
+          if (f.indexOf('fecha_') === 0 && v) {
+            try { v = new Date(v).toISOString().split('T')[0]; } catch(e) { v = ''; }
+          }
+          el.value = v;
+        }
+      });
+      document.getElementById('formAlert').innerHTML = '';
+      document.getElementById('formModal').classList.add('bs-active');
+    }
+
+    async function submitForm() {
+      const datos = {};
+      ['fecha_recepcion','clasificacion','canal','categoria','sector','detalle','accion_correctiva','accion_mejora','coordinacion','resultado','observaciones','empresa'].forEach(function(f) {
+        datos[f] = document.getElementById(f).value;
+      });
+
+      if (!datos.fecha_recepcion || !datos.clasificacion || !datos.empresa || !datos.detalle) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Completa los campos obligatorios marcados con *</div>';
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+
+      try {
+        const id = document.getElementById('quejaId').value;
+        const action = id ? 'bs_actualizarQueja' : 'bs_crearQueja';
+        const payload = id
+          ? { usuario: user.usuario, id: parseInt(id), datos: datos }
+          : { usuario: user.usuario, datos: datos };
+
+        const res = await api(action, payload);
+        if (res.ok) {
+          closeModal();
+          cargarQuejas();
+        } else {
+          document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
+        }
+      } catch(err) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+      }
+    }
+
+    // ===== LOGOUT =====
+    function logout() {
+      if (confirm('¿Cerrar sesión?')) {
+        localStorage.removeItem('bienestarSocialAuth');
+        window.location.href = '../index.html';
+      }
+    }
+
+    // ===== INIT =====
+    cargarQuejas();
+  </script>
+</body>
+</html>

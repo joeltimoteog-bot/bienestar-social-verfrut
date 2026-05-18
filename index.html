@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login · Bienestar Social - RR.LL.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="bs-login-bg">
+
+  <div class="bs-login-card">
+    <div class="bs-login-logo">BS</div>
+    <h1 class="bs-login-title">Bienestar Social</h1>
+    <p class="bs-login-subtitle">Equipo Relaciones Laborales · Unifrutti</p>
+
+    <div id="alertContainer"></div>
+
+    <form id="loginForm" autocomplete="off">
+      <div class="bs-form-group">
+        <label class="bs-label" for="usuario">Usuario</label>
+        <input type="text" id="usuario" name="usuario" class="bs-input" required autofocus autocomplete="off">
+      </div>
+
+      <div class="bs-form-group">
+        <label class="bs-label" for="password">Contraseña</label>
+        <input type="password" id="password" name="password" class="bs-input" required autocomplete="off">
+      </div>
+
+      <button type="submit" id="btnLogin" class="bs-btn bs-btn-primary">
+        <span id="btnText">Ingresar</span>
+        <div id="btnSpinner" class="bs-spinner bs-hidden"></div>
+      </button>
+    </form>
+
+    <p class="bs-footer-text">
+      Creado por <strong>Joel Angel Timoteo Gonza</strong><br>
+      Unifrutti Group · RAPEL S.A.C. / VERFRUT S.A.C.<br>
+      v1.0.0
+    </p>
+  </div>
+
+  <script>
+    // ===== CONFIGURACIÓN =====
+    const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+
+    // ===== DOM refs =====
+    const form = document.getElementById('loginForm');
+    const btnLogin = document.getElementById('btnLogin');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const alertContainer = document.getElementById('alertContainer');
+
+    // ===== Sesión existente -> redirigir =====
+    const session = localStorage.getItem('bienestarSocialAuth');
+    if (session) {
+      try {
+        const data = JSON.parse(session);
+        if (data && data.usuario) {
+          window.location.href = 'portal.html';
+        }
+      } catch(e) {
+        localStorage.removeItem('bienestarSocialAuth');
+      }
+    }
+
+    // ===== Helpers UI =====
+    function showAlert(msg, tipo) {
+      tipo = tipo || 'danger';
+      alertContainer.innerHTML = '<div class="bs-alert bs-alert-' + tipo + '">' + msg + '</div>';
+    }
+    function clearAlert() { alertContainer.innerHTML = ''; }
+    function setLoading(state) {
+      btnLogin.disabled = state;
+      if (state) {
+        btnText.textContent = 'Ingresando...';
+        btnSpinner.classList.remove('bs-hidden');
+      } else {
+        btnText.textContent = 'Ingresar';
+        btnSpinner.classList.add('bs-hidden');
+      }
+    }
+
+    // ===== Submit =====
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      clearAlert();
+
+      const usuario = document.getElementById('usuario').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!usuario || !password) {
+        showAlert('Por favor completa todos los campos');
+        return;
+      }
+
+      if (!BS_API_URL) {
+        showAlert('Backend pendiente de configurar.', 'danger');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // GAS WebApp: usar text/plain para evitar CORS preflight
+        const res = await fetch(BS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'bs_login',
+            usuario: usuario,
+            password: password
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.ok) {
+          localStorage.setItem('bienestarSocialAuth', JSON.stringify({
+            usuario: data.user.usuario,
+            nombre: data.user.nombre,
+            rol: data.user.rol,
+            permisos: data.user.permisos,
+            loginAt: new Date().toISOString()
+          }));
+          showAlert('Bienvenido, ' + data.user.nombre, 'success');
+          setTimeout(function() { window.location.href = 'portal.html'; }, 600);
+        } else {
+          showAlert(data.message || 'Usuario o contraseña incorrectos');
+          setLoading(false);
+        }
+      } catch(err) {
+        console.error(err);
+        showAlert('Error de conexión. Verifica tu internet.');
+        setLoading(false);
+      }
+    });
+  </script>
+
+</body>
+</html>

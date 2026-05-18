@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accidentes Laborales · Bienestar Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <!-- TOPBAR -->
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon" style="background: var(--bs-mod-accidentes);">🩺</div>
+          <span>Bienestar Social · <strong>Accidentes Laborales</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+
+      <!-- Header -->
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h1 style="color: var(--bs-mod-accidentes);">🩺 Accidentes Laborales</h1>
+          <p class="bs-text-subtle" style="margin: 0;">Reporte y seguimiento de accidentes laborales con atenciones médicas y restricciones.</p>
+        </div>
+        <button class="bs-btn" style="background: var(--bs-mod-accidentes); color: white;" onclick="openModalCaso()">+ Nuevo Caso</button>
+      </div>
+
+      <!-- Filtros -->
+      <div class="bs-card bs-mb">
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Empresa</label>
+            <select class="bs-select" id="filterEmpresa" onchange="cargar()">
+              <option value="">Todas</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Estado del caso</label>
+            <select class="bs-select" id="filterEstado" onchange="cargar()">
+              <option value="">Todos</option>
+              <option value="Activo">Activo</option>
+              <option value="En tratamiento">En tratamiento</option>
+              <option value="Con restricción">Con restricción</option>
+              <option value="Reincorporado">Reincorporado</option>
+              <option value="Cerrado">Cerrado</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Fundo</label>
+            <input type="text" class="bs-input" id="filterFundo" placeholder="Buscar fundo..." onchange="cargar()">
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">DNI</label>
+            <input type="text" class="bs-input" id="filterDni" placeholder="8 dígitos" maxlength="8" onchange="cargar()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div id="tablaContainer">
+        <div class="bs-text-center" style="padding: 2rem;">
+          <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="bs-footer">
+      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0
+    </footer>
+  </div>
+
+  <!-- MODAL CASO (form completo) -->
+  <div class="bs-modal-overlay" id="formModalCaso">
+    <div class="bs-modal" style="max-width: 920px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="formTitle">Nuevo Caso</h3>
+        <button class="bs-modal-close" onclick="closeModalCaso()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <input type="hidden" id="casoId">
+
+        <!-- Sección 1: Trabajador -->
+        <h4 style="color: var(--bs-mod-accidentes); margin-bottom: 0.5rem;">👤 Datos del trabajador</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">DNI <span class="bs-required">*</span></label>
+            <input type="text" id="dni" class="bs-input" maxlength="8" required>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Nombre completo <span class="bs-required">*</span></label>
+            <input type="text" id="nombre" class="bs-input" required>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Edad</label>
+            <input type="number" id="edad" class="bs-input" min="14" max="99">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Teléfono</label>
+            <input type="text" id="telefono" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Sexo</label>
+            <select id="sexo" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Empresa <span class="bs-required">*</span></label>
+            <select id="empresa" class="bs-select" required>
+              <option value="">Seleccionar...</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+            </select>
+          </div>
+        </div>
+        <div class="bs-form-group">
+          <label class="bs-label">Fundo / Lugar de trabajo</label>
+          <input type="text" id="fundo" class="bs-input">
+        </div>
+
+        <!-- Sección 2: Accidente -->
+        <h4 style="color: var(--bs-mod-accidentes); margin: 1rem 0 0.5rem;">⚠️ Datos del accidente</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Fecha ingreso a la empresa</label>
+            <input type="date" id="fecha_ingreso" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Día del accidente <span class="bs-required">*</span></label>
+            <input type="date" id="dia_accidente" class="bs-input" required>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Día reportado</label>
+            <input type="date" id="dia_reportado" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Parte del cuerpo afectada</label>
+            <input type="text" id="parte_cuerpo" class="bs-input" placeholder="Mano derecha, columna...">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Tipo de accidente</label>
+            <select id="tipo_accidente" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="Leve">Leve</option>
+              <option value="Incapacitante">Incapacitante</option>
+              <option value="Grave">Grave</option>
+              <option value="Mortal">Mortal</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Seguro</label>
+            <select id="seguro" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="SCTR">SCTR</option>
+              <option value="EsSalud">EsSalud</option>
+              <option value="EPS">EPS</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="bs-form-group">
+          <label class="bs-label">Diagnóstico</label>
+          <input type="text" id="diagnostico" class="bs-input">
+        </div>
+        <div class="bs-form-group">
+          <label class="bs-label">Detalle del accidente</label>
+          <textarea id="detalle" class="bs-textarea" placeholder="Describir cómo ocurrió el accidente..."></textarea>
+        </div>
+
+        <!-- Sección 3: Atención médica -->
+        <h4 style="color: var(--bs-mod-accidentes); margin: 1rem 0 0.5rem;">🏥 Atención médica</h4>
+        <div class="bs-grid bs-grid-2 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Centro de atención</label>
+            <input type="text" id="centro_atencion" class="bs-input" placeholder="Hospital / Clínica">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Especialidades</label>
+            <input type="text" id="especialidades" class="bs-input" placeholder="Traumatología, Medicina general...">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Staff médico</label>
+            <input type="text" id="staff_medico" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Estatus accidente</label>
+            <input type="text" id="estatus_accidente" class="bs-input">
+          </div>
+        </div>
+
+        <!-- Sección 4: Restricciones / Reincorporación -->
+        <h4 style="color: var(--bs-mod-accidentes); margin: 1rem 0 0.5rem;">🔄 Restricciones y reincorporación</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Fecha reincorporo</label>
+            <input type="date" id="fecha_reincorporo" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Fecha fin restricción</label>
+            <input type="date" id="fecha_fin_restriccion" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Días restricción</label>
+            <input type="number" id="dias_restriccion" class="bs-input" min="0">
+          </div>
+        </div>
+        <div class="bs-form-group">
+          <label class="bs-label">Detalle de restricción</label>
+          <textarea id="detalle_restriccion" class="bs-textarea" placeholder="No levantar peso, evitar bipedestación prolongada..."></textarea>
+        </div>
+        <div class="bs-grid bs-grid-2 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Descanso médico</label>
+            <input type="text" id="descanso_medico" class="bs-input" placeholder="Días de DM autorizados">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Formulario con goce</label>
+            <select id="formulario_con_goce" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="Sí">Sí</option>
+              <option value="No">No</option>
+              <option value="Pendiente">Pendiente</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sección 5: Gestión -->
+        <h4 style="color: var(--bs-mod-accidentes); margin: 1rem 0 0.5rem;">📋 Gestión y seguimiento</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Estado</label>
+            <input type="text" id="estado" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Situación</label>
+            <input type="text" id="situacion" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Responsable</label>
+            <input type="text" id="responsable" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Responsable autorizar</label>
+            <input type="text" id="responsable_autorizar" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label"># Atenciones</label>
+            <input type="number" id="numero_atenciones" class="bs-input" min="0" readonly style="background: var(--bs-surface-alt);">
+            <p class="bs-helptext">Auto-incrementa con seguimientos</p>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Estado del caso</label>
+            <select id="estado_caso" class="bs-select">
+              <option value="Activo">Activo</option>
+              <option value="En tratamiento">En tratamiento</option>
+              <option value="Con restricción">Con restricción</option>
+              <option value="Reincorporado">Reincorporado</option>
+              <option value="Cerrado">Cerrado</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="formAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeModalCaso()">Cancelar</button>
+        <button class="bs-btn" id="btnSubmit" onclick="submitCaso()" style="background: var(--bs-mod-accidentes); color: white;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SEGUIMIENTOS -->
+  <div class="bs-modal-overlay" id="seguimientosModal">
+    <div class="bs-modal" style="max-width: 720px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="segTitle">Seguimientos del Caso</h3>
+        <button class="bs-modal-close" onclick="closeModalSeg()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <div id="casoResumen" style="background: var(--bs-surface-alt); padding: 0.85rem; border-radius: var(--bs-radius); margin-bottom: 1rem;"></div>
+
+        <h4 style="color: var(--bs-mod-accidentes); margin-bottom: 0.5rem;">📅 Historial de seguimientos</h4>
+        <div id="listaSeguimientos">
+          <div class="bs-text-center"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>
+        </div>
+
+        <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--bs-border);">
+
+        <h4 style="color: var(--bs-mod-accidentes); margin-bottom: 0.5rem;">➕ Agregar nuevo seguimiento</h4>
+        <div class="bs-grid bs-grid-2 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Fecha del seguimiento <span class="bs-required">*</span></label>
+            <input type="date" id="seg_fecha" class="bs-input" required>
+          </div>
+        </div>
+        <div class="bs-form-group">
+          <label class="bs-label">Detalle <span class="bs-required">*</span></label>
+          <textarea id="seg_detalle" class="bs-textarea" required placeholder="Resultado de la atención, evolución, indicaciones..."></textarea>
+        </div>
+        <div id="segAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeModalSeg()">Cerrar</button>
+        <button class="bs-btn" id="btnSeg" onclick="submitSeguimiento()" style="background: var(--bs-mod-accidentes); color: white;">+ Agregar Seguimiento</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+
+    // ===== AUTH =====
+    const session = localStorage.getItem('bienestarSocialAuth');
+    if (!session) window.location.href = '../index.html';
+    let user;
+    try {
+      user = JSON.parse(session);
+      if (!user || !user.usuario) throw new Error();
+    } catch(e) { window.location.href = '../index.html'; }
+    if (!user.permisos || !user.permisos.accidentes) {
+      alert('No tienes permiso para acceder a este módulo');
+      window.location.href = '../portal.html';
+    }
+    document.getElementById('userName').textContent = user.nombre || user.usuario;
+
+    // ===== API =====
+    async function api(action, payload) {
+      const res = await fetch(BS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+      });
+      return await res.json();
+    }
+
+    // ===== LISTAR CASOS =====
+    let casosCache = [];
+    async function cargar() {
+      const filtros = {
+        empresa: document.getElementById('filterEmpresa').value,
+        estado_caso: document.getElementById('filterEstado').value,
+        fundo: document.getElementById('filterFundo').value,
+        dni: document.getElementById('filterDni').value
+      };
+      const cont = document.getElementById('tablaContainer');
+      cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+      try {
+        const res = await api('bs_listarAccidentes', { filtros: filtros });
+        if (!res.ok) { cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>'; return; }
+        casosCache = res.items;
+        if (res.items.length === 0) {
+          cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay casos registrados con esos filtros.</p></div>';
+          return;
+        }
+        let html = '<div class="bs-table-wrap"><table class="bs-table">';
+        html += '<thead><tr><th>ID</th><th>DNI</th><th>Trabajador</th><th>Fundo</th><th>Empresa</th><th>Fecha accidente</th><th>Parte cuerpo</th><th>Tipo</th><th># Atenc.</th><th>Estado caso</th><th>Acciones</th></tr></thead><tbody>';
+        res.items.forEach(function(c) {
+          const fecha = c.dia_accidente ? new Date(c.dia_accidente).toLocaleDateString('es-PE') : '-';
+          const estadoBadge = c.estado_caso === 'Cerrado' || c.estado_caso === 'Reincorporado' ? 'bs-badge-success'
+            : c.estado_caso === 'Con restricción' ? 'bs-badge-warning'
+            : 'bs-badge-info';
+          const tipoBadge = c.tipo_accidente === 'Grave' || c.tipo_accidente === 'Mortal' ? 'bs-badge-danger'
+            : c.tipo_accidente === 'Incapacitante' ? 'bs-badge-warning'
+            : 'bs-badge';
+          html += '<tr>' +
+            '<td><strong>#' + c.id + '</strong></td>' +
+            '<td>' + (c.dni || '-') + '</td>' +
+            '<td>' + (c.nombre || '-') + '</td>' +
+            '<td>' + (c.fundo || '-') + '</td>' +
+            '<td>' + (c.empresa || '-') + '</td>' +
+            '<td>' + fecha + '</td>' +
+            '<td>' + (c.parte_cuerpo || '-') + '</td>' +
+            '<td><span class="bs-badge ' + tipoBadge + '">' + (c.tipo_accidente || '-') + '</span></td>' +
+            '<td style="text-align:center;"><strong>' + (c.numero_atenciones || 0) + '</strong></td>' +
+            '<td><span class="bs-badge ' + estadoBadge + '">' + (c.estado_caso || '-') + '</span></td>' +
+            '<td style="white-space: nowrap;">' +
+              '<button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editarCaso(' + c.id + ')" style="margin-right: 4px;">Editar</button>' +
+              '<button class="bs-btn bs-btn-sm" style="background: var(--bs-mod-accidentes); color: white;" onclick="verSeguimientos(' + c.id + ')">Seguim.</button>' +
+            '</td>' +
+          '</tr>';
+        });
+        html += '</tbody></table></div>';
+        cont.innerHTML = html;
+      } catch(err) {
+        cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
+      }
+    }
+
+    // ===== MODAL CASO =====
+    const ALL_FIELDS = ['dni','nombre','edad','telefono','fundo','sexo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','diagnostico','tipo_accidente','seguro','detalle','estatus_accidente','centro_atencion','especialidades','staff_medico','estado','situacion','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','responsable','descanso_medico','formulario_con_goce','responsable_autorizar','numero_atenciones','estado_caso','empresa'];
+    const DATE_FIELDS = ['fecha_ingreso','dia_accidente','dia_reportado','fecha_reincorporo','fecha_fin_restriccion'];
+
+    function openModalCaso() {
+      document.getElementById('formTitle').textContent = 'Nuevo Caso';
+      document.getElementById('casoId').value = '';
+      ALL_FIELDS.forEach(function(f) { const el = document.getElementById(f); if (el) el.value = ''; });
+      const hoy = new Date().toISOString().split('T')[0];
+      document.getElementById('dia_accidente').value = hoy;
+      document.getElementById('dia_reportado').value = hoy;
+      document.getElementById('estado_caso').value = 'Activo';
+      document.getElementById('numero_atenciones').value = 0;
+      document.getElementById('formAlert').innerHTML = '';
+      document.getElementById('formModalCaso').classList.add('bs-active');
+    }
+    function closeModalCaso() { document.getElementById('formModalCaso').classList.remove('bs-active'); }
+
+    async function editarCaso(id) {
+      const c = casosCache.find(function(x) { return parseInt(x.id) === parseInt(id); });
+      if (!c) return alert('Caso no encontrado');
+      document.getElementById('formTitle').textContent = 'Caso #' + c.id + ' · ' + (c.nombre || '');
+      document.getElementById('casoId').value = c.id;
+      ALL_FIELDS.forEach(function(f) {
+        const el = document.getElementById(f);
+        if (el) {
+          let v = c[f];
+          if (v === null || v === undefined) v = '';
+          if (DATE_FIELDS.indexOf(f) >= 0 && v) {
+            try { v = new Date(v).toISOString().split('T')[0]; } catch(e) { v = ''; }
+          }
+          el.value = v;
+        }
+      });
+      document.getElementById('formAlert').innerHTML = '';
+      document.getElementById('formModalCaso').classList.add('bs-active');
+    }
+
+    async function submitCaso() {
+      const datos = {};
+      ALL_FIELDS.forEach(function(f) { datos[f] = document.getElementById(f).value; });
+      if (!datos.dni || !datos.nombre || !datos.empresa || !datos.dia_accidente) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Completa los campos obligatorios (*)</div>';
+        return;
+      }
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true; btn.textContent = 'Guardando...';
+      try {
+        const id = document.getElementById('casoId').value;
+        const action = id ? 'bs_actualizarAccidente' : 'bs_crearAccidente';
+        const payload = id
+          ? { usuario: user.usuario, id: parseInt(id), datos: datos }
+          : { usuario: user.usuario, datos: datos };
+        const res = await api(action, payload);
+        if (res.ok) { closeModalCaso(); cargar(); }
+        else { document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>'; }
+      } catch(err) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
+      } finally { btn.disabled = false; btn.textContent = 'Guardar'; }
+    }
+
+    // ===== MODAL SEGUIMIENTOS =====
+    let casoActualId = null;
+
+    async function verSeguimientos(id) {
+      casoActualId = id;
+      const c = casosCache.find(function(x) { return parseInt(x.id) === parseInt(id); });
+      if (!c) return alert('Caso no encontrado');
+
+      document.getElementById('segTitle').textContent = 'Seguimientos · Caso #' + c.id;
+      document.getElementById('casoResumen').innerHTML =
+        '<div class="bs-flex bs-justify-between bs-items-center" style="flex-wrap: wrap;">' +
+          '<div>' +
+            '<strong>' + (c.nombre || '-') + '</strong> · DNI: ' + (c.dni || '-') + '<br>' +
+            '<small class="bs-text-muted">' + (c.empresa || '-') + ' · ' + (c.fundo || '-') + ' · ' + (c.parte_cuerpo || '-') + '</small>' +
+          '</div>' +
+          '<div><span class="bs-badge bs-badge-primary"># Atenciones: ' + (c.numero_atenciones || 0) + '</span></div>' +
+        '</div>';
+
+      const hoy = new Date().toISOString().split('T')[0];
+      document.getElementById('seg_fecha').value = hoy;
+      document.getElementById('seg_detalle').value = '';
+      document.getElementById('segAlert').innerHTML = '';
+      document.getElementById('seguimientosModal').classList.add('bs-active');
+
+      await cargarSeguimientos(id);
+    }
+
+    function closeModalSeg() {
+      document.getElementById('seguimientosModal').classList.remove('bs-active');
+      casoActualId = null;
+    }
+
+    async function cargarSeguimientos(id) {
+      const cont = document.getElementById('listaSeguimientos');
+      cont.innerHTML = '<div class="bs-text-center"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+      try {
+        const res = await api('bs_listarSeguimientos', { id_caso: id });
+        if (!res.ok) { cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>'; return; }
+        if (res.items.length === 0) {
+          cont.innerHTML = '<p class="bs-text-muted bs-text-sm">No hay seguimientos registrados aún. Agrega el primero abajo ⬇️</p>';
+          return;
+        }
+        let html = '';
+        res.items.forEach(function(s) {
+          const fecha = s.fecha_seguimiento ? new Date(s.fecha_seguimiento).toLocaleDateString('es-PE') : '-';
+          html += '<div style="padding: 0.85rem; border-left: 3px solid var(--bs-mod-accidentes); background: var(--bs-surface-alt); margin-bottom: 0.5rem; border-radius: 0 var(--bs-radius-sm) var(--bs-radius-sm) 0;">' +
+            '<div class="bs-flex bs-justify-between bs-items-center">' +
+              '<strong>Seguimiento #' + s.numero_seguimiento + '</strong>' +
+              '<span class="bs-text-xs bs-text-muted">' + fecha + '</span>' +
+            '</div>' +
+            '<p class="bs-text-sm" style="margin: 0.4rem 0 0; white-space: pre-wrap;">' + (s.detalle || '-').replace(/</g,'&lt;') + '</p>' +
+            '<p class="bs-text-xs bs-text-subtle" style="margin: 0.3rem 0 0;">por ' + (s.created_by || '-') + '</p>' +
+          '</div>';
+        });
+        cont.innerHTML = html;
+      } catch(err) {
+        cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
+      }
+    }
+
+    async function submitSeguimiento() {
+      if (!casoActualId) return;
+      const datos = {
+        fecha_seguimiento: document.getElementById('seg_fecha').value,
+        detalle: document.getElementById('seg_detalle').value
+      };
+      if (!datos.fecha_seguimiento || !datos.detalle) {
+        document.getElementById('segAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Completa fecha y detalle</div>';
+        return;
+      }
+      const btn = document.getElementById('btnSeg');
+      btn.disabled = true; btn.textContent = 'Agregando...';
+      try {
+        const res = await api('bs_crearSeguimiento', {
+          usuario: user.usuario,
+          id_caso: casoActualId,
+          datos: datos
+        });
+        if (res.ok) {
+          document.getElementById('seg_detalle').value = '';
+          document.getElementById('segAlert').innerHTML = '<div class="bs-alert bs-alert-success">' + res.message + '</div>';
+          await cargarSeguimientos(casoActualId);
+          await cargar(); // refresca tabla principal para mostrar # atenciones actualizado
+        } else {
+          document.getElementById('segAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
+        }
+      } catch(err) {
+        document.getElementById('segAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
+      } finally { btn.disabled = false; btn.textContent = '+ Agregar Seguimiento'; }
+    }
+
+    // ===== LOGOUT =====
+    function logout() {
+      if (confirm('¿Cerrar sesión?')) {
+        localStorage.removeItem('bienestarSocialAuth');
+        window.location.href = '../index.html';
+      }
+    }
+
+    // ===== INIT =====
+    cargar();
+  </script>
+</body>
+</html>

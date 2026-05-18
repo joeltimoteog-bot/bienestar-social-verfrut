@@ -1,0 +1,41 @@
+# Dependencias y caches
+node_modules/
+.npm
+.cache/
+
+# Archivos de configuración local con credenciales
+local.settings.json
+.env
+.env.local
+*.local
+
+# Azure Functions legacy (proyecto pivoteado)
+functions/
+
+# Builds y archivos temporales
+deploy.zip
+dist/
+build/
+*.tmp
+*.bak
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backup local de GAS (source of truth está en Apps Script editor)
+backend/gas/codigo.gs
+backend/gas/*.gs.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Secretos (NO subir nunca)
+*.key
+*.pem
+secrets/

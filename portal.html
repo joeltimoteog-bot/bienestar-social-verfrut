@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal · Bienestar Social - RR.LL.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <!-- TOPBAR -->
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon">BS</div>
+          <span>Bienestar Social · RR.LL.</span>
+        </div>
+        <div class="bs-topbar-user">
+          <span class="bs-topbar-user-name" id="userName">Cargando...</span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="bs-main">
+      <h1>Bienvenido, <span id="userFirstName"></span></h1>
+      <p class="bs-text-subtle bs-mb-lg">Selecciona el módulo con el que deseas trabajar.</p>
+
+      <div class="bs-module-grid" id="moduleGrid">
+        <!-- Cards generadas por JS según permisos -->
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bs-footer">
+      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · RAPEL S.A.C. / VERFRUT S.A.C. · v1.0.0
+    </footer>
+  </div>
+
+  <script>
+    // ===== AUTH CHECK =====
+    const session = localStorage.getItem('bienestarSocialAuth');
+    if (!session) {
+      window.location.href = 'index.html';
+    }
+
+    let user;
+    try {
+      user = JSON.parse(session);
+      if (!user || !user.usuario) throw new Error('Sesion invalida');
+    } catch (e) {
+      localStorage.removeItem('bienestarSocialAuth');
+      window.location.href = 'index.html';
+    }
+
+    // ===== UI: Header con datos del user =====
+    document.getElementById('userName').textContent = user.nombre || user.usuario;
+    document.getElementById('userFirstName').textContent = (user.nombre || user.usuario).split(' ')[0];
+
+    // ===== MÓDULOS =====
+    const MODULOS = [
+      {
+        id: 'quejas',
+        permiso: 'quejas',
+        url: 'modulos/quejas.html',
+        title: 'Quejas y Sugerencias',
+        desc: 'Registro y seguimiento de quejas, reclamos y sugerencias del personal.',
+        icon: '📋',
+        color: 'var(--bs-mod-quejas)'
+      },
+      {
+        id: 'accidentes',
+        permiso: 'accidentes',
+        url: 'modulos/accidentes.html',
+        title: 'Accidentes Laborales',
+        desc: 'Reporte y seguimiento de accidentes laborales con seguimientos médicos.',
+        icon: '🩺',
+        color: 'var(--bs-mod-accidentes)'
+      },
+      {
+        id: 'hostigamiento',
+        permiso: 'hostigamiento',
+        url: 'modulos/hostigamiento.html',
+        title: 'Hostigamiento Sexual',
+        desc: 'Denuncias por hostigamiento sexual. Acceso restringido (Ley 29733).',
+        icon: '🔒',
+        color: 'var(--bs-mod-hostigamiento)',
+        confidencial: true
+      },
+      {
+        id: 'subsidios',
+        permiso: 'subsidios',
+        url: 'modulos/subsidios.html',
+        title: 'Subsidios',
+        desc: 'Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, etc.).',
+        icon: '💰',
+        color: 'var(--bs-mod-subsidios)'
+      }
+    ];
+
+    function renderModules() {
+      const grid = document.getElementById('moduleGrid');
+      const html = MODULOS.map(function(m) {
+        const tienePermiso = user.permisos && user.permisos[m.permiso];
+        const disabledClass = tienePermiso ? '' : 'bs-disabled';
+        const onclick = tienePermiso ? 'onclick="window.location.href=\'' + m.url + '\'"' : '';
+        let badge = '';
+        if (!tienePermiso) {
+          badge = '<span class="bs-module-lock">❌ Sin acceso</span>';
+        } else if (m.confidencial) {
+          badge = '<span class="bs-module-lock">🔐 Confidencial</span>';
+        }
+        return (
+          '<div class="bs-module-card ' + disabledClass + '" ' + onclick + '>' +
+            badge +
+            '<div class="bs-module-icon" style="background: ' + m.color + ';">' + m.icon + '</div>' +
+            '<h3 class="bs-module-title">' + m.title + '</h3>' +
+            '<p class="bs-module-desc">' + m.desc + '</p>' +
+          '</div>'
+        );
+      }).join('');
+      grid.innerHTML = html;
+    }
+
+    renderModules();
+
+    // ===== LOGOUT =====
+    function logout() {
+      if (confirm('¿Cerrar sesión?')) {
+        localStorage.removeItem('bienestarSocialAuth');
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+</body>
+</html>
