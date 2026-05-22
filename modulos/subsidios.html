@@ -215,7 +215,7 @@
             <input type="number" id="calculo_por_dia" class="bs-input" min="0" step="0.01" placeholder="Auto o manual">
           </div>
           <div class="bs-form-group">
-            <label class="bs-label">Reembolso por mes <span class="bs-text-xs bs-text-subtle">(manual)</span></label>
+            <label class="bs-label">Reembolso por mes <span class="bs-text-xs bs-text-subtle">(= ESSALUD)</span></label>
             <input type="number" id="reembolso_por_mes" class="bs-input" min="0" step="0.01">
           </div>
         </div>
@@ -524,6 +524,7 @@
       document.getElementById('monto_total').value = montoTotal;
       document.getElementById('pago_empresa').value = pagoEmpresa;
       document.getElementById('recuperado_essalud').value = recuperado;
+      document.getElementById('reembolso_por_mes').value = recuperado; // = recuperado ESSALUD
       document.getElementById('diferencias').value = +(montoTotal - recuperado).toFixed(2);
     }
 
