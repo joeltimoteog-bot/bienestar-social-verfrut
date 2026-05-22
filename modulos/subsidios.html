@@ -200,34 +200,45 @@
           <textarea id="descripcion" class="bs-textarea" placeholder="Detalle del subsidio..."></textarea>
         </div>
 
-        <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Datos económicos (S/)</h4>
-        <p class="bs-helptext" style="margin: -0.25rem 0 0.6rem; line-height: 1.4;">💡 <strong>Auto-cálculo ESSALUD:</strong> ingresa el <strong>cálculo por día</strong> y las fechas (o los días). Incapacidad: primeros 20 días = empresa, resto = ESSALUD. Maternidad: todo ESSALUD. Puedes editar los montos manualmente si tu caso es especial.</p>
+        <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Cálculo del subsidio (S/)</h4>
+        <p class="bs-helptext" style="margin: -0.25rem 0 0.6rem; line-height: 1.4;">💡 <strong>Auto-cálculo ESSALUD:</strong> ingresa la <strong>remuneración mensual</strong> y las fechas (o los días). El sistema calcula todo solo. Incapacidad: primeros 20 días = empresa, resto = ESSALUD. Maternidad: todo ESSALUD. Todos los montos son editables.</p>
+
+        <!-- ENTRADAS BASE -->
         <div class="bs-grid bs-grid-3 bs-gap">
           <div class="bs-form-group">
-            <label class="bs-label">Cálculo por día</label>
-            <input type="number" id="calculo_por_dia" class="bs-input" min="0" step="0.01">
+            <label class="bs-label">Remuneración mensual <span class="bs-text-xs bs-text-subtle">(base)</span></label>
+            <input type="number" id="remuneracion_mensual" class="bs-input" min="0" step="0.01" placeholder="Ej: 1500">
           </div>
           <div class="bs-form-group">
-            <label class="bs-label">Pago empresa</label>
-            <input type="number" id="pago_empresa" class="bs-input" min="0" step="0.01">
+            <label class="bs-label">Cálculo por día <span class="bs-text-xs bs-text-subtle">(rem ÷ 30)</span></label>
+            <input type="number" id="calculo_por_dia" class="bs-input" min="0" step="0.01" placeholder="Auto o manual">
           </div>
           <div class="bs-form-group">
-            <label class="bs-label">Reembolso por mes</label>
+            <label class="bs-label">Reembolso por mes <span class="bs-text-xs bs-text-subtle">(manual)</span></label>
             <input type="number" id="reembolso_por_mes" class="bs-input" min="0" step="0.01">
           </div>
         </div>
-        <div class="bs-grid bs-grid-3 bs-gap">
-          <div class="bs-form-group">
-            <label class="bs-label">Recuperado EsSalud</label>
-            <input type="number" id="recuperado_essalud" class="bs-input" min="0" step="0.01">
-          </div>
-          <div class="bs-form-group">
-            <label class="bs-label">Monto total</label>
-            <input type="number" id="monto_total" class="bs-input" min="0" step="0.01">
-          </div>
-          <div class="bs-form-group">
-            <label class="bs-label">Diferencias</label>
-            <input type="number" id="diferencias" class="bs-input" step="0.01">
+
+        <!-- RESULTADOS CALCULADOS -->
+        <div style="background: var(--bs-surface-alt); border-radius: var(--bs-radius); padding: 0.85rem 0.85rem 0.25rem; margin-top: 0.5rem;">
+          <p class="bs-text-xs bs-text-subtle" style="margin: 0 0 0.5rem;">📊 Resultados (se calculan solos, puedes ajustar)</p>
+          <div class="bs-grid bs-grid-4 bs-gap">
+            <div class="bs-form-group">
+              <label class="bs-label">Pago empresa</label>
+              <input type="number" id="pago_empresa" class="bs-input" min="0" step="0.01">
+            </div>
+            <div class="bs-form-group">
+              <label class="bs-label">Recuperado EsSalud</label>
+              <input type="number" id="recuperado_essalud" class="bs-input" min="0" step="0.01">
+            </div>
+            <div class="bs-form-group">
+              <label class="bs-label">Monto total</label>
+              <input type="number" id="monto_total" class="bs-input" min="0" step="0.01" style="font-weight: 600;">
+            </div>
+            <div class="bs-form-group">
+              <label class="bs-label">Diferencias</label>
+              <input type="number" id="diferencias" class="bs-input" step="0.01">
+            </div>
           </div>
         </div>
 
@@ -367,6 +378,7 @@
         const el = document.getElementById(f);
         if (el) el.value = '';
       });
+      document.getElementById('remuneracion_mensual').value = '';
       document.getElementById('anio').value = new Date().getFullYear();
       document.getElementById('estado_general').value = 'En proceso';
       document.getElementById('formAlert').innerHTML = '';
@@ -471,33 +483,37 @@
     // ===== CÁLCULO AUTOMÁTICO DE SUBSIDIO (ESSALUD Perú) =====
     const SUBSIDIO_DIAS_EMPRESA = 20; // primeros 20 días los paga la empresa (incapacidad temporal)
 
-    function calcularSubsidio() {
-      const tipo = document.getElementById('tipo').value;
-      const cpd = parseFloat(document.getElementById('calculo_por_dia').value) || 0;
-      let dias = parseInt(document.getElementById('dias').value) || 0;
-
-      // Si hay fechas, recalcular días (inclusivo: cuenta inicio y término)
+    function recalcularDias() {
       const ini = document.getElementById('inicio').value;
       const fin = document.getElementById('termino').value;
       if (ini && fin) {
         const d = bsDiasEntre(ini, fin);
-        if (d >= 0) { dias = d + 1; document.getElementById('dias').value = dias; }
+        if (d >= 0) document.getElementById('dias').value = d + 1; // inclusivo
       }
+    }
 
-      if (!cpd || !dias) return; // sin datos base, no calcula
+    function calcularSubsidio() {
+      // 1) Cálculo por día: si hay remuneración mensual, lo deriva (rem / 30)
+      const rem = parseFloat(document.getElementById('remuneracion_mensual').value) || 0;
+      if (rem > 0) {
+        document.getElementById('calculo_por_dia').value = +(rem / 30).toFixed(2);
+      }
+      const cpd = parseFloat(document.getElementById('calculo_por_dia').value) || 0;
+      const dias = parseInt(document.getElementById('dias').value) || 0;
+      const tipo = document.getElementById('tipo').value;
+
+      if (!cpd || !dias) return; // sin base no calcula
 
       const montoTotal = +(cpd * dias).toFixed(2);
       let pagoEmpresa = 0, recuperado = 0;
 
       if (tipo === 'Maternidad') {
-        // ESSALUD cubre todo desde el inicio
-        recuperado = montoTotal;
+        recuperado = montoTotal;          // ESSALUD cubre todo
         pagoEmpresa = 0;
       } else if (tipo === 'Lactancia' || tipo === 'Sepelio') {
-        // montos fijos, no se calculan por días — no tocar
-        return;
+        return;                            // montos fijos, no por días
       } else {
-        // Incapacidad Temporal (default): primeros 20 días empresa, resto ESSALUD
+        // Incapacidad Temporal (default): 20 días empresa, resto ESSALUD
         const diasEmpresa = Math.min(SUBSIDIO_DIAS_EMPRESA, dias);
         const diasEssalud = Math.max(0, dias - SUBSIDIO_DIAS_EMPRESA);
         pagoEmpresa = +(cpd * diasEmpresa).toFixed(2);
@@ -511,10 +527,19 @@
     }
 
     function setupCalculoSubsidio() {
-      ['inicio','termino','dias','calculo_por_dia','tipo'].forEach(function(id) {
+      // fechas: recalcular días y luego montos
+      ['inicio','termino'].forEach(function(id) {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('change', calcularSubsidio);
+        if (el) el.addEventListener('change', function() { recalcularDias(); calcularSubsidio(); });
       });
+      // entradas que recalculan en tiempo real (mientras escribes)
+      ['remuneracion_mensual','calculo_por_dia','dias'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', calcularSubsidio);
+      });
+      // tipo cambia la regla
+      const t = document.getElementById('tipo');
+      if (t) t.addEventListener('change', calcularSubsidio);
     }
 
     // ===== INIT =====
