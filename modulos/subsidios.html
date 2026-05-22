@@ -180,6 +180,15 @@
           </div>
         </div>
 
+        <div class="bs-form-group">
+          <label class="bs-label">Descripción / Diagnóstico</label>
+          <textarea id="descripcion" class="bs-textarea" placeholder="Detalle del subsidio..."></textarea>
+        </div>
+
+        <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Cálculo del subsidio (S/)</h4>
+        <p class="bs-helptext" style="margin: -0.25rem 0 0.6rem; line-height: 1.4;">💡 <strong>Auto-cálculo ESSALUD:</strong> ingresa la <strong>remuneración mensual</strong> y las fechas (o los días). El sistema calcula todo solo. Incapacidad: primeros 20 días = empresa, resto = ESSALUD. Maternidad: todo ESSALUD. Todos los montos son editables.</p>
+
+        <!-- FECHAS Y DÍAS (necesarios para el cálculo) -->
         <div class="bs-grid bs-grid-3 bs-gap">
           <div class="bs-form-group">
             <label class="bs-label">Inicio</label>
@@ -190,18 +199,10 @@
             <input type="date" id="termino" class="bs-input">
           </div>
           <div class="bs-form-group">
-            <label class="bs-label">Días</label>
-            <input type="number" id="dias" class="bs-input" min="0" step="1">
+            <label class="bs-label">Días <span class="bs-required">*</span></label>
+            <input type="number" id="dias" class="bs-input" min="0" step="1" placeholder="Total de días">
           </div>
         </div>
-
-        <div class="bs-form-group">
-          <label class="bs-label">Descripción / Diagnóstico</label>
-          <textarea id="descripcion" class="bs-textarea" placeholder="Detalle del subsidio..."></textarea>
-        </div>
-
-        <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Cálculo del subsidio (S/)</h4>
-        <p class="bs-helptext" style="margin: -0.25rem 0 0.6rem; line-height: 1.4;">💡 <strong>Auto-cálculo ESSALUD:</strong> ingresa la <strong>remuneración mensual</strong> y las fechas (o los días). El sistema calcula todo solo. Incapacidad: primeros 20 días = empresa, resto = ESSALUD. Maternidad: todo ESSALUD. Todos los montos son editables.</p>
 
         <!-- ENTRADAS BASE -->
         <div class="bs-grid bs-grid-3 bs-gap">
