@@ -190,6 +190,7 @@
     </div>
   </div>
 
+  <script src="../assets/js/trabajadores.js"></script>
   <script>
     const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
 
@@ -376,7 +377,47 @@
       }
     }
 
+    // ===== BÚSQUEDA DNI EN AZURE (denunciante y denunciado) =====
+    function setupBusquedaDNI() {
+      // Denunciante: autocompleta nombre, puesto y empresa
+      const dEl = document.getElementById('denunciante_dni');
+      if (dEl) {
+        dEl.addEventListener('input', async function(e) {
+          const v = e.target.value.replace(/[^0-9]/g, '');
+          if (v.length === 8) {
+            dEl.style.borderColor = '#7c3aed';
+            const t = await bsBuscarTrabajador(v);
+            if (t) {
+              document.getElementById('denunciante_nombre').value = t.nombre_completo || '';
+              if (t.oficio) document.getElementById('denunciante_puesto').value = t.oficio;
+              if (t.empresa) document.getElementById('empresa').value = t.empresa;
+              dEl.style.borderColor = '#10b981';
+            } else { dEl.style.borderColor = '#ef4444'; }
+            setTimeout(function() { dEl.style.borderColor = ''; }, 2500);
+          }
+        });
+      }
+      // Denunciado: autocompleta nombre y puesto (no toca empresa)
+      const aEl = document.getElementById('denunciado_dni');
+      if (aEl) {
+        aEl.addEventListener('input', async function(e) {
+          const v = e.target.value.replace(/[^0-9]/g, '');
+          if (v.length === 8) {
+            aEl.style.borderColor = '#7c3aed';
+            const t = await bsBuscarTrabajador(v);
+            if (t) {
+              document.getElementById('denunciado_nombre').value = t.nombre_completo || '';
+              if (t.oficio) document.getElementById('denunciado_puesto').value = t.oficio;
+              aEl.style.borderColor = '#10b981';
+            } else { aEl.style.borderColor = '#ef4444'; }
+            setTimeout(function() { aEl.style.borderColor = ''; }, 2500);
+          }
+        });
+      }
+    }
+
     // ===== INIT =====
+    setupBusquedaDNI();
     cargar();
   </script>
 </body>

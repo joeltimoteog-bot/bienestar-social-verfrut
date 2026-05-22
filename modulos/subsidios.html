@@ -270,6 +270,7 @@
     </div>
   </div>
 
+  <script src="../assets/js/trabajadores.js"></script>
   <script>
     const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
 
@@ -443,7 +444,31 @@
       }
     }
 
+    // ===== BÚSQUEDA DNI EN AZURE (autocompletar) =====
+    function setupBusquedaDNI() {
+      const el = document.getElementById('numero');
+      if (!el) return;
+      el.addEventListener('input', async function(e) {
+        const v = e.target.value.replace(/[^0-9]/g, '');
+        if (v.length === 8) {
+          el.style.borderColor = '#0891b2'; // buscando
+          const t = await bsBuscarTrabajador(v);
+          if (t) {
+            if (t.ap_paterno) document.getElementById('apellido_paterno').value = t.ap_paterno;
+            if (t.ap_materno) document.getElementById('apellido_materno').value = t.ap_materno;
+            if (t.nombres) document.getElementById('nombres').value = t.nombres;
+            if (t.empresa) document.getElementById('empresa').value = t.empresa;
+            el.style.borderColor = '#10b981'; // verde = encontrado
+          } else {
+            el.style.borderColor = '#ef4444'; // rojo = no encontrado
+          }
+          setTimeout(function() { el.style.borderColor = ''; }, 2500);
+        }
+      });
+    }
+
     // ===== INIT =====
+    setupBusquedaDNI();
     cargarSubsidios();
   </script>
 </body>
