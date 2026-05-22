@@ -297,8 +297,9 @@
             <input type="date" id="fecha_fin_restriccion" class="bs-input">
           </div>
           <div class="bs-form-group">
-            <label class="bs-label">Días restricción</label>
-            <input type="number" id="dias_restriccion" class="bs-input" min="0">
+            <label class="bs-label">Días restricción <span class="bs-text-xs bs-text-subtle">(auto)</span></label>
+            <input type="number" id="dias_restriccion" class="bs-input" min="0" readonly style="background: var(--bs-surface-alt);">
+            <p class="bs-helptext">Se calcula de las fechas de arriba</p>
           </div>
         </div>
         <div class="bs-form-group">
@@ -422,6 +423,7 @@
     </div>
   </div>
 
+  <script src="../assets/js/trabajadores.js"></script>
   <script>
     const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
 
@@ -454,9 +456,12 @@
 
     function setupAutoTab() {
       const dniEl = document.getElementById('dni');
-      dniEl.addEventListener('input', function(e) {
+      dniEl.addEventListener('input', async function(e) {
         e.target.value = e.target.value.replace(/[^0-9]/g, '');
-        if (e.target.value.length >= 8) focusNext('dni');
+        if (e.target.value.length >= 8) {
+          await autocompletarPorDNI(e.target.value);
+          focusNext('dni');
+        }
       });
       ['sexo','empresa','formulario_con_goce','estado','situacion','responsable','estado_caso'].forEach(function(id) {
         const el = document.getElementById(id);
@@ -466,6 +471,36 @@
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', function() { if (el.value) focusNext(id); });
       });
+    }
+
+    // ===== BÚSQUEDA DNI EN AZURE (autocompletar) =====
+    async function autocompletarPorDNI(dni) {
+      const dniEl = document.getElementById('dni');
+      dniEl.style.borderColor = '#f59e0b'; // ámbar = buscando
+      const t = await bsBuscarTrabajador(dni);
+      if (t) {
+        document.getElementById('nombre').value = t.nombre_completo || '';
+        const edad = bsCalcularEdad(t.fecha_nacimiento);
+        if (edad !== '') document.getElementById('edad').value = edad;
+        if (t.sexo) document.getElementById('sexo').value = t.sexo;
+        if (t.empresa) document.getElementById('empresa').value = t.empresa;
+        if (t.fecha_inicio) document.getElementById('fecha_ingreso').value = bsFechaInput(t.fecha_inicio);
+        dniEl.style.borderColor = '#10b981'; // verde = encontrado
+      } else {
+        dniEl.style.borderColor = '#ef4444'; // rojo = no encontrado
+      }
+      setTimeout(function() { dniEl.style.borderColor = ''; }, 2500);
+    }
+
+    // ===== CÁLCULO AUTOMÁTICO DE DÍAS DE RESTRICCIÓN =====
+    function setupDiasRestriccion() {
+      const calc = function() {
+        const ini = document.getElementById('fecha_reincorporo').value;
+        const fin = document.getElementById('fecha_fin_restriccion').value;
+        document.getElementById('dias_restriccion').value = bsDiasEntre(ini, fin);
+      };
+      document.getElementById('fecha_reincorporo').addEventListener('change', calc);
+      document.getElementById('fecha_fin_restriccion').addEventListener('change', calc);
     }
 
     let casosCache = [];
@@ -645,6 +680,7 @@
     }
 
     setupAutoTab();
+    setupDiasRestriccion();
     cargar();
   </script>
 </body>
