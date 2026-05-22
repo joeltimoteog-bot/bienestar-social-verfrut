@@ -201,6 +201,7 @@
         </div>
 
         <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Datos económicos (S/)</h4>
+        <p class="bs-helptext" style="margin: -0.25rem 0 0.6rem; line-height: 1.4;">💡 <strong>Auto-cálculo ESSALUD:</strong> ingresa el <strong>cálculo por día</strong> y las fechas (o los días). Incapacidad: primeros 20 días = empresa, resto = ESSALUD. Maternidad: todo ESSALUD. Puedes editar los montos manualmente si tu caso es especial.</p>
         <div class="bs-grid bs-grid-3 bs-gap">
           <div class="bs-form-group">
             <label class="bs-label">Cálculo por día</label>
@@ -467,8 +468,58 @@
       });
     }
 
+    // ===== CÁLCULO AUTOMÁTICO DE SUBSIDIO (ESSALUD Perú) =====
+    const SUBSIDIO_DIAS_EMPRESA = 20; // primeros 20 días los paga la empresa (incapacidad temporal)
+
+    function calcularSubsidio() {
+      const tipo = document.getElementById('tipo').value;
+      const cpd = parseFloat(document.getElementById('calculo_por_dia').value) || 0;
+      let dias = parseInt(document.getElementById('dias').value) || 0;
+
+      // Si hay fechas, recalcular días (inclusivo: cuenta inicio y término)
+      const ini = document.getElementById('inicio').value;
+      const fin = document.getElementById('termino').value;
+      if (ini && fin) {
+        const d = bsDiasEntre(ini, fin);
+        if (d >= 0) { dias = d + 1; document.getElementById('dias').value = dias; }
+      }
+
+      if (!cpd || !dias) return; // sin datos base, no calcula
+
+      const montoTotal = +(cpd * dias).toFixed(2);
+      let pagoEmpresa = 0, recuperado = 0;
+
+      if (tipo === 'Maternidad') {
+        // ESSALUD cubre todo desde el inicio
+        recuperado = montoTotal;
+        pagoEmpresa = 0;
+      } else if (tipo === 'Lactancia' || tipo === 'Sepelio') {
+        // montos fijos, no se calculan por días — no tocar
+        return;
+      } else {
+        // Incapacidad Temporal (default): primeros 20 días empresa, resto ESSALUD
+        const diasEmpresa = Math.min(SUBSIDIO_DIAS_EMPRESA, dias);
+        const diasEssalud = Math.max(0, dias - SUBSIDIO_DIAS_EMPRESA);
+        pagoEmpresa = +(cpd * diasEmpresa).toFixed(2);
+        recuperado = +(cpd * diasEssalud).toFixed(2);
+      }
+
+      document.getElementById('monto_total').value = montoTotal;
+      document.getElementById('pago_empresa').value = pagoEmpresa;
+      document.getElementById('recuperado_essalud').value = recuperado;
+      document.getElementById('diferencias').value = +(montoTotal - recuperado).toFixed(2);
+    }
+
+    function setupCalculoSubsidio() {
+      ['inicio','termino','dias','calculo_por_dia','tipo'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', calcularSubsidio);
+      });
+    }
+
     // ===== INIT =====
     setupBusquedaDNI();
+    setupCalculoSubsidio();
     cargarSubsidios();
   </script>
 </body>
