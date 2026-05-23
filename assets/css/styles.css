@@ -241,3 +241,6 @@ small, .bs-text-sm { font-size: 0.85rem; }
 .bs-cursor-pointer { cursor: pointer; }
 .bs-rounded { border-radius: var(--bs-radius); }
 .bs-w-full { width: 100%; }
+/* LOGO UNIFRUTTI OVERRIDE */
+.bs-topbar-brand-icon{background:#fff!important;border-radius:8px!important;width:auto!important;height:auto!important;padding:4px 8px!important;overflow:visible!important;display:flex;align-items:center}
+.bs-topbar-brand-icon img{height:32px;width:auto;display:block;object-fit:contain}

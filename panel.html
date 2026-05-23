@@ -16,6 +16,8 @@
   /* ===== TOPBAR ===== */
   .topbar{background:var(--navy);color:#fff;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
   .topbar .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem}
+  .logo-chip{background:#fff;border-radius:8px;padding:4px 8px;display:inline-flex;align-items:center}
+  .logo-chip img{height:30px;width:auto;display:block}
   .topbar .brand small{display:block;font-weight:400;font-size:.72rem;color:rgba(255,255,255,.6)}
   .topbar .right{display:flex;align-items:center;gap:14px;font-size:.85rem}
   .btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.85rem;text-decoration:none}
@@ -59,7 +61,7 @@
 <body>
 
 <div class="topbar">
-  <div class="brand">🏛️ <div>Bienestar Social<small>Relaciones Laborales · RAPEL / VERFRUT</small></div></div>
+  <div class="brand"><span class="logo-chip"><img src="images/logo-unifrutti-hd.png" alt="Unifrutti"></span> <div>Bienestar Social<small>Relaciones Laborales · RAPEL / VERFRUT</small></div></div>
   <div class="right">
     <span id="userName">—</span>
     <a class="btn-ghost" href="portal.html">← Portal</a>
