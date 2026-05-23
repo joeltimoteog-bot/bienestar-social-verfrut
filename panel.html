@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --navy:#0b1e45; --green:#16a34a;
+    --navy:#0033A0; --green:#E2231A;
     --c-quejas:#f97316; --c-accidentes:#ef4444; --c-host:#7c3aed; --c-subs:#06b6d4;
     --bg:#f1f5f9; --card:#ffffff; --muted:#64748b; --line:#e2e8f0;
   }
@@ -39,7 +39,7 @@
   .kpi .pill{background:#f8fafc;border-radius:8px;padding:6px}
   .kpi .pill b{display:block;font-size:1.1rem} .kpi .pill span{font-size:.68rem;color:var(--muted)}
   .kpi .k-money{margin-top:12px;font-size:.78rem;color:var(--muted)}
-  .kpi .k-money b{color:var(--green)}
+  .kpi .k-money b{color:var(--navy)}
   .badge{display:inline-block;font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:20px;background:#f3e8ff;color:var(--c-host)}
   .kpi.locked{opacity:.7;border-color:var(--line);background:#fafafa}
   .kpi.locked .k-big{color:var(--muted)}
@@ -244,7 +244,7 @@ function render(d){
   const sumEmp = e => (d.quejas.porEmpresa[e]||0) + (d.accidentes.porEmpresa[e]||0) + (d.subsidios.porEmpresa[e]||0);
   new Chart(document.getElementById('chartEmpresa'), {
     type:'bar',
-    data:{ labels:['RAPEL','VERFRUT'], datasets:[{ label:'Casos', data:[sumEmp('RAPEL'), sumEmp('VERFRUT')], backgroundColor:['#0b1e45','#16a34a'], borderRadius:8 }] },
+    data:{ labels:['RAPEL','VERFRUT'], datasets:[{ label:'Casos', data:[sumEmp('RAPEL'), sumEmp('VERFRUT')], backgroundColor:['#0033A0','#E2231A'], borderRadius:8 }] },
     options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
   });
 }
