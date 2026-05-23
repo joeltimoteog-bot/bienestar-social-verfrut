@@ -101,13 +101,23 @@
         desc: 'Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, etc.).',
         icon: '💰',
         color: 'var(--bs-mod-subsidios)'
+      },
+      {
+        id: 'panel',
+        permiso: 'panel',
+        siempre: true,
+        url: 'panel.html',
+        title: 'Panel / Dashboard',
+        desc: 'Resumen consolidado de todos los modulos (KPIs y graficos).',
+        icon: '📊',
+        color: '#16a34a'
       }
     ];
 
     function renderModules() {
       const grid = document.getElementById('moduleGrid');
       const html = MODULOS.map(function(m) {
-        const tienePermiso = user.permisos && user.permisos[m.permiso];
+        const tienePermiso = m.siempre === true || (user.permisos && user.permisos[m.permiso]);
         const disabledClass = tienePermiso ? '' : 'bs-disabled';
         const onclick = tienePermiso ? 'onclick="window.location.href=\'' + m.url + '\'"' : '';
         let badge = '';
