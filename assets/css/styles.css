@@ -21,13 +21,13 @@ body {
 /* ---------- Design Tokens ---------- */
 :root {
   /* Marca Unifrutti */
-  --bs-primary: #0a2540;
-  --bs-primary-dark: #051a30;
-  --bs-primary-light: #1e3a5f;
-  --bs-secondary: #2d7a4b;
-  --bs-secondary-light: #38a169;
-  --bs-secondary-dark: #1f5733;
-  --bs-accent: #ed8936;
+  --bs-primary: #0033A0;
+  --bs-primary-dark: #00277A;
+  --bs-primary-light: #2A5BD7;
+  --bs-secondary: #E2231A;
+  --bs-secondary-light: #F0473E;
+  --bs-secondary-dark: #B71C13;
+  --bs-accent: #E2231A;
 
   /* Neutros */
   --bs-bg: #f7fafc;
