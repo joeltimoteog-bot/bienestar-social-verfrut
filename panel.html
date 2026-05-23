@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel · Bienestar Social</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#0b1e45; --green:#16a34a;
+    --c-quejas:#f97316; --c-accidentes:#ef4444; --c-host:#7c3aed; --c-subs:#06b6d4;
+    --bg:#f1f5f9; --card:#ffffff; --muted:#64748b; --line:#e2e8f0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--navy)}
+  /* ===== TOPBAR ===== */
+  .topbar{background:var(--navy);color:#fff;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .topbar .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem}
+  .topbar .brand small{display:block;font-weight:400;font-size:.72rem;color:rgba(255,255,255,.6)}
+  .topbar .right{display:flex;align-items:center;gap:14px;font-size:.85rem}
+  .btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.85rem;text-decoration:none}
+  .btn-ghost:hover{background:rgba(255,255,255,.22)}
+  /* ===== LAYOUT ===== */
+  .wrap{max-width:1200px;margin:0 auto;padding:22px}
+  .page-title{font-size:1.3rem;font-weight:800}
+  .page-sub{color:var(--muted);font-size:.85rem;margin-top:2px}
+  .head-row{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+  /* ===== KPI CARDS ===== */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-bottom:22px}
+  .kpi{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:5px solid var(--navy)}
+  .kpi.quejas{border-color:var(--c-quejas)} .kpi.accidentes{border-color:var(--c-accidentes)}
+  .kpi.host{border-color:var(--c-host)} .kpi.subs{border-color:var(--c-subs)}
+  .kpi .k-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .kpi .k-title{font-size:.82rem;font-weight:700}
+  .kpi.quejas .k-title{color:var(--c-quejas)} .kpi.accidentes .k-title{color:var(--c-accidentes)}
+  .kpi.host .k-title{color:var(--c-host)} .kpi.subs .k-title{color:var(--c-subs)}
+  .kpi .k-big{font-size:2rem;font-weight:900;line-height:1}
+  .kpi .k-sub{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;text-align:center}
+  .kpi .pill{background:#f8fafc;border-radius:8px;padding:6px}
+  .kpi .pill b{display:block;font-size:1.1rem} .kpi .pill span{font-size:.68rem;color:var(--muted)}
+  .kpi .k-money{margin-top:12px;font-size:.78rem;color:var(--muted)}
+  .kpi .k-money b{color:var(--green)}
+  .badge{display:inline-block;font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:20px;background:#f3e8ff;color:var(--c-host)}
+  .kpi.locked{opacity:.7;border-color:var(--line);background:#fafafa}
+  .kpi.locked .k-big{color:var(--muted)}
+  /* ===== CHARTS ===== */
+  .chart-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px}
+  .chart-grid .full{grid-column:1 / -1}
+  .panel{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .panel h3{font-size:.95rem;margin-bottom:14px}
+  .bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:820px){.chart-grid,.bottom-grid{grid-template-columns:1fr}}
+  /* ===== STATES ===== */
+  #loading,#errorBox{text-align:center;padding:50px 20px;color:var(--muted)}
+  #errorBox{display:none;color:var(--c-accidentes)}
+  .footer{text-align:center;color:var(--muted);font-size:.72rem;padding:22px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">🏛️ <div>Bienestar Social<small>Relaciones Laborales · RAPEL / VERFRUT</small></div></div>
+  <div class="right">
+    <span id="userName">—</span>
+    <a class="btn-ghost" href="portal.html">← Portal</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="head-row">
+    <div>
+      <div class="page-title">📊 Panel consolidado</div>
+      <div class="page-sub">Resumen de los módulos de Bienestar Social</div>
+    </div>
+    <div class="page-sub" id="genStamp"></div>
+  </div>
+
+  <div id="loading">⏳ Cargando estadísticas…</div>
+  <div id="errorBox">⚠️ <span id="errorMsg"></span></div>
+
+  <div id="content" style="display:none">
+    <!-- KPIs -->
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <!-- Tendencia (full width) -->
+    <div class="chart-grid">
+      <div class="panel full">
+        <h3>📈 Tendencia mensual por módulo</h3>
+        <canvas id="chartTendencia" height="110"></canvas>
+      </div>
+    </div>
+
+    <!-- Dona + Barras -->
+    <div class="bottom-grid">
+      <div class="panel">
+        <h3>🍩 Distribución por módulo</h3>
+        <canvas id="chartDona" height="220"></canvas>
+      </div>
+      <div class="panel">
+        <h3>🏢 Casos por empresa</h3>
+        <canvas id="chartEmpresa" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Bienestar Social · Relaciones Laborales 2026 — Joel Ángel Timoteo Gonza</div>
+
+<script>
+// ============================================================
+// ⚙️ CONFIGURACIÓN — URL del WebApp de BIENESTAR (no la del Sistema RL)
+// ============================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+
+// ============================================================
+// SESIÓN
+// ============================================================
+const auth = JSON.parse(localStorage.getItem('bienestarSocialAuth') || 'null');
+if (!auth) { window.location.href = 'index.html'; }
+document.getElementById('userName').textContent = '👤 ' + (auth?.nombre || auth?.usuario || '');
+
+function esAdmin(){ return auth && auth.rol && /admin/i.test(auth.rol); }
+function tienePermiso(p){
+  if (esAdmin()) return true;
+  const P = auth?.permisos || {};
+  if (Array.isArray(P)) return P.indexOf(p) >= 0 || P.indexOf('mod_'+p) >= 0;
+  return P[p] === true || P['mod_'+p] === true;
+}
+
+// ============================================================
+// CARGA DE DATOS
+// ============================================================
+async function cargar(){
+  const permisos = {
+    quejas:        tienePermiso('quejas'),
+    accidentes:    tienePermiso('accidentes'),
+    hostigamiento: tienePermiso('hostigamiento'),
+    subsidios:     tienePermiso('subsidios')
+  };
+  try {
+    const res = await fetch(API_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action:'bs_dashboard', permisos: permisos })
+    });
+    const data = await res.json();
+    if (!data.ok) return mostrarError(data.message || 'Respuesta no válida del servidor.');
+    render(data);
+  } catch(err){
+    mostrarError('Error de conexión: ' + err.message);
+  }
+}
+
+function mostrarError(msg){
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorBox').style.display = 'block';
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+const fmt = n => (n||0).toLocaleString('es-PE');
+const soles = n => 'S/ ' + (n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function labelMes(p){ const [y,m]=p.split('-'); return MESES[(+m)-1] + ' ' + y.slice(2); }
+
+function render(d){
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('content').style.display = 'block';
+  if (d.generado) document.getElementById('genStamp').textContent = 'Actualizado: ' + new Date(d.generado).toLocaleString('es-PE');
+
+  // ---- KPIs ----
+  const grid = document.getElementById('kpiGrid');
+  let html = '';
+
+  if (tienePermiso('quejas')) html += `
+    <div class="kpi quejas">
+      <div class="k-top"><span class="k-title">📋 QUEJAS</span><span class="k-big">${fmt(d.quejas.total)}</span></div>
+      <div class="k-sub">
+        <div class="pill"><b>${fmt(d.quejas.pendientes)}</b><span>Pendientes</span></div>
+        <div class="pill"><b>${fmt(d.quejas.resueltas)}</b><span>Resueltas</span></div>
+      </div>
+    </div>`;
+
+  if (tienePermiso('accidentes')) html += `
+    <div class="kpi accidentes">
+      <div class="k-top"><span class="k-title">🩺 ACCIDENTES</span><span class="k-big">${fmt(d.accidentes.total)}</span></div>
+      <div class="k-sub">
+        <div class="pill"><b>${fmt(d.accidentes.enSeguimiento)}</b><span>En seguimiento</span></div>
+        <div class="pill"><b>${fmt(d.accidentes.cerrados)}</b><span>Cerrados</span></div>
+      </div>
+    </div>`;
+
+  if (d.hostigamiento.acceso) {
+    html += `
+    <div class="kpi host">
+      <div class="k-top"><span class="k-title">🔒 HOSTIGAMIENTO</span><span class="k-big">${fmt(d.hostigamiento.total)}</span></div>
+      <div style="margin-top:12px"><span class="badge">🔐 Confidencial</span></div>
+    </div>`;
+  } else {
+    html += `
+    <div class="kpi host locked">
+      <div class="k-top"><span class="k-title">🔒 HOSTIGAMIENTO</span><span class="k-big">—</span></div>
+      <div style="margin-top:12px;font-size:.75rem;color:var(--muted)">🔐 Sin acceso</div>
+    </div>`;
+  }
+
+  if (tienePermiso('subsidios')) html += `
+    <div class="kpi subs">
+      <div class="k-top"><span class="k-title">💰 SUBSIDIOS</span><span class="k-big">${fmt(d.subsidios.total)}</span></div>
+      <div class="k-money">Recuperado ESSALUD: <b>${soles(d.subsidios.recuperadoEssalud)}</b><br>Monto total: <b>${soles(d.subsidios.montoTotal)}</b></div>
+    </div>`;
+
+  grid.innerHTML = html;
+
+  // ---- Tendencia ----
+  const labels = (d.tendencia||[]).map(t => labelMes(t.periodo));
+  const ds = [
+    { label:'Quejas',     data:d.tendencia.map(t=>t.quejas),     borderColor:'#f97316', backgroundColor:'#f9731622', tension:.3 },
+    { label:'Accidentes', data:d.tendencia.map(t=>t.accidentes), borderColor:'#ef4444', backgroundColor:'#ef444422', tension:.3 },
+    { label:'Subsidios',  data:d.tendencia.map(t=>t.subsidios),  borderColor:'#06b6d4', backgroundColor:'#06b6d422', tension:.3 }
+  ];
+  if (d.hostigamiento.acceso) ds.push({ label:'Hostigamiento', data:d.tendencia.map(t=>t.hostigamiento), borderColor:'#7c3aed', backgroundColor:'#7c3aed22', tension:.3 });
+  new Chart(document.getElementById('chartTendencia'), {
+    type:'line',
+    data:{ labels: labels.length?labels:['Sin datos'], datasets: ds },
+    options:{ responsive:true, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+
+  // ---- Dona por módulo ----
+  const donaLabels = [], donaData = [], donaColors = [];
+  if (tienePermiso('quejas'))     { donaLabels.push('Quejas');        donaData.push(d.quejas.total);        donaColors.push('#f97316'); }
+  if (tienePermiso('accidentes')) { donaLabels.push('Accidentes');    donaData.push(d.accidentes.total);    donaColors.push('#ef4444'); }
+  if (d.hostigamiento.acceso)     { donaLabels.push('Hostigamiento'); donaData.push(d.hostigamiento.total); donaColors.push('#7c3aed'); }
+  if (tienePermiso('subsidios'))  { donaLabels.push('Subsidios');     donaData.push(d.subsidios.total);     donaColors.push('#06b6d4'); }
+  new Chart(document.getElementById('chartDona'), {
+    type:'doughnut',
+    data:{ labels:donaLabels, datasets:[{ data:donaData, backgroundColor:donaColors, borderColor:'#fff', borderWidth:2 }] },
+    options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } }
+  });
+
+  // ---- Barras por empresa (suma quejas+accidentes+subsidios) ----
+  const sumEmp = e => (d.quejas.porEmpresa[e]||0) + (d.accidentes.porEmpresa[e]||0) + (d.subsidios.porEmpresa[e]||0);
+  new Chart(document.getElementById('chartEmpresa'), {
+    type:'bar',
+    data:{ labels:['RAPEL','VERFRUT'], datasets:[{ label:'Casos', data:[sumEmp('RAPEL'), sumEmp('VERFRUT')], backgroundColor:['#0b1e45','#16a34a'], borderRadius:8 }] },
+    options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+}
+
+cargar();
+</script>
+</body>
+</html>
