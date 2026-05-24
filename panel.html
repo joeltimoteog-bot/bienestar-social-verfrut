@@ -50,6 +50,13 @@
   .chart-grid .full{grid-column:1 / -1}
   .panel{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
   .panel h3{font-size:.95rem;margin-bottom:14px}
+  table.mov{width:100%;border-collapse:collapse;font-size:.83rem}
+  table.mov th,table.mov td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+  table.mov th{color:var(--muted);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em}
+  table.mov tr:last-child td{border-bottom:none}
+  .mov-mod{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+  .mov-empty{text-align:center;color:var(--muted);padding:24px}
+  .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.7rem;background:var(--bg);color:var(--muted)}
   .bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   @media(max-width:820px){.chart-grid,.bottom-grid{grid-template-columns:1fr}}
   /* ===== STATES ===== */
@@ -102,6 +109,12 @@
         <h3>🏢 Casos por empresa</h3>
         <canvas id="chartEmpresa" height="220"></canvas>
       </div>
+    </div>
+
+    <!-- Tabla últimos movimientos -->
+    <div class="panel" style="margin-top:16px">
+      <h3>🕑 Últimos movimientos</h3>
+      <div id="tablaWrap"></div>
     </div>
   </div>
 </div>
@@ -163,6 +176,7 @@ function mostrarError(msg){
 // RENDER
 // ============================================================
 const fmt = n => (n||0).toLocaleString('es-PE');
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const soles = n => 'S/ ' + (n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 function labelMes(p){ const [y,m]=p.split('-'); return MESES[(+m)-1] + ' ' + y.slice(2); }
@@ -249,6 +263,26 @@ function render(d){
     data:{ labels:['RAPEL','VERFRUT'], datasets:[{ label:'Casos', data:[sumEmp('RAPEL'), sumEmp('VERFRUT')], backgroundColor:['#0033A0','#E2231A'], borderRadius:8 }] },
     options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
   });
+
+  // ---- Tabla últimos movimientos ----
+  const wrap = document.getElementById('tablaWrap');
+  const rec = d.recientes || [];
+  if (!rec.length) {
+    wrap.innerHTML = '<div class="mov-empty">Sin movimientos aún. Los registros más recientes aparecerán aquí.</div>';
+  } else {
+    let t = '<table class="mov"><thead><tr><th>Módulo</th><th>Fecha</th><th>Detalle</th><th>Estado</th><th>Empresa</th></tr></thead><tbody>';
+    rec.forEach(function(m){
+      t += '<tr>' +
+        '<td><span class="mov-mod">' + (m.icon||'') + ' ' + esc(m.modulo) + '</span></td>' +
+        '<td>' + (esc(m.fecha) || '—') + '</td>' +
+        '<td>' + (esc(m.titulo) || '—') + '</td>' +
+        '<td><span class="tag">' + (esc(m.estado) || '—') + '</span></td>' +
+        '<td>' + (esc(m.empresa) || '—') + '</td>' +
+      '</tr>';
+    });
+    t += '</tbody></table>';
+    wrap.innerHTML = t;
+  }
 }
 
 cargar();
