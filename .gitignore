@@ -39,3 +39,10 @@ npm-debug.log*
 *.key
 *.pem
 secrets/
+
+# Scripts locales de mantenimiento
+fix*.ps1
+# Backups automaticos
+*.bak
+# Copia suelta erronea en la raiz (la real esta en assets/css/)
+/styles.css
