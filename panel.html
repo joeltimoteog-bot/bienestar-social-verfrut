@@ -143,15 +143,15 @@
       <div id="tablaWrap"></div>
     </div>
 
-    <!-- Fuerza laboral por tipo de contrato (solo admins) -->
+    <!-- Casos por contrato y antigüedad del trabajador -->
     <div class="panel" id="fuerzaPanel" style="margin-top:16px;display:none">
       <div class="alertas-head">
-        <h3>👷 Fuerza laboral por tipo de contrato</h3>
+        <h3>📑 Casos por contrato y antigüedad del trabajador</h3>
         <div id="fuerzaResumen" class="alertas-resumen"></div>
       </div>
       <div class="bottom-grid" style="margin-top:12px">
-        <div><canvas id="chartContrato" height="220"></canvas></div>
-        <div id="fuerzaEmpresa"></div>
+        <div><h4 style="font-size:.82rem;color:var(--muted);margin:0 0 6px">Por tipo de contrato</h4><canvas id="chartContrato" height="220"></canvas></div>
+        <div><h4 style="font-size:.82rem;color:var(--muted);margin:0 0 6px">Por tiempo laborando</h4><canvas id="chartAntiguedad" height="220"></canvas></div>
       </div>
     </div>
   </div>
@@ -200,7 +200,7 @@ async function cargar(){
     if (!data.ok) return mostrarError(data.message || 'Respuesta no válida del servidor.');
     render(data);
     cargarAlertas(permisos);
-    if (esAdmin()) cargarClasificacion();
+    cargarCasosContrato(permisos);
   } catch(err){
     mostrarError('Error de conexión: ' + err.message);
   }
@@ -376,42 +376,45 @@ function render(d){
   }
 }
 
-// ---- Fuerza laboral por tipo de contrato (solo admins) ----
-async function cargarClasificacion(){
+// ---- Casos por contrato y antigüedad del trabajador ----
+async function cargarCasosContrato(permisos){
   try {
     const res = await fetch(API_URL, {
       method:'POST',
       headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'bs_clasificacion' })
+      body: JSON.stringify({ action:'bs_casos_contrato', permisos: permisos })
     });
     const d = await res.json();
-    if (d.ok) renderClasificacion(d);
+    if (d.ok) renderCasosContrato(d);
   } catch(err){ /* silencioso */ }
 }
 
-function renderClasificacion(d){
+function renderCasosContrato(d){
+  if (!d.total) return; // sin casos clasificables, no mostrar
   document.getElementById('fuerzaPanel').style.display = 'block';
-  const t = d.porTipo || {prueba:0,plazoFijo:0,indeterminado:0};
+  const t = d.porTipo || {prueba:0,plazoFijo:0,indeterminado:0,sinDato:0};
 
   document.getElementById('fuerzaResumen').innerHTML =
     '<span class="chip" style="background:#e7edfb;color:#0033A0"><span class="dot" style="background:#2A5BD7"></span>Prueba ' + fmt(t.prueba) + '</span>' +
     '<span class="chip ambar"><span class="dot"></span>Plazo fijo ' + fmt(t.plazoFijo) + '</span>' +
     '<span class="chip rojo"><span class="dot"></span>Indeterminado ' + fmt(t.indeterminado) + '</span>' +
+    (t.sinDato ? '<span class="chip" style="background:#eef2f7;color:#475569"><span class="dot" style="background:#94a3b8"></span>Sin dato ' + fmt(t.sinDato) + '</span>' : '') +
     '<span class="chip verde" style="background:#eef2f7;color:#475569"><span class="dot" style="background:#94a3b8"></span>Total ' + fmt(d.total) + '</span>';
 
   new Chart(document.getElementById('chartContrato'), {
     type:'doughnut',
-    data:{ labels:['Período de prueba','Plazo fijo','Indeterminado'],
-      datasets:[{ data:[t.prueba, t.plazoFijo, t.indeterminado], backgroundColor:['#2A5BD7','#f59e0b','#E2231A'], borderColor:'#fff', borderWidth:2 }] },
+    data:{ labels:['Período de prueba','Plazo fijo','Indeterminado','Sin dato'],
+      datasets:[{ data:[t.prueba, t.plazoFijo, t.indeterminado, t.sinDato||0], backgroundColor:['#2A5BD7','#f59e0b','#E2231A','#cbd5e1'], borderColor:'#fff', borderWidth:2 }] },
     options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } }
   });
 
-  const e = d.porEmpresa || {RAPEL:{},VERFRUT:{}};
-  function fila(emp, o){ o = o||{}; var tot=(o.prueba||0)+(o.plazoFijo||0)+(o.indeterminado||0);
-    return '<tr><td><b>'+emp+'</b></td><td>'+fmt(o.prueba)+'</td><td>'+fmt(o.plazoFijo)+'</td><td>'+fmt(o.indeterminado)+'</td><td><b>'+fmt(tot)+'</b></td></tr>'; }
-  document.getElementById('fuerzaEmpresa').innerHTML =
-    '<table class="alz"><thead><tr><th>Empresa</th><th>Prueba</th><th>Plazo fijo</th><th>Indet.</th><th>Total</th></tr></thead><tbody>' +
-    fila('RAPEL', e.RAPEL) + fila('VERFRUT', e.VERFRUT) + '</tbody></table>';
+  const an = d.porAntiguedad || {};
+  new Chart(document.getElementById('chartAntiguedad'), {
+    type:'bar',
+    data:{ labels:['< 3 m','3 m–1 a','1–3 a','3–4.5 a','≥ 4.5 a','Sin dato'],
+      datasets:[{ label:'Casos', data:[an.m3||0, an.m3a12||0, an.a1a3||0, an.a3a54||0, an.mas54||0, an.sinDato||0], backgroundColor:'#0033A0', borderRadius:6 }] },
+    options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  });
 }
 
 cargar();
