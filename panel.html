@@ -153,8 +153,6 @@
         <div><canvas id="chartContrato" height="220"></canvas></div>
         <div id="fuerzaEmpresa"></div>
       </div>
-      <div id="fuerzaProx" style="margin-top:14px"></div>
-      <div id="fuerzaVence" style="margin-top:14px"></div>
     </div>
   </div>
 </div>
@@ -414,23 +412,6 @@ function renderClasificacion(d){
   document.getElementById('fuerzaEmpresa').innerHTML =
     '<table class="alz"><thead><tr><th>Empresa</th><th>Prueba</th><th>Plazo fijo</th><th>Indet.</th><th>Total</th></tr></thead><tbody>' +
     fila('RAPEL', e.RAPEL) + fila('VERFRUT', e.VERFRUT) + '</tbody></table>';
-
-  function listaAlertas(titulo, color, arr, etiquetaDias){
-    arr = arr || [];
-    if (!arr.length) return '';
-    const top = arr.slice(0, 15);
-    let h = '<h3 style="color:'+color+';font-size:.9rem;margin:6px 0 8px">'+titulo+' ('+arr.length+')</h3>';
-    h += '<table class="alz"><thead><tr><th>Trabajador</th><th>DNI</th><th>Empresa</th><th>Fecha</th><th>Días</th></tr></thead><tbody>';
-    top.forEach(function(x){
-      h += '<tr><td>'+esc(x.nombre)+'</td><td>'+esc(x.dni)+'</td><td>'+esc(x.empresa)+'</td><td>'+esc(x.fecha)+'</td>'+
-           '<td class="dias-ambar">'+x.dias+'d</td></tr>';
-    });
-    h += '</tbody></table>';
-    if (arr.length > 15) h += '<div class="al-empty" style="padding:8px">… y '+(arr.length-15)+' más</div>';
-    return h;
-  }
-  document.getElementById('fuerzaProx').innerHTML  = listaAlertas('⏳ Próximos a indeterminado', '#92400e', d.proximosIndet);
-  document.getElementById('fuerzaVence').innerHTML = listaAlertas('📄 Contratos por vencer', '#b91c1c', d.porVencer);
 }
 
 cargar();
