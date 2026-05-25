@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Panel · Bienestar Social</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
     --navy:#0033A0; --green:#E2231A;
@@ -80,6 +81,16 @@
   #loading,#errorBox{text-align:center;padding:50px 20px;color:var(--muted)}
   #errorBox{display:none;color:var(--c-accidentes)}
   .footer{text-align:center;color:var(--muted);font-size:.72rem;padding:22px}
+  .export-bar{display:flex;gap:8px}
+  .btn-exp{background:#fff;border:1px solid var(--line);color:var(--navy);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:600}
+  .btn-exp:hover{background:#f8fafc}
+  @media print {
+    .topbar, .export-bar, .footer { display:none !important; }
+    body { background:#fff; }
+    .wrap { max-width:100%; padding:0; }
+    .panel, .kpi { box-shadow:none !important; border:1px solid #e2e8f0; break-inside:avoid; }
+    @page { margin:12mm; }
+  }
 </style>
 </head>
 <body>
@@ -98,7 +109,13 @@
       <div class="page-title">📊 Panel consolidado</div>
       <div class="page-sub">Resumen de los módulos de Bienestar Social</div>
     </div>
-    <div class="page-sub" id="genStamp"></div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+      <div class="export-bar">
+        <button class="btn-exp" onclick="exportarExcel()">⬇️ Excel</button>
+        <button class="btn-exp" onclick="exportarPDF()">🖨️ PDF</button>
+      </div>
+      <div class="page-sub" id="genStamp"></div>
+    </div>
   </div>
 
   <div id="loading">⏳ Cargando estadísticas…</div>
@@ -223,6 +240,7 @@ async function cargarAlertas(permisos){
 }
 
 function renderAlertas(d){
+  DATA_ALERTAS = d;
   const r = d.resumen || {rojo:0,ambar:0,verde:0};
   document.getElementById('alertasResumen').innerHTML =
     '<span class="chip rojo"><span class="dot"></span>' + r.rojo + ' vencidos</span>' +
@@ -273,6 +291,7 @@ const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov'
 function labelMes(p){ const [y,m]=p.split('-'); return MESES[(+m)-1] + ' ' + y.slice(2); }
 
 function render(d){
+  DATA_DASH = d;
   document.getElementById('loading').style.display = 'none';
   document.getElementById('content').style.display = 'block';
   if (d.generado) document.getElementById('genStamp').textContent = 'Actualizado: ' + new Date(d.generado).toLocaleString('es-PE');
@@ -390,6 +409,7 @@ async function cargarCasosContrato(permisos){
 }
 
 function renderCasosContrato(d){
+  DATA_CASOS = d;
   if (!d.total) return; // sin casos clasificables, no mostrar
   document.getElementById('fuerzaPanel').style.display = 'block';
   const t = d.porTipo || {prueba:0,plazoFijo:0,indeterminado:0,sinDato:0};
@@ -416,6 +436,68 @@ function renderCasosContrato(d){
     options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
   });
 }
+
+// ---- Exportar Excel / PDF ----
+let DATA_DASH=null, DATA_ALERTAS=null, DATA_CASOS=null;
+
+function exportarExcel(){
+  if (typeof XLSX === 'undefined'){ alert('La librería de Excel aún se está cargando. Intenta de nuevo en unos segundos.'); return; }
+  const wb = XLSX.utils.book_new();
+  const hoy = new Date().toLocaleString('es-PE');
+
+  if (DATA_DASH){
+    const d = DATA_DASH;
+    const resumen = [
+      ['PANEL BIENESTAR SOCIAL — RR.LL. 2026'],
+      ['Generado', hoy],
+      [],
+      ['Módulo','Total','Detalle 1','Detalle 2'],
+      ['Quejas', d.quejas.total, 'Pendientes: '+d.quejas.pendientes, 'Resueltas: '+d.quejas.resueltas],
+      ['Accidentes', d.accidentes.total, 'En seguimiento: '+d.accidentes.enSeguimiento, 'Cerrados: '+d.accidentes.cerrados],
+      ['Hostigamiento', (d.hostigamiento.acceso ? d.hostigamiento.total : 'Sin acceso'), '', ''],
+      ['Subsidios', d.subsidios.total, 'Recuperado ESSALUD: '+d.subsidios.recuperadoEssalud, 'Monto total: '+d.subsidios.montoTotal]
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumen), 'Resumen');
+  }
+
+  if (DATA_ALERTAS && DATA_ALERTAS.alertas){
+    const rows = [['Estado','Módulo','Detalle','Regla','Vence','Días restantes','Empresa']];
+    DATA_ALERTAS.alertas.forEach(a => rows.push([a.estado, a.modulo, a.descripcion, a.regla, a.fechaLimite, a.diasRestantes, a.empresa]));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Alertas');
+  }
+
+  if (DATA_CASOS && DATA_CASOS.porTipo){
+    const t = DATA_CASOS.porTipo, an = DATA_CASOS.porAntiguedad || {};
+    const rows = [
+      ['CASOS POR TIPO DE CONTRATO',''],
+      ['Período de prueba', t.prueba],
+      ['Plazo fijo', t.plazoFijo],
+      ['Indeterminado', t.indeterminado],
+      ['Sin dato', t.sinDato||0],
+      ['Total', DATA_CASOS.total],
+      [],
+      ['CASOS POR TIEMPO LABORANDO',''],
+      ['< 3 meses', an.m3||0],
+      ['3 meses – 1 año', an.m3a12||0],
+      ['1 – 3 años', an.a1a3||0],
+      ['3 – 4.5 años', an.a3a54||0],
+      ['≥ 4.5 años', an.mas54||0],
+      ['Sin dato', an.sinDato||0]
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Casos x Contrato');
+  }
+
+  if (DATA_DASH && DATA_DASH.recientes){
+    const rows = [['Módulo','Fecha','Detalle','Estado','Empresa']];
+    DATA_DASH.recientes.forEach(m => rows.push([m.modulo, m.fecha, m.titulo, m.estado, m.empresa]));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Movimientos');
+  }
+
+  if (!wb.SheetNames.length){ alert('Aún no hay datos cargados.'); return; }
+  XLSX.writeFile(wb, 'Panel_Bienestar_' + new Date().toISOString().slice(0,10) + '.xlsx');
+}
+
+function exportarPDF(){ window.print(); }
 
 cargar();
 </script>
