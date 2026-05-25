@@ -142,6 +142,20 @@
       <h3>🕑 Últimos movimientos</h3>
       <div id="tablaWrap"></div>
     </div>
+
+    <!-- Fuerza laboral por tipo de contrato (solo admins) -->
+    <div class="panel" id="fuerzaPanel" style="margin-top:16px;display:none">
+      <div class="alertas-head">
+        <h3>👷 Fuerza laboral por tipo de contrato</h3>
+        <div id="fuerzaResumen" class="alertas-resumen"></div>
+      </div>
+      <div class="bottom-grid" style="margin-top:12px">
+        <div><canvas id="chartContrato" height="220"></canvas></div>
+        <div id="fuerzaEmpresa"></div>
+      </div>
+      <div id="fuerzaProx" style="margin-top:14px"></div>
+      <div id="fuerzaVence" style="margin-top:14px"></div>
+    </div>
   </div>
 </div>
 
@@ -188,6 +202,7 @@ async function cargar(){
     if (!data.ok) return mostrarError(data.message || 'Respuesta no válida del servidor.');
     render(data);
     cargarAlertas(permisos);
+    if (esAdmin()) cargarClasificacion();
   } catch(err){
     mostrarError('Error de conexión: ' + err.message);
   }
@@ -361,6 +376,61 @@ function render(d){
     t += '</tbody></table>';
     wrap.innerHTML = t;
   }
+}
+
+// ---- Fuerza laboral por tipo de contrato (solo admins) ----
+async function cargarClasificacion(){
+  try {
+    const res = await fetch(API_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action:'bs_clasificacion' })
+    });
+    const d = await res.json();
+    if (d.ok) renderClasificacion(d);
+  } catch(err){ /* silencioso */ }
+}
+
+function renderClasificacion(d){
+  document.getElementById('fuerzaPanel').style.display = 'block';
+  const t = d.porTipo || {prueba:0,plazoFijo:0,indeterminado:0};
+
+  document.getElementById('fuerzaResumen').innerHTML =
+    '<span class="chip" style="background:#e7edfb;color:#0033A0"><span class="dot" style="background:#2A5BD7"></span>Prueba ' + fmt(t.prueba) + '</span>' +
+    '<span class="chip ambar"><span class="dot"></span>Plazo fijo ' + fmt(t.plazoFijo) + '</span>' +
+    '<span class="chip rojo"><span class="dot"></span>Indeterminado ' + fmt(t.indeterminado) + '</span>' +
+    '<span class="chip verde" style="background:#eef2f7;color:#475569"><span class="dot" style="background:#94a3b8"></span>Total ' + fmt(d.total) + '</span>';
+
+  new Chart(document.getElementById('chartContrato'), {
+    type:'doughnut',
+    data:{ labels:['Período de prueba','Plazo fijo','Indeterminado'],
+      datasets:[{ data:[t.prueba, t.plazoFijo, t.indeterminado], backgroundColor:['#2A5BD7','#f59e0b','#E2231A'], borderColor:'#fff', borderWidth:2 }] },
+    options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } }
+  });
+
+  const e = d.porEmpresa || {RAPEL:{},VERFRUT:{}};
+  function fila(emp, o){ o = o||{}; var tot=(o.prueba||0)+(o.plazoFijo||0)+(o.indeterminado||0);
+    return '<tr><td><b>'+emp+'</b></td><td>'+fmt(o.prueba)+'</td><td>'+fmt(o.plazoFijo)+'</td><td>'+fmt(o.indeterminado)+'</td><td><b>'+fmt(tot)+'</b></td></tr>'; }
+  document.getElementById('fuerzaEmpresa').innerHTML =
+    '<table class="alz"><thead><tr><th>Empresa</th><th>Prueba</th><th>Plazo fijo</th><th>Indet.</th><th>Total</th></tr></thead><tbody>' +
+    fila('RAPEL', e.RAPEL) + fila('VERFRUT', e.VERFRUT) + '</tbody></table>';
+
+  function listaAlertas(titulo, color, arr, etiquetaDias){
+    arr = arr || [];
+    if (!arr.length) return '';
+    const top = arr.slice(0, 15);
+    let h = '<h3 style="color:'+color+';font-size:.9rem;margin:6px 0 8px">'+titulo+' ('+arr.length+')</h3>';
+    h += '<table class="alz"><thead><tr><th>Trabajador</th><th>DNI</th><th>Empresa</th><th>Fecha</th><th>Días</th></tr></thead><tbody>';
+    top.forEach(function(x){
+      h += '<tr><td>'+esc(x.nombre)+'</td><td>'+esc(x.dni)+'</td><td>'+esc(x.empresa)+'</td><td>'+esc(x.fecha)+'</td>'+
+           '<td class="dias-ambar">'+x.dias+'d</td></tr>';
+    });
+    h += '</tbody></table>';
+    if (arr.length > 15) h += '<div class="al-empty" style="padding:8px">… y '+(arr.length-15)+' más</div>';
+    return h;
+  }
+  document.getElementById('fuerzaProx').innerHTML  = listaAlertas('⏳ Próximos a indeterminado', '#92400e', d.proximosIndet);
+  document.getElementById('fuerzaVence').innerHTML = listaAlertas('📄 Contratos por vencer', '#b91c1c', d.porVencer);
 }
 
 cargar();
