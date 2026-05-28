@@ -266,6 +266,23 @@
           <textarea id="detalle" class="bs-textarea" placeholder="Ej: COLABORADOR REALIZANDO SU LABOR DE COSECHA, RESBALA Y CAE, GOLPEÁNDOSE LA RODILLA IZQUIERDA..."></textarea>
         </div>
 
+        <!-- A2: sub-campos horas del accidente (visibles al escribir el detalle) -->
+        <div class="bs-grid bs-grid-3 bs-gap" id="horasGroup" style="display:none;">
+          <div class="bs-form-group">
+            <label class="bs-label">Hora inicio del accidente</label>
+            <input type="time" id="accidente_hora_inicio" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Hora fin del accidente</label>
+            <input type="time" id="accidente_hora_fin" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Horas transcurridas <span class="bs-text-xs bs-text-subtle">(auto)</span></label>
+            <input type="number" id="accidente_horas" class="bs-input" min="0" step="0.01" readonly style="background: var(--bs-surface-alt);">
+            <p class="bs-helptext">Se calcula de las horas</p>
+          </div>
+        </div>
+
         <h4 style="color: var(--bs-mod-accidentes); margin: 1rem 0 0.5rem;">🏥 Atención médica</h4>
         <div class="bs-grid bs-grid-2 bs-gap">
           <div class="bs-form-group">
@@ -313,19 +330,50 @@
           <label class="bs-label">Detalle de restricción</label>
           <textarea id="detalle_restriccion" class="bs-textarea" placeholder="No levantar peso, evitar bipedestación prolongada..."></textarea>
         </div>
-        <div class="bs-grid bs-grid-2 bs-gap">
+        <div class="bs-form-group">
+          <label class="bs-label">Descanso médico</label>
+          <input type="text" id="descanso_medico" class="bs-input" placeholder="Días de DM autorizados">
+        </div>
+        <!-- A2: sub-campos descanso medico (visibles al escribir) -->
+        <div class="bs-grid bs-grid-3 bs-gap" id="descansoGroup" style="display:none;">
           <div class="bs-form-group">
-            <label class="bs-label">Descanso médico</label>
-            <input type="text" id="descanso_medico" class="bs-input" placeholder="Días de DM autorizados">
+            <label class="bs-label">Fecha inicio DM</label>
+            <input type="date" id="descanso_medico_inicio" class="bs-input">
           </div>
           <div class="bs-form-group">
-            <label class="bs-label">Formulario con goce</label>
-            <select id="formulario_con_goce" class="bs-select">
-              <option value="">Seleccionar...</option>
-              <option value="Sí">Sí</option>
-              <option value="No">No</option>
-              <option value="Pendiente">Pendiente</option>
-            </select>
+            <label class="bs-label">Fecha fin DM</label>
+            <input type="date" id="descanso_medico_fin" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Días DM <span class="bs-text-xs bs-text-subtle">(auto)</span></label>
+            <input type="number" id="descanso_medico_dias" class="bs-input" min="0" readonly style="background: var(--bs-surface-alt);">
+            <p class="bs-helptext">Se calcula de las fechas</p>
+          </div>
+        </div>
+
+        <div class="bs-form-group">
+          <label class="bs-label">Formulario con goce</label>
+          <select id="formulario_con_goce" class="bs-select">
+            <option value="">Seleccionar...</option>
+            <option value="Sí">Sí</option>
+            <option value="No">No</option>
+            <option value="Pendiente">Pendiente</option>
+          </select>
+        </div>
+        <!-- A2: sub-campos formulario con goce (visibles al elegir "Si") -->
+        <div class="bs-grid bs-grid-3 bs-gap" id="goceGroup" style="display:none;">
+          <div class="bs-form-group">
+            <label class="bs-label">Fecha inicio formulario</label>
+            <input type="date" id="goce_inicio" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Fecha fin formulario</label>
+            <input type="date" id="goce_fin" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Días formulario <span class="bs-text-xs bs-text-subtle">(auto)</span></label>
+            <input type="number" id="goce_dias" class="bs-input" min="0" readonly style="background: var(--bs-surface-alt);">
+            <p class="bs-helptext">Se calcula de las fechas</p>
           </div>
         </div>
 
@@ -451,7 +499,7 @@
     }
 
     // ===== AUTO-TAB =====
-    const FORM_ORDER = ['dni','nombre','edad','telefono','sexo','empresa','fundo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','tipo_accidente','seguro','diagnostico','detalle','centro_atencion','especialidades','staff_medico','estatus_accidente','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','descanso_medico','formulario_con_goce','estado','situacion','responsable','responsable_autorizar','estado_caso'];
+    const FORM_ORDER = ['dni','nombre','edad','telefono','sexo','empresa','fundo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','tipo_accidente','seguro','diagnostico','detalle','accidente_hora_inicio','accidente_hora_fin','accidente_horas','centro_atencion','especialidades','staff_medico','estatus_accidente','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','descanso_medico','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','formulario_con_goce','goce_inicio','goce_fin','goce_dias','estado','situacion','responsable','responsable_autorizar','estado_caso'];
 
     function focusNext(currentId) {
       const idx = FORM_ORDER.indexOf(currentId);
@@ -561,8 +609,8 @@
       }
     }
 
-    const ALL_FIELDS = ['dni','nombre','edad','telefono','fundo','sexo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','diagnostico','tipo_accidente','seguro','detalle','estatus_accidente','centro_atencion','especialidades','staff_medico','estado','situacion','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','responsable','descanso_medico','formulario_con_goce','responsable_autorizar','numero_atenciones','estado_caso','empresa'];
-    const DATE_FIELDS = ['fecha_ingreso','dia_accidente','dia_reportado','fecha_reincorporo','fecha_fin_restriccion'];
+    const ALL_FIELDS = ['dni','nombre','edad','telefono','fundo','sexo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','diagnostico','tipo_accidente','seguro','detalle','estatus_accidente','centro_atencion','especialidades','staff_medico','estado','situacion','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','responsable','descanso_medico','formulario_con_goce','responsable_autorizar','numero_atenciones','estado_caso','empresa','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','goce_inicio','goce_fin','goce_dias','accidente_hora_inicio','accidente_hora_fin','accidente_horas'];
+    const DATE_FIELDS = ['fecha_ingreso','dia_accidente','dia_reportado','fecha_reincorporo','fecha_fin_restriccion','descanso_medico_inicio','descanso_medico_fin','goce_inicio','goce_fin'];
 
     function openModalCaso() {
       document.getElementById('formTitle').textContent = 'Nuevo Caso';
@@ -574,6 +622,7 @@
       document.getElementById('dia_reportado').value = hoy;
       document.getElementById('estado_caso').value = 'Activo';
       document.getElementById('numero_atenciones').value = 0;
+      toggleDescanso(); toggleGoce(); toggleHoras();
       document.getElementById('formAlert').innerHTML = '';
       document.getElementById('formModalCaso').classList.add('bs-active');
       setTimeout(function() { document.getElementById('dni').focus(); }, 100);
@@ -596,6 +645,7 @@
           el.value = v;
         }
       });
+      toggleDescanso(); toggleGoce(); toggleHoras();
       document.getElementById('formAlert').innerHTML = '';
       document.getElementById('formModalCaso').classList.add('bs-active');
     }
@@ -687,8 +737,50 @@
       if (confirm('¿Cerrar sesión?')) { localStorage.removeItem('bienestarSocialAuth'); window.location.href = '../index.html'; }
     }
 
+    // ===== A2: visibilidad y calculos de campos auto-revelados =====
+    function toggleDescanso() {
+      const t = (document.getElementById('descanso_medico').value || '').trim().length > 0;
+      document.getElementById('descansoGroup').style.display = t ? '' : 'none';
+      if (!t) { ['descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias'].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=''; }); }
+    }
+    function toggleGoce() {
+      const t = document.getElementById('formulario_con_goce').value === 'Sí';
+      document.getElementById('goceGroup').style.display = t ? '' : 'none';
+      if (!t) { ['goce_inicio','goce_fin','goce_dias'].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=''; }); }
+    }
+    function toggleHoras() {
+      const t = (document.getElementById('detalle').value || '').trim().length > 0;
+      document.getElementById('horasGroup').style.display = t ? '' : 'none';
+      if (!t) { ['accidente_hora_inicio','accidente_hora_fin','accidente_horas'].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=''; }); }
+    }
+    function _horasDecimal(ini, fin) {
+      if (!ini || !fin) return 0;
+      const a=ini.split(':'), b=fin.split(':');
+      if (a.length<2 || b.length<2) return 0;
+      const m1=parseInt(a[0])*60+parseInt(a[1]);
+      const m2=parseInt(b[0])*60+parseInt(b[1]);
+      let diff = m2 - m1;
+      if (diff < 0) diff += 24*60;
+      return Math.round((diff/60) * 100) / 100;
+    }
+    function setupA2() {
+      document.getElementById('descanso_medico').addEventListener('input', toggleDescanso);
+      const calcD = function(){ document.getElementById('descanso_medico_dias').value = bsDiasEntre(document.getElementById('descanso_medico_inicio').value, document.getElementById('descanso_medico_fin').value); };
+      document.getElementById('descanso_medico_inicio').addEventListener('change', calcD);
+      document.getElementById('descanso_medico_fin').addEventListener('change', calcD);
+      document.getElementById('formulario_con_goce').addEventListener('change', toggleGoce);
+      const calcG = function(){ document.getElementById('goce_dias').value = bsDiasEntre(document.getElementById('goce_inicio').value, document.getElementById('goce_fin').value); };
+      document.getElementById('goce_inicio').addEventListener('change', calcG);
+      document.getElementById('goce_fin').addEventListener('change', calcG);
+      document.getElementById('detalle').addEventListener('input', toggleHoras);
+      const calcH = function(){ document.getElementById('accidente_horas').value = _horasDecimal(document.getElementById('accidente_hora_inicio').value, document.getElementById('accidente_hora_fin').value); };
+      document.getElementById('accidente_hora_inicio').addEventListener('change', calcH);
+      document.getElementById('accidente_hora_fin').addEventListener('change', calcH);
+    }
+
     setupAutoTab();
     setupDiasRestriccion();
+    setupA2();
     cargar();
   </script>
 <!-- === BS-EXPORT-EXCEL : Exportar a Excel (reutilizable) === -->
