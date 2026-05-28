@@ -541,6 +541,23 @@
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', function() { if (el.value) focusNext(id); });
       });
+
+      // A4: auto-avance al escribir + Tab/Enter en inputs y textareas (selects ya usan 'change')
+      FORM_ORDER.forEach(function(id){
+        const el = document.getElementById(id);
+        if (!el) return;
+        const tag = el.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') return;
+        el.addEventListener('keydown', function(ev){
+          if (ev.key === 'Tab' && !ev.shiftKey) {
+            ev.preventDefault();
+            focusNext(id);
+          } else if (ev.key === 'Enter' && tag !== 'TEXTAREA') {
+            ev.preventDefault();
+            focusNext(id);
+          }
+        });
+      });
     }
 
     // ===== BÚSQUEDA DNI EN AZURE (autocompletar) =====
