@@ -193,8 +193,8 @@
         <h4 style="color: var(--bs-mod-accidentes); margin-bottom: 0.5rem;">👤 Datos del trabajador</h4>
         <div class="bs-grid bs-grid-3 bs-gap">
           <div class="bs-form-group">
-            <label class="bs-label">DNI <span class="bs-required">*</span></label>
-            <input type="text" id="dni" class="bs-input" maxlength="8" required placeholder="8 dígitos (auto-salta)">
+            <label class="bs-label">DNI / Carnet de Extranjería <span class="bs-required">*</span></label>
+            <input type="text" id="dni" class="bs-input" maxlength="12" required placeholder="DNI (8 díg.) o Carnet de Extranjería">
           </div>
           <div class="bs-form-group">
             <label class="bs-label">Nombre completo <span class="bs-required">*</span></label>
@@ -282,7 +282,14 @@
           </div>
           <div class="bs-form-group">
             <label class="bs-label">Estatus accidente</label>
-            <input type="text" id="estatus_accidente" class="bs-input">
+            <select id="estatus_accidente" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="REINCORPORACIÓN">REINCORPORACIÓN</option>
+              <option value="REINCORPORACIÓN CON RESTRICCIÓN">REINCORPORACIÓN CON RESTRICCIÓN</option>
+              <option value="TERAPIA FÍSICA">TERAPIA FÍSICA</option>
+              <option value="CONTROL MÉDICO">CONTROL MÉDICO</option>
+              <option value="EN PROCESO DE REFERENCIA">EN PROCESO DE REFERENCIA</option>
+            </select>
           </div>
         </div>
 
@@ -457,8 +464,9 @@
     function setupAutoTab() {
       const dniEl = document.getElementById('dni');
       dniEl.addEventListener('input', async function(e) {
-        e.target.value = e.target.value.replace(/[^0-9]/g, '');
-        if (e.target.value.length >= 8) {
+        // permite DNI (8 digitos) o Carnet de Extranjeria (alfanumerico)
+        e.target.value = e.target.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+        if (/^[0-9]{8}$/.test(e.target.value)) {
           await autocompletarPorDNI(e.target.value);
           focusNext('dni');
         }
