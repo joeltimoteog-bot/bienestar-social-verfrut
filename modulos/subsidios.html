@@ -55,8 +55,6 @@
               <option value="">Todos</option>
               <option value="Incapacidad Temporal">Incapacidad Temporal</option>
               <option value="Maternidad">Maternidad</option>
-              <option value="Lactancia">Lactancia</option>
-              <option value="Sepelio">Sepelio</option>
             </select>
           </div>
           <div class="bs-form-group" style="margin: 0;">
@@ -170,8 +168,6 @@
               <option value="">Seleccionar...</option>
               <option value="Incapacidad Temporal">Incapacidad Temporal</option>
               <option value="Maternidad">Maternidad</option>
-              <option value="Lactancia">Lactancia</option>
-              <option value="Sepelio">Sepelio</option>
             </select>
           </div>
           <div class="bs-form-group">
@@ -180,10 +176,6 @@
           </div>
         </div>
 
-        <div class="bs-form-group">
-          <label class="bs-label">Descripción / Diagnóstico</label>
-          <textarea id="descripcion" class="bs-textarea" placeholder="Detalle del subsidio..."></textarea>
-        </div>
 
         <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Cálculo del subsidio (S/)</h4>
         <p class="bs-helptext" style="margin: -0.25rem 0 0.6rem; line-height: 1.4;">💡 <strong>Auto-cálculo ESSALUD:</strong> ingresa la <strong>remuneración mensual</strong> y las fechas (o los días). El sistema calcula todo solo. Incapacidad: primeros 20 días = empresa, resto = ESSALUD. Maternidad: todo ESSALUD. Todos los montos son editables.</p>
@@ -254,7 +246,6 @@
             <select id="tipo_pago_planilla" class="bs-select">
               <option value="">Seleccionar...</option>
               <option value="Recuperado">Recuperado</option>
-              <option value="Pendiente">Pendiente</option>
               <option value="Compensado">Compensado</option>
             </select>
           </div>
@@ -369,8 +360,49 @@
     }
 
     // ===== MODAL =====
-    const ALL_FIELDS = ['anio','mes','tipo','numero','apellido_paterno','apellido_materno','nombres','descripcion','estado','dias','calculo_por_dia','pago_empresa','reembolso_por_mes','recuperado_essalud','monto_total','periodo','expediente','inicio','termino','observaciones','diferencias','tipo_pago_planilla','estado_general','empresa'];
+    const ALL_FIELDS = ['anio','mes','tipo','numero','apellido_paterno','apellido_materno','nombres','estado','dias','calculo_por_dia','pago_empresa','reembolso_por_mes','recuperado_essalud','monto_total','periodo','expediente','inicio','termino','observaciones','diferencias','tipo_pago_planilla','estado_general','empresa'];
     const DATE_FIELDS = ['inicio','termino'];
+
+    // ===== NAVEGACION INTELIGENTE =====
+    const FORM_ORDER = ['numero','empresa','expediente','apellido_paterno','apellido_materno','nombres','anio','mes','tipo','periodo','inicio','termino','dias','remuneracion_mensual','calculo_por_dia','reembolso_por_mes','pago_empresa','recuperado_essalud','monto_total','diferencias','estado','tipo_pago_planilla','estado_general','observaciones'];
+
+    // Salta al PROXIMO campo vacio + editable + visible + habilitado. Omite llenos/readonly/disabled/ocultos.
+    function focusNext(currentId) {
+      const idx = FORM_ORDER.indexOf(currentId);
+      if (idx < 0) return;
+      for (let i = idx + 1; i < FORM_ORDER.length; i++) {
+        const el = document.getElementById(FORM_ORDER[i]);
+        if (!el) continue;
+        if (el.readOnly || el.disabled) continue;
+        if (el.offsetParent === null) continue;
+        const v = el.value;
+        if (v !== undefined && v !== null && String(v).trim() !== '') continue;
+        el.focus();
+        if (typeof el.select === 'function' && el.tagName === 'INPUT') { try { el.select(); } catch(e){} }
+        return;
+      }
+      const btn = document.getElementById('btnSubmit');
+      if (btn && !btn.disabled) btn.focus();
+    }
+
+    function setupAutoTab() {
+      // Selects: auto-avance al elegir
+      ['empresa','mes','tipo','tipo_pago_planilla','estado_general'].forEach(function(id){
+        const el = document.getElementById(id);
+        if (el && el.tagName === 'SELECT') el.addEventListener('change', function(){ if (el.value) focusNext(id); });
+      });
+      // Inputs/textareas: Tab (sin Shift) y Enter (no en textarea) -> focusNext
+      FORM_ORDER.forEach(function(id){
+        const el = document.getElementById(id);
+        if (!el) return;
+        const tag = el.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') return;
+        el.addEventListener('keydown', function(ev){
+          if (ev.key === 'Tab' && !ev.shiftKey) { ev.preventDefault(); focusNext(id); }
+          else if (ev.key === 'Enter' && tag !== 'TEXTAREA') { ev.preventDefault(); focusNext(id); }
+        });
+      });
+    }
 
     function openModal() {
       document.getElementById('formTitle').textContent = 'Nuevo Subsidio';
@@ -547,6 +579,7 @@
     // ===== INIT =====
     setupBusquedaDNI();
     setupCalculoSubsidio();
+    setupAutoTab();
     cargarSubsidios();
   </script>
 <!-- === BS-EXPORT-EXCEL : Exportar a Excel (reutilizable) === -->
