@@ -501,12 +501,26 @@
     // ===== AUTO-TAB =====
     const FORM_ORDER = ['dni','nombre','edad','telefono','sexo','empresa','fundo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','tipo_accidente','seguro','diagnostico','detalle','accidente_hora_inicio','accidente_hora_fin','accidente_horas','centro_atencion','especialidades','staff_medico','estatus_accidente','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','descanso_medico','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','formulario_con_goce','goce_inicio','goce_fin','goce_dias','estado','situacion','responsable','responsable_autorizar','estado_caso'];
 
+    // focusNext inteligente: salta al PROXIMO campo vacio + editable + visible + habilitado.
+    // Omite: llenos, readonly, disabled, ocultos (display:none o ancestro oculto).
+    // Si no queda ninguno, enfoca el boton Guardar.
     function focusNext(currentId) {
       const idx = FORM_ORDER.indexOf(currentId);
-      if (idx >= 0 && idx < FORM_ORDER.length - 1) {
-        const nextEl = document.getElementById(FORM_ORDER[idx + 1]);
-        if (nextEl && !nextEl.readOnly && !nextEl.disabled) nextEl.focus();
+      if (idx < 0) return;
+      for (let i = idx + 1; i < FORM_ORDER.length; i++) {
+        const el = document.getElementById(FORM_ORDER[i]);
+        if (!el) continue;                          // no existe en el DOM
+        if (el.readOnly || el.disabled) continue;   // bloqueado/calculado
+        if (el.offsetParent === null) continue;     // oculto (display:none propio o de un ancestro)
+        const v = el.value;
+        if (v !== undefined && v !== null && String(v).trim() !== '') continue; // ya tiene valor
+        el.focus();
+        if (typeof el.select === 'function' && el.tagName === 'INPUT') { try { el.select(); } catch(e){} }
+        return;
       }
+      // todos llenos: enfoca el boton Guardar si existe
+      const btn = document.getElementById('btnSubmit');
+      if (btn && !btn.disabled) btn.focus();
     }
 
     function setupAutoTab() {
@@ -519,7 +533,7 @@
           focusNext('dni');
         }
       });
-      ['sexo','empresa','formulario_con_goce','estado','situacion','responsable','estado_caso'].forEach(function(id) {
+      ['sexo','empresa','estatus_accidente','formulario_con_goce','estado','situacion','responsable','estado_caso'].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', function() { if (el.value) focusNext(id); });
       });
