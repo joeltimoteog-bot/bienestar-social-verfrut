@@ -129,8 +129,8 @@
         <h4 style="color: var(--bs-mod-hostigamiento); margin: 1rem 0 0.5rem;">👤 Datos de la persona denunciante</h4>
         <div class="bs-grid bs-grid-3 bs-gap">
           <div class="bs-form-group">
-            <label class="bs-label">DNI</label>
-            <input type="text" id="denunciante_dni" class="bs-input" maxlength="8" placeholder="8 dígitos">
+            <label class="bs-label">DNI / Carnet de Extranjería</label>
+            <input type="text" id="denunciante_dni" class="bs-input" maxlength="12" placeholder="DNI (8 díg.) o Carnet de Extranjería">
           </div>
           <div class="bs-form-group">
             <label class="bs-label">Nombre completo <span class="bs-required">*</span></label>
@@ -150,8 +150,8 @@
         <h4 style="color: var(--bs-mod-hostigamiento); margin: 1rem 0 0.5rem;">⚖️ Datos de la persona denunciada</h4>
         <div class="bs-grid bs-grid-3 bs-gap">
           <div class="bs-form-group">
-            <label class="bs-label">DNI</label>
-            <input type="text" id="denunciado_dni" class="bs-input" maxlength="8" placeholder="8 dígitos">
+            <label class="bs-label">DNI / Carnet de Extranjería</label>
+            <input type="text" id="denunciado_dni" class="bs-input" maxlength="12" placeholder="DNI (8 díg.) o Carnet de Extranjería">
           </div>
           <div class="bs-form-group">
             <label class="bs-label">Nombre completo</label>
@@ -177,7 +177,13 @@
           </div>
           <div class="bs-form-group">
             <label class="bs-label">Decisión final</label>
-            <input type="text" id="decision" class="bs-input" placeholder="Sanción / Despido / Capacitación / Sin medida">
+            <select id="decision" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="EN EVALUACIÓN">EN EVALUACIÓN</option>
+              <option value="EN INVESTIGACIÓN">EN INVESTIGACIÓN</option>
+              <option value="PROCESO DE RESOLUCIÓN">PROCESO DE RESOLUCIÓN</option>
+              <option value="IMPROCEDENTE">IMPROCEDENTE</option>
+            </select>
           </div>
         </div>
 
@@ -291,6 +297,47 @@
     const ALL_FIELDS = ['fecha_denuncia','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','fundo','decision','status','empresa'];
     const DATE_FIELDS = ['fecha_denuncia'];
 
+    // ===== NAVEGACION INTELIGENTE =====
+    const FORM_ORDER = ['fecha_denuncia','empresa','fundo','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','status','decision'];
+
+    // Salta al PROXIMO campo vacio + editable + visible + habilitado. Omite llenos/readonly/disabled/ocultos.
+    function focusNext(currentId) {
+      const idx = FORM_ORDER.indexOf(currentId);
+      if (idx < 0) return;
+      for (let i = idx + 1; i < FORM_ORDER.length; i++) {
+        const el = document.getElementById(FORM_ORDER[i]);
+        if (!el) continue;
+        if (el.readOnly || el.disabled) continue;
+        if (el.offsetParent === null) continue;
+        const v = el.value;
+        if (v !== undefined && v !== null && String(v).trim() !== '') continue;
+        el.focus();
+        if (typeof el.select === 'function' && el.tagName === 'INPUT') { try { el.select(); } catch(e){} }
+        return;
+      }
+      const btn = document.getElementById('btnSubmit');
+      if (btn && !btn.disabled) btn.focus();
+    }
+
+    function setupAutoTab() {
+      // Selects: auto-avance al cambiar
+      ['empresa','status','decision'].forEach(function(id){
+        const el = document.getElementById(id);
+        if (el && el.tagName === 'SELECT') el.addEventListener('change', function(){ if (el.value) focusNext(id); });
+      });
+      // Inputs/textareas: Tab (sin Shift) y Enter (no en textarea) -> focusNext
+      FORM_ORDER.forEach(function(id){
+        const el = document.getElementById(id);
+        if (!el) return;
+        const tag = el.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') return;
+        el.addEventListener('keydown', function(ev){
+          if (ev.key === 'Tab' && !ev.shiftKey) { ev.preventDefault(); focusNext(id); }
+          else if (ev.key === 'Enter' && tag !== 'TEXTAREA') { ev.preventDefault(); focusNext(id); }
+        });
+      });
+    }
+
     function openModal() {
       document.getElementById('formTitle').textContent = 'Nueva Denuncia';
       document.getElementById('denunciaId').value = '';
@@ -383,8 +430,10 @@
       const dEl = document.getElementById('denunciante_dni');
       if (dEl) {
         dEl.addEventListener('input', async function(e) {
-          const v = e.target.value.replace(/[^0-9]/g, '');
-          if (v.length === 8) {
+          // DNI (8 digitos) o Carnet de Extranjeria (alfanumerico)
+          e.target.value = e.target.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+          const v = e.target.value;
+          if (/^[0-9]{8}$/.test(v)) {
             dEl.style.borderColor = '#7c3aed';
             const t = await bsBuscarTrabajador(v);
             if (t) {
@@ -392,6 +441,7 @@
               if (t.oficio) document.getElementById('denunciante_puesto').value = t.oficio;
               if (t.empresa) document.getElementById('empresa').value = t.empresa;
               dEl.style.borderColor = '#10b981';
+              focusNext('denunciante_dni');
             } else { dEl.style.borderColor = '#ef4444'; }
             setTimeout(function() { dEl.style.borderColor = ''; }, 2500);
           }
@@ -401,14 +451,17 @@
       const aEl = document.getElementById('denunciado_dni');
       if (aEl) {
         aEl.addEventListener('input', async function(e) {
-          const v = e.target.value.replace(/[^0-9]/g, '');
-          if (v.length === 8) {
+          // DNI (8 digitos) o Carnet de Extranjeria (alfanumerico)
+          e.target.value = e.target.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+          const v = e.target.value;
+          if (/^[0-9]{8}$/.test(v)) {
             aEl.style.borderColor = '#7c3aed';
             const t = await bsBuscarTrabajador(v);
             if (t) {
               document.getElementById('denunciado_nombre').value = t.nombre_completo || '';
               if (t.oficio) document.getElementById('denunciado_puesto').value = t.oficio;
               aEl.style.borderColor = '#10b981';
+              focusNext('denunciado_dni');
             } else { aEl.style.borderColor = '#ef4444'; }
             setTimeout(function() { aEl.style.borderColor = ''; }, 2500);
           }
@@ -418,6 +471,7 @@
 
     // ===== INIT =====
     setupBusquedaDNI();
+    setupAutoTab();
     cargar();
   </script>
 <!-- === BS-EXPORT-EXCEL : Exportar a Excel (reutilizable) === -->
