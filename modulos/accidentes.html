@@ -482,6 +482,26 @@
   <script>
     const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
 
+    // ===== VALIDACION OBLIGATORIA (global) =====
+    function bsValidarRequeridos(ids) {
+      for (let i = 0; i < ids.length; i++) {
+        const el = document.getElementById(ids[i]);
+        if (!el) continue;
+        const v = el.value;
+        if (v === undefined || v === null || String(v).trim() === '') {
+          let lbl = ids[i];
+          const grp = el.closest ? el.closest('.bs-form-group') : null;
+          if (grp) {
+            const labelEl = grp.querySelector('.bs-label');
+            if (labelEl) lbl = labelEl.textContent.replace(/\s+/g,' ').replace(/\s*\*\s*$/,'').trim();
+          }
+          return { ok: false, id: ids[i], label: lbl };
+        }
+      }
+      return { ok: true };
+    }
+
+
     const session = localStorage.getItem('bienestarSocialAuth');
     if (!session) window.location.href = '../index.html';
     let user;
@@ -684,8 +704,12 @@
     async function submitCaso() {
       const datos = {};
       ALL_FIELDS.forEach(function(f) { datos[f] = document.getElementById(f).value; });
-      if (!datos.dni || !datos.nombre || !datos.empresa || !datos.dia_accidente) {
-        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Completa los campos obligatorios (*)</div>';
+      const REQUIRED_FIELDS = ['dni','nombre','empresa','dia_accidente'];
+      const _req = bsValidarRequeridos(REQUIRED_FIELDS);
+      if (!_req.ok) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Falta completar: <strong>' + _req.label + '</strong></div>';
+        const _e = document.getElementById(_req.id);
+        if (_e && _e.offsetParent !== null) { try { _e.focus(); } catch(x){} }
         return;
       }
       const btn = document.getElementById('btnSubmit');
