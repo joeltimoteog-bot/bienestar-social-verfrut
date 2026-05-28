@@ -302,6 +302,48 @@
     }
 
     // ===== MODAL =====
+    // ===== NAVEGACION INTELIGENTE =====
+    const FORM_ORDER = ['fecha_recepcion','empresa','clasificacion','canal','categoria','sector','detalle','accion_correctiva','accion_mejora','coordinacion','resultado','observaciones'];
+
+    // Salta al PROXIMO campo vacio + editable + visible + habilitado. Omite llenos/readonly/disabled/ocultos.
+    function focusNext(currentId) {
+      const idx = FORM_ORDER.indexOf(currentId);
+      if (idx < 0) return;
+      for (let i = idx + 1; i < FORM_ORDER.length; i++) {
+        const el = document.getElementById(FORM_ORDER[i]);
+        if (!el) continue;
+        if (el.readOnly || el.disabled) continue;
+        if (el.offsetParent === null) continue;
+        const v = el.value;
+        if (v !== undefined && v !== null && String(v).trim() !== '') continue;
+        el.focus();
+        if (typeof el.select === 'function' && el.tagName === 'INPUT') { try { el.select(); } catch(e){} }
+        return;
+      }
+      const btn = document.getElementById('btnSubmit');
+      if (btn && !btn.disabled) btn.focus();
+    }
+
+    function setupAutoTab() {
+      // Selects: auto-avance al elegir. Sector NO entra porque al elegirlo se abre el panel de buzones
+      // y el usuario debe quedarse para capturar las cantidades.
+      ['empresa','clasificacion','canal','categoria','resultado'].forEach(function(id){
+        const el = document.getElementById(id);
+        if (el && el.tagName === 'SELECT') el.addEventListener('change', function(){ if (el.value) focusNext(id); });
+      });
+      // Inputs/textareas: Tab (sin Shift) y Enter (no en textarea) -> focusNext
+      FORM_ORDER.forEach(function(id){
+        const el = document.getElementById(id);
+        if (!el) return;
+        const tag = el.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') return;
+        el.addEventListener('keydown', function(ev){
+          if (ev.key === 'Tab' && !ev.shiftKey) { ev.preventDefault(); focusNext(id); }
+          else if (ev.key === 'Enter' && tag !== 'TEXTAREA') { ev.preventDefault(); focusNext(id); }
+        });
+      });
+    }
+
     function openModal() {
       document.getElementById('formTitle').textContent = 'Nueva Queja';
       document.getElementById('quejaId').value = '';
@@ -512,6 +554,7 @@
 
     // ===== INIT =====
     cargarBuzones();
+    setupAutoTab();
     cargarQuejas();
   </script>
 <!-- === BS-EXPORT-EXCEL : Exportar a Excel (reutilizable) === -->
