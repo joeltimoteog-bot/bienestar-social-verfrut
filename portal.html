@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Â· Bienestar Social - RR.LL.</title>
+  <title>Portal · Bienestar Social - RR.LL.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,12 +17,12 @@
       <div class="bs-topbar-inner">
         <div class="bs-topbar-brand">
           <div class="bs-topbar-brand-icon"><img src="images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
-          <span>Bienestar Social Â· RR.LL.</span>
+          <span>Bienestar Social · RR.LL.</span>
         </div>
         <div class="bs-topbar-user">
           <span class="bs-topbar-user-name" id="userName">Cargando...</span>
-          <button class="bs-topbar-logout" onclick="window.location.href='https://joeltimoteog-bot.github.io/sistema-rl-verfrut/frontend/pages/dashboard.html'" style="background:#1e40af;color:#fff;margin-right:8px">â† Volver al Sistema RR.LL.</button>
-          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesiÃ³n</button>
+          <button class="bs-topbar-logout" onclick="window.location.href='https://joeltimoteog-bot.github.io/sistema-rl-verfrut/frontend/pages/dashboard.html'" style="background:#1e40af;color:#fff;margin-right:8px">← Volver al Sistema RR.LL.</button>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
         </div>
       </div>
     </header>
@@ -30,16 +30,16 @@
     <!-- MAIN -->
     <main class="bs-main">
       <h1>Bienvenido, <span id="userFirstName"></span></h1>
-      <p class="bs-text-subtle bs-mb-lg">Selecciona el mÃ³dulo con el que deseas trabajar.</p>
+      <p class="bs-text-subtle bs-mb-lg">Selecciona el módulo con el que deseas trabajar.</p>
 
       <div class="bs-module-grid" id="moduleGrid">
-        <!-- Cards generadas por JS segÃºn permisos -->
+        <!-- Cards generadas por JS según permisos -->
       </div>
     </main>
 
     <!-- FOOTER -->
     <footer class="bs-footer">
-      Creado por <strong>Joel Angel Timoteo Gonza</strong> Â· Unifrutti Group Â· RAPEL S.A.C. / VERFRUT S.A.C. Â· v1.0.0
+      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · RAPEL S.A.C. / VERFRUT S.A.C. · v1.0.0
     </footer>
   </div>
 
@@ -63,7 +63,7 @@
     document.getElementById('userName').textContent = user.nombre || user.usuario;
     document.getElementById('userFirstName').textContent = (user.nombre || user.usuario).split(' ')[0];
 
-    // ===== MÃ“DULOS =====
+    // ===== MÓDULOS =====
     const MODULOS = [
     { id: 'sugerencias', permiso: null, url: 'modulos/sugerencias.html', title: '💡 Sugerencias de Mejora', desc: 'Propon mejoras del sistema y dale seguimiento.', icon: '💡', color: '#0033A0', confidencial: false, siempre: true },
       {
@@ -72,7 +72,7 @@
         url: 'modulos/quejas.html',
         title: 'Quejas y Sugerencias',
         desc: 'Registro y seguimiento de quejas, reclamos y sugerencias del personal.',
-        icon: 'ðŸ“‹',
+        icon: '📋',
         color: 'var(--bs-mod-quejas)'
       },
       {
@@ -80,8 +80,8 @@
         permiso: 'accidentes',
         url: 'modulos/accidentes.html',
         title: 'Accidentes Laborales',
-        desc: 'Reporte y seguimiento de accidentes laborales con seguimientos mÃ©dicos.',
-        icon: 'ðŸ©º',
+        desc: 'Reporte y seguimiento de accidentes laborales con seguimientos médicos.',
+        icon: '🩺',
         color: 'var(--bs-mod-accidentes)'
       },
       {
@@ -90,7 +90,7 @@
         url: 'modulos/hostigamiento.html',
         title: 'Hostigamiento Sexual',
         desc: 'Denuncias por hostigamiento sexual. Acceso restringido (Ley 29733).',
-        icon: 'ðŸ”’',
+        icon: '🔒',
         color: 'var(--bs-mod-hostigamiento)',
         confidencial: true
       },
@@ -99,8 +99,8 @@
         permiso: 'subsidios',
         url: 'modulos/subsidios.html',
         title: 'Subsidios',
-        desc: 'GestiÃ³n de subsidios RAPEL y VERFRUT (incapacidad, maternidad, etc.).',
-        icon: 'ðŸ’°',
+        desc: 'Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, etc.).',
+        icon: '💰',
         color: 'var(--bs-mod-subsidios)'
       },
       {
@@ -110,7 +110,7 @@
         url: 'panel.html',
         title: 'Panel / Dashboard',
         desc: 'Resumen consolidado de todos los modulos (KPIs y graficos).',
-        icon: 'ðŸ“Š',
+        icon: '📊',
         color: '#16a34a'
       }
     ];
@@ -123,9 +123,9 @@
         const onclick = tienePermiso ? 'onclick="window.location.href=\'' + m.url + '\'"' : '';
         let badge = '';
         if (!tienePermiso) {
-          badge = '<span class="bs-module-lock">âŒ Sin acceso</span>';
+          badge = '<span class="bs-module-lock">❌ Sin acceso</span>';
         } else if (m.confidencial) {
-          badge = '<span class="bs-module-lock">ðŸ” Confidencial</span>';
+          badge = '<span class="bs-module-lock">🔐 Confidencial</span>';
         }
         return (
           '<div class="bs-module-card ' + disabledClass + '" ' + onclick + '>' +
@@ -143,7 +143,7 @@
 
     // ===== LOGOUT =====
     function logout() {
-      if (confirm('Â¿Cerrar sesiÃ³n?')) {
+      if (confirm('¿Cerrar sesión?')) {
         localStorage.removeItem('bienestarSocialAuth');
         window.location.href = 'index.html';
       }
