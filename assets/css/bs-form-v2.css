@@ -16,12 +16,7 @@
   --bs-uf-shadow:      0 24px 60px rgba(0, 51, 160, 0.18);
 }
 
-/* ---- Fondo del modal: oscuro azulado, ligero blur ---- */
-.bs-modal {
-  background: rgba(11, 30, 69, 0.55) !important;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-}
+/* ---- Fondo detras del modal: NO se modifica .bs-modal para no oscurecer la tarjeta ---- */
 
 /* ---- Caja del modal: ancha, redondeada, banda corporativa arriba ---- */
 .bs-modal-content {
@@ -32,8 +27,11 @@
   box-shadow: var(--bs-uf-shadow);
   overflow: hidden !important;
   padding: 0 !important;
-  background: #ffffff;
+  background: #ffffff !important;
 }
+/* refuerzo de especificidad por si el styles.css base define un fondo distinto */
+.bs-modal .bs-modal-content,
+.bs-modal-content { background: #ffffff !important; }
 
 /* Banda corporativa azul + rojo en el borde superior */
 .bs-modal-content::before {
