@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sugerencias de Mejora · Bienestar Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <!-- TOPBAR -->
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon"><img src="../images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
+          <span>Bienestar Social · <strong>Sugerencias de Mejora</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+
+      <!-- Header -->
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h1 style="color: #0033A0;">💡 Sugerencias de Mejora del Sistema</h1>
+          <p class="bs-text-subtle" style="margin: 0;">Comparte tus ideas para mejorar Bienestar Social. El administrador las revisa y les da seguimiento.</p>
+        </div>
+        <button class="bs-btn" style="background: #0033A0; color: white;" onclick="openModal()">+ Nueva Sugerencia</button>
+      </div>
+
+      <!-- Filtros -->
+      <div class="bs-card bs-mb">
+        <div class="bs-grid bs-grid-2 bs-gap">
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Estado</label>
+            <select class="bs-select" id="filterEstado" onchange="cargar()">
+              <option value="">Todos</option>
+              <option value="Recibida">Recibida</option>
+              <option value="En revisión">En revisión</option>
+              <option value="En desarrollo">En desarrollo</option>
+              <option value="Finalizada">Finalizada</option>
+              <option value="Descartada">Descartada</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Módulo / Área</label>
+            <select class="bs-select" id="filterModulo" onchange="cargar()">
+              <option value="">Todos</option>
+              <option value="Quejas">Quejas</option>
+              <option value="Accidentes">Accidentes</option>
+              <option value="Hostigamiento">Hostigamiento</option>
+              <option value="Subsidios">Subsidios</option>
+              <option value="Panel / Dashboard">Panel / Dashboard</option>
+              <option value="Sistema general">Sistema general</option>
+              <option value="Interfaz / UI">Interfaz / UI</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div id="tablaContainer">
+        <div class="bs-text-center" style="padding: 2rem;">
+          <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="bs-footer">
+      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0
+    </footer>
+  </div>
+
+  <!-- MODAL: NUEVA SUGERENCIA -->
+  <div class="bs-modal-overlay" id="formModal">
+    <div class="bs-modal" style="max-width: 720px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title">Nueva Sugerencia</h3>
+        <button class="bs-modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <div class="bs-form-group">
+          <label class="bs-label">Título <span class="bs-required">*</span></label>
+          <input type="text" id="titulo" class="bs-input" placeholder="Resumen breve de tu sugerencia">
+        </div>
+        <div class="bs-grid bs-grid-2 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Módulo / Área <span class="bs-required">*</span></label>
+            <select id="modulo" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="Quejas">Quejas</option>
+              <option value="Accidentes">Accidentes</option>
+              <option value="Hostigamiento">Hostigamiento</option>
+              <option value="Subsidios">Subsidios</option>
+              <option value="Panel / Dashboard">Panel / Dashboard</option>
+              <option value="Sistema general">Sistema general</option>
+              <option value="Interfaz / UI">Interfaz / UI</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Prioridad sugerida</label>
+            <select id="prioridad" class="bs-select">
+              <option value="Baja">Baja</option>
+              <option value="Media" selected>Media</option>
+              <option value="Alta">Alta</option>
+            </select>
+          </div>
+        </div>
+        <div class="bs-form-group">
+          <label class="bs-label">Descripción <span class="bs-required">*</span></label>
+          <textarea id="descripcion" class="bs-textarea" placeholder="Describe la mejora: qué problema resuelve, cómo te gustaría que funcione..." style="min-height: 120px;"></textarea>
+        </div>
+        <div id="formAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="bs-btn" id="btnSubmit" onclick="submitForm()" style="background: #0033A0; color: white;">Enviar sugerencia</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GESTIONAR (solo admin) -->
+  <div class="bs-modal-overlay" id="gestionModal">
+    <div class="bs-modal" style="max-width: 760px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title">Gestionar Sugerencia</h3>
+        <button class="bs-modal-close" onclick="closeGestion()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <input type="hidden" id="g_id">
+        <div id="g_detalle" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:0.9rem 1.1rem;margin-bottom:1rem;font-size:0.9rem;"></div>
+        <div class="bs-form-group">
+          <label class="bs-label">Estado</label>
+          <select id="g_estado" class="bs-select">
+            <option value="Recibida">Recibida</option>
+            <option value="En revisión">En revisión</option>
+            <option value="En desarrollo">En desarrollo</option>
+            <option value="Finalizada">Finalizada</option>
+            <option value="Descartada">Descartada</option>
+          </select>
+        </div>
+        <div class="bs-form-group">
+          <label class="bs-label">Respuesta / Comentario del administrador</label>
+          <textarea id="g_respuesta" class="bs-textarea" placeholder="Comentario para el seguimiento o cierre de la sugerencia..." style="min-height: 110px;"></textarea>
+        </div>
+        <div id="gestionAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeGestion()">Cancelar</button>
+        <button class="bs-btn" id="btnFinalizar" onclick="finalizar()" style="background: #16a34a; color: white;">✓ Finalizar</button>
+        <button class="bs-btn" id="btnSubmit" onclick="submitGestion()" style="background: #0033A0; color: white;">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+
+    // ===== VALIDACION OBLIGATORIA =====
+    function bsValidarRequeridos(ids) {
+      for (let i = 0; i < ids.length; i++) {
+        const el = document.getElementById(ids[i]);
+        if (!el) continue;
+        const v = el.value;
+        if (v === undefined || v === null || String(v).trim() === '') {
+          let lbl = ids[i];
+          const grp = el.closest ? el.closest('.bs-form-group') : null;
+          if (grp) {
+            const labelEl = grp.querySelector('.bs-label');
+            if (labelEl) lbl = labelEl.textContent.replace(/\s+/g,' ').replace(/\s*\*\s*$/,'').trim();
+          }
+          return { ok: false, id: ids[i], label: lbl };
+        }
+      }
+      return { ok: true };
+    }
+
+    // ===== AUTH =====
+    const session = localStorage.getItem('bienestarSocialAuth');
+    if (!session) window.location.href = '../index.html';
+    let user;
+    try {
+      user = JSON.parse(session);
+      if (!user || !user.usuario) throw new Error();
+    } catch(e) {
+      window.location.href = '../index.html';
+    }
+    document.getElementById('userName').textContent = user.nombre || user.usuario;
+    const isAdmin = /admin/i.test(user.rol || '');
+
+    // ===== API =====
+    async function api(action, payload) {
+      const res = await fetch(BS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+      });
+      return await res.json();
+    }
+
+    function logout() {
+      if (confirm('¿Cerrar sesión?')) {
+        localStorage.removeItem('bienestarSocialAuth');
+        window.location.href = '../index.html';
+      }
+    }
+
+    // ===== Helpers =====
+    function esc(t) {
+      return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+    }
+    function fechaCorta(iso) {
+      if (!iso) return '-';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '-';
+      return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
+    }
+    function badgeEstado(e) {
+      const map = {
+        'Recibida':      '#0891b2',
+        'En revisión':   '#d97706',
+        'En desarrollo': '#7c3aed',
+        'Finalizada':    '#16a34a',
+        'Descartada':    '#64748b'
+      };
+      const col = map[e] || '#64748b';
+      return '<span style="background:'+col+'20;color:'+col+';border:1px solid '+col+'55;padding:2px 10px;border-radius:999px;font-size:0.78rem;font-weight:600;white-space:nowrap;">'+esc(e||'-')+'</span>';
+    }
+    function badgePrioridad(p) {
+      const map = { 'Alta':'#dc2626', 'Media':'#d97706', 'Baja':'#16a34a' };
+      const col = map[p] || '#64748b';
+      return '<span style="color:'+col+';font-weight:600;">'+esc(p||'-')+'</span>';
+    }
+
+    // ===== Carga / render =====
+    let cache = [];
+    async function cargar() {
+      const cont = document.getElementById('tablaContainer');
+      cont.innerHTML = '<div class="bs-text-center" style="padding:2rem;"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto;"></div></div>';
+      const filtros = {
+        estado: document.getElementById('filterEstado').value,
+        modulo: document.getElementById('filterModulo').value
+      };
+      if (!isAdmin) filtros.usuario = user.usuario; // usuario normal: solo las suyas
+      try {
+        const r = await api('bs_listarSugerencias', { filtros: filtros });
+        cache = (r && r.ok && r.items) ? r.items : [];
+        render();
+      } catch(e) {
+        cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error al cargar: ' + esc(e.message) + '</div>';
+      }
+    }
+
+    function render() {
+      const cont = document.getElementById('tablaContainer');
+      if (!cache.length) {
+        cont.innerHTML = '<div class="bs-card bs-text-center" style="padding:2.5rem;color:#64748b;">No hay sugerencias todavía. ¡Sé el primero en proponer una mejora! 💡</div>';
+        return;
+      }
+      let filas = '';
+      cache.forEach(function(s) {
+        const accion = isAdmin
+          ? '<button class="bs-btn bs-btn-ghost" style="padding:4px 12px;font-size:0.82rem;" onclick="gestionar('+s.id+')">Gestionar</button>'
+          : (s.respuesta_admin ? '<span class="bs-text-sm" style="color:#16a34a;">Con respuesta</span>' : '<span class="bs-text-sm" style="color:#94a3b8;">—</span>');
+        filas +=
+          '<tr>' +
+            '<td style="font-weight:600;">#'+s.id+'</td>' +
+            '<td>'+fechaCorta(s.fecha)+'</td>' +
+            (isAdmin ? '<td>'+esc(s.nombre_usuario || s.usuario)+'</td>' : '') +
+            '<td style="font-weight:500;">'+esc(s.titulo)+'</td>' +
+            '<td>'+esc(s.modulo)+'</td>' +
+            '<td>'+badgePrioridad(s.prioridad)+'</td>' +
+            '<td>'+badgeEstado(s.estado)+'</td>' +
+            '<td style="text-align:right;">'+accion+'</td>' +
+          '</tr>';
+      });
+      const thUsuario = isAdmin ? '<th>Usuario</th>' : '';
+      cont.innerHTML =
+        '<div class="bs-card" style="padding:0;overflow-x:auto;">' +
+        '<table class="bs-table" style="width:100%;">' +
+        '<thead><tr>' +
+          '<th>ID</th><th>Fecha</th>'+thUsuario+'<th>Título</th><th>Módulo</th><th>Prioridad</th><th>Estado</th><th style="text-align:right;">Acción</th>' +
+        '</tr></thead><tbody>' + filas + '</tbody></table></div>';
+    }
+
+    // ===== Modal nueva sugerencia =====
+    function openModal() {
+      document.getElementById('titulo').value = '';
+      document.getElementById('modulo').value = '';
+      document.getElementById('prioridad').value = 'Media';
+      document.getElementById('descripcion').value = '';
+      document.getElementById('formAlert').innerHTML = '';
+      document.getElementById('formModal').classList.add('bs-active');
+    }
+    function closeModal() {
+      document.getElementById('formModal').classList.remove('bs-active');
+    }
+
+    async function submitForm() {
+      const REQUIRED_FIELDS = ['titulo','modulo','descripcion'];
+      const _req = bsValidarRequeridos(REQUIRED_FIELDS);
+      if (!_req.ok) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Falta completar: <strong>' + _req.label + '</strong></div>';
+        const _e = document.getElementById(_req.id);
+        if (_e && _e.offsetParent !== null) { try { _e.focus(); } catch(x){} }
+        return;
+      }
+      const btn = document.getElementById('formModal').querySelector('#btnSubmit');
+      btn.disabled = true; btn.textContent = 'Enviando...';
+      try {
+        const datos = {
+          nombre_usuario: user.nombre || user.usuario,
+          titulo: document.getElementById('titulo').value.trim(),
+          modulo: document.getElementById('modulo').value,
+          prioridad: document.getElementById('prioridad').value,
+          descripcion: document.getElementById('descripcion').value.trim()
+        };
+        const r = await api('bs_crearSugerencia', { usuario: user.usuario, datos: datos });
+        if (r && r.ok) {
+          closeModal();
+          cargar();
+        } else {
+          document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">' + esc((r && r.message) || 'Error al enviar') + '</div>';
+        }
+      } catch(e) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + esc(e.message) + '</div>';
+      } finally {
+        btn.disabled = false; btn.textContent = 'Enviar sugerencia';
+      }
+    }
+
+    // ===== Modal gestionar (admin) =====
+    function gestionar(id) {
+      const s = cache.find(function(x){ return parseInt(x.id) === parseInt(id); });
+      if (!s) return;
+      document.getElementById('g_id').value = s.id;
+      document.getElementById('g_estado').value = s.estado || 'Recibida';
+      document.getElementById('g_respuesta').value = s.respuesta_admin || '';
+      document.getElementById('g_detalle').innerHTML =
+        '<div style="font-weight:700;color:#0033A0;margin-bottom:0.3rem;">#'+s.id+' · '+esc(s.titulo)+'</div>' +
+        '<div style="color:#64748b;margin-bottom:0.5rem;font-size:0.82rem;">'+esc(s.nombre_usuario || s.usuario)+' · '+esc(s.modulo)+' · '+fechaCorta(s.fecha)+' · Prioridad: '+esc(s.prioridad)+'</div>' +
+        '<div style="white-space:pre-wrap;color:#0b1e45;">'+esc(s.descripcion)+'</div>';
+      document.getElementById('gestionAlert').innerHTML = '';
+      document.getElementById('gestionModal').classList.add('bs-active');
+    }
+    function closeGestion() {
+      document.getElementById('gestionModal').classList.remove('bs-active');
+    }
+    async function _guardarGestion(estadoForzado) {
+      const id = document.getElementById('g_id').value;
+      const datos = {
+        estado: estadoForzado || document.getElementById('g_estado').value,
+        respuesta_admin: document.getElementById('g_respuesta').value.trim()
+      };
+      const r = await api('bs_actualizarSugerencia', { usuario: user.usuario, id: id, datos: datos });
+      if (r && r.ok) { closeGestion(); cargar(); }
+      else { document.getElementById('gestionAlert').innerHTML = '<div class="bs-alert bs-alert-danger">' + esc((r && r.message) || 'Error') + '</div>'; }
+    }
+    async function submitGestion() {
+      const btn = document.getElementById('gestionModal').querySelector('#btnSubmit');
+      btn.disabled = true; const t = btn.textContent; btn.textContent = 'Guardando...';
+      try { await _guardarGestion(null); }
+      catch(e) { document.getElementById('gestionAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + esc(e.message) + '</div>'; }
+      finally { btn.disabled = false; btn.textContent = t; }
+    }
+    async function finalizar() {
+      if (!confirm('¿Marcar esta sugerencia como FINALIZADA?')) return;
+      const btn = document.getElementById('btnFinalizar');
+      btn.disabled = true; const t = btn.textContent; btn.textContent = 'Finalizando...';
+      try { document.getElementById('g_estado').value = 'Finalizada'; await _guardarGestion('Finalizada'); }
+      catch(e) { document.getElementById('gestionAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + esc(e.message) + '</div>'; }
+      finally { btn.disabled = false; btn.textContent = t; }
+    }
+
+    // ===== INIT =====
+    cargar();
+  </script>
+</body>
+</html>

@@ -1,7 +1,8 @@
 /* ============================================================
    Bienestar Social — Form V2 (Unifrutti corporate)
-   Overlay sobre styles.css. AdItivo, no destructivo.
-   Paleta: azul Unifrutti, rojo Unifrutti, blanco.
+   Overlay sobre styles.css. AdItivo.
+   Estructura real: .bs-modal-overlay (fondo) > .bs-modal (tarjeta)
+     > .bs-modal-header + .bs-modal-body + .bs-modal-footer
    ============================================================ */
 
 :root {
@@ -13,71 +14,91 @@
   --bs-uf-border:      #d8e0ec;
   --bs-uf-text:        #0b1e45;
   --bs-uf-muted:       #64748b;
-  --bs-uf-shadow:      0 24px 60px rgba(0, 51, 160, 0.18);
 }
 
-/* ---- Fondo detras del modal: NO se modifica .bs-modal para no oscurecer la tarjeta ---- */
-
-/* ---- Caja del modal: ancha, redondeada, banda corporativa arriba ---- */
-.bs-modal-content {
-  max-width: min(1320px, 95vw) !important;
-  width: 95vw;
+/* ============ TARJETA: ancha, blanca, header+footer fijos ============ */
+.bs-modal {
+  max-width: min(1300px, 95vw) !important;
+  width: 95vw !important;
   max-height: 95vh !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  border-radius: 16px !important;
-  border: 1px solid var(--bs-uf-border);
-  box-shadow: var(--bs-uf-shadow);
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
   padding: 0 !important;
   background: #ffffff !important;
+  border-radius: 16px !important;
+  border: 1px solid var(--bs-uf-border) !important;
+  box-shadow: 0 24px 60px rgba(0, 51, 160, 0.18) !important;
 }
-/* refuerzo de especificidad por si el styles.css base define un fondo distinto */
-.bs-modal .bs-modal-content,
-.bs-modal-content { background: #ffffff !important; }
 
-/* Banda corporativa azul + rojo en el borde superior */
-.bs-modal-content::before {
+/* Banda corporativa azul + rojo arriba */
+.bs-modal::before {
   content: "";
   display: block;
+  flex: 0 0 auto;
   height: 5px;
   background: linear-gradient(90deg,
-    var(--bs-uf-blue) 0%,
-    var(--bs-uf-blue) 65%,
-    var(--bs-uf-red)  65%,
-    var(--bs-uf-red)  100%);
+    var(--bs-uf-blue) 0%, var(--bs-uf-blue) 65%,
+    var(--bs-uf-red) 65%, var(--bs-uf-red) 100%);
 }
 
-/* ---- Tipografia del header (h2/h3 directos del modal) ---- */
-.bs-modal-content > h2,
-.bs-modal-content > h3 {
-  margin: 0 !important;
-  padding: 0.95rem 1.6rem 0.75rem !important;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--bs-uf-blue);
-  letter-spacing: -0.01em;
+/* ---- Header fijo ---- */
+.bs-modal .bs-modal-header {
+  flex: 0 0 auto;
+  padding: 0.9rem 1.6rem !important;
   background: linear-gradient(to bottom, #ffffff, var(--bs-uf-blue-soft));
   border-bottom: 1px solid var(--bs-uf-border);
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bs-modal .bs-modal-title {
+  color: var(--bs-uf-blue) !important;
+  font-size: 1.3rem !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  letter-spacing: -0.01em;
+}
+.bs-modal .bs-modal-close {
+  color: var(--bs-uf-muted) !important;
+  font-size: 1.5rem;
+  line-height: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color .15s ease, transform .1s ease;
+}
+.bs-modal .bs-modal-close:hover {
+  color: var(--bs-uf-red) !important;
+  transform: scale(1.12);
 }
 
-/* ---- Cuerpo del modal con padding generoso ---- */
-.bs-modal-content > form,
-.bs-modal-content > .bs-modal-body,
-.bs-modal-content > div:not(:first-child) {
-  padding: 0.85rem 1.6rem 0.8rem;
+/* ---- Cuerpo: el unico que hace scroll ---- */
+.bs-modal .bs-modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem 1.6rem !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bs-uf-blue) #eef3ff;
+}
+.bs-modal .bs-modal-body::-webkit-scrollbar { width: 8px; }
+.bs-modal .bs-modal-body::-webkit-scrollbar-track { background: #eef3ff; }
+.bs-modal .bs-modal-body::-webkit-scrollbar-thumb { background: var(--bs-uf-blue); border-radius: 4px; }
+
+/* ---- Footer fijo (botones siempre visibles) ---- */
+.bs-modal .bs-modal-footer {
+  flex: 0 0 auto;
+  padding: 0.8rem 1.6rem !important;
+  border-top: 1px solid var(--bs-uf-border);
+  background: #ffffff;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
 }
 
-/* Padding al ultimo elemento (footer/botones) */
-.bs-modal-content > form > *:last-child,
-.bs-modal-content > .bs-modal-body > *:last-child {
-  margin-bottom: 0.3rem;
-}
-
-/* ---- Labels: azul, semibold, espaciado, MAYUSCULAS pequeñas ---- */
-.bs-modal-content .bs-label {
+/* ============ CAMPOS ============ */
+.bs-modal .bs-label {
   color: var(--bs-uf-blue) !important;
   font-weight: 600;
   font-size: 0.72rem;
@@ -86,176 +107,100 @@
   margin-bottom: 0.22rem;
   display: block;
 }
-.bs-modal-content .bs-required {
-  color: var(--bs-uf-red) !important;
-  margin-left: 0.15rem;
-  font-weight: 700;
-}
+.bs-modal .bs-required { color: var(--bs-uf-red) !important; font-weight: 700; margin-left: 0.15rem; }
 
-/* ---- Inputs/selects/textareas: borde corporativo + focus suave ---- */
-.bs-modal-content .bs-input,
-.bs-modal-content .bs-select,
-.bs-modal-content .bs-textarea {
+.bs-modal .bs-input,
+.bs-modal .bs-select,
+.bs-modal .bs-textarea {
   border: 1.5px solid var(--bs-uf-border) !important;
   border-radius: 8px !important;
   padding: 0.48rem 0.7rem !important;
   font-size: 0.9rem !important;
   color: var(--bs-uf-text);
   background: #ffffff;
-  transition: border-color .15s ease, box-shadow .15s ease;
   width: 100%;
   font-family: inherit;
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
-.bs-modal-content .bs-textarea {
-  min-height: 58px;
-  resize: vertical;
-}
-.bs-modal-content .bs-input:hover,
-.bs-modal-content .bs-select:hover,
-.bs-modal-content .bs-textarea:hover {
-  border-color: var(--bs-uf-blue) !important;
-}
-.bs-modal-content .bs-input:focus,
-.bs-modal-content .bs-select:focus,
-.bs-modal-content .bs-textarea:focus {
+.bs-modal .bs-textarea { min-height: 58px; resize: vertical; }
+.bs-modal .bs-input:hover,
+.bs-modal .bs-select:hover,
+.bs-modal .bs-textarea:hover { border-color: var(--bs-uf-blue) !important; }
+.bs-modal .bs-input:focus,
+.bs-modal .bs-select:focus,
+.bs-modal .bs-textarea:focus {
   outline: none !important;
   border-color: var(--bs-uf-blue) !important;
   box-shadow: 0 0 0 3px rgba(0, 51, 160, 0.18) !important;
 }
-
-/* Inputs auto-calculados (readonly): fondo sutil para que se note que no se editan */
-.bs-modal-content .bs-input[readonly],
-.bs-modal-content .bs-textarea[readonly] {
+.bs-modal .bs-input[readonly],
+.bs-modal .bs-textarea[readonly] {
   background: #f1f5f9 !important;
   color: var(--bs-uf-muted);
   cursor: default;
 }
+.bs-modal input[type="number"]::-webkit-inner-spin-button,
+.bs-modal input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.bs-modal input[type="number"] { -moz-appearance: textfield; }
 
-/* Number input sin spinners (mas limpio) */
-.bs-modal-content input[type="number"]::-webkit-inner-spin-button,
-.bs-modal-content input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-.bs-modal-content input[type="number"] { -moz-appearance: textfield; }
-
-/* ---- Espaciado de form-groups y grids ---- */
-.bs-modal-content .bs-form-group {
-  margin-bottom: 0.65rem;
-}
-.bs-modal-content .bs-grid {
-  gap: 0.8rem !important;
-}
-
-/* Helptext sutil */
-.bs-modal-content .bs-helptext,
-.bs-modal-content p.bs-helptext {
+.bs-modal .bs-form-group { margin-bottom: 0.65rem; }
+.bs-modal .bs-grid { gap: 0.8rem !important; }
+.bs-modal .bs-helptext {
   color: var(--bs-uf-muted) !important;
   font-size: 0.78rem !important;
-  margin-top: 0.35rem !important;
   font-style: italic;
+  margin-top: 0.3rem !important;
 }
 
-/* ---- Boton cerrar (x) ---- */
-.bs-modal-content [onclick*="closeModal"] {
-  color: var(--bs-uf-muted);
-  transition: color .15s ease, transform .1s ease;
-}
-.bs-modal-content [onclick*="closeModal"]:hover {
-  color: var(--bs-uf-red);
-  transform: scale(1.1);
-}
-
-/* ---- Boton primario (Guardar) ---- */
-.bs-modal-content [id="btnSubmit"],
-.bs-modal-content .bs-btn-primary,
-.bs-modal-content button[type="submit"] {
+/* ============ BOTONES ============ */
+.bs-modal #btnSubmit {
   background: var(--bs-uf-blue) !important;
   color: #ffffff !important;
   border: none !important;
-  padding: 0.75rem 1.6rem !important;
+  padding: 0.6rem 1.6rem !important;
   border-radius: 8px !important;
   font-weight: 600 !important;
-  letter-spacing: 0.02em;
-  font-size: 0.95rem !important;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 51, 160, 0.28);
-  transition: background .15s ease, transform .1s ease, box-shadow .15s ease;
+  transition: background .15s ease, transform .1s ease;
 }
-.bs-modal-content [id="btnSubmit"]:hover,
-.bs-modal-content .bs-btn-primary:hover {
-  background: var(--bs-uf-blue-dark) !important;
-  box-shadow: 0 6px 16px rgba(0, 51, 160, 0.35);
-}
-.bs-modal-content [id="btnSubmit"]:active,
-.bs-modal-content .bs-btn-primary:active {
-  transform: translateY(1px);
-}
-.bs-modal-content [id="btnSubmit"]:disabled {
-  background: #9aa9c1 !important;
-  cursor: not-allowed;
-  box-shadow: none;
-}
+.bs-modal #btnSubmit:hover { background: var(--bs-uf-blue-dark) !important; }
+.bs-modal #btnSubmit:active { transform: translateY(1px); }
+.bs-modal #btnSubmit:disabled { background: #9aa9c1 !important; box-shadow: none; cursor: not-allowed; }
 
-/* Botones secundarios (Cancelar, etc) */
-.bs-modal-content .bs-btn-secondary,
-.bs-modal-content button.bs-btn:not([id="btnSubmit"]):not(.bs-btn-primary) {
+.bs-modal .bs-btn-ghost {
   background: #ffffff !important;
   color: var(--bs-uf-blue) !important;
-  border: 1.5px solid var(--bs-uf-blue) !important;
+  border: 1.5px solid var(--bs-uf-border) !important;
+  padding: 0.6rem 1.3rem !important;
   border-radius: 8px !important;
-  padding: 0.7rem 1.4rem !important;
   font-weight: 600;
   cursor: pointer;
-  transition: background .15s ease;
+  transition: background .15s ease, border-color .15s ease;
 }
-.bs-modal-content .bs-btn-secondary:hover {
+.bs-modal .bs-btn-ghost:hover {
   background: var(--bs-uf-blue-soft) !important;
+  border-color: var(--bs-uf-blue) !important;
 }
 
-/* ---- Alertas dentro del modal ---- */
-.bs-modal-content .bs-alert {
-  border-radius: 8px !important;
-  padding: 0.75rem 1rem !important;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-.bs-modal-content .bs-alert-danger {
+/* ============ ALERTAS ============ */
+.bs-modal .bs-alert { border-radius: 8px !important; padding: 0.7rem 0.9rem !important; }
+.bs-modal .bs-alert-danger {
   background: var(--bs-uf-red-soft) !important;
   border: 1px solid var(--bs-uf-red) !important;
   color: #7f1d1d !important;
 }
-.bs-modal-content .bs-alert-info {
+
+/* ============ Panel buzones / grupos auto-revelados ============ */
+.bs-modal #buzonesMsg {
   background: var(--bs-uf-blue-soft) !important;
   border: 1px solid #bfdbfe !important;
   color: var(--bs-uf-blue-dark) !important;
 }
-
-/* ---- Scrollbar interno ---- */
-.bs-modal-content {
-  scrollbar-width: thin;
-  scrollbar-color: var(--bs-uf-blue) #eef3ff;
-}
-.bs-modal-content::-webkit-scrollbar { width: 8px; }
-.bs-modal-content::-webkit-scrollbar-track { background: #eef3ff; }
-.bs-modal-content::-webkit-scrollbar-thumb {
-  background: var(--bs-uf-blue);
-  border-radius: 4px;
-}
-
-/* ---- Panel de buzones (Quejas) — armoniza con la paleta ---- */
-#buzonesPanel #buzonesMsg {
-  background: var(--bs-uf-blue-soft) !important;
-  border: 1px solid #bfdbfe !important;
-  color: var(--bs-uf-blue-dark) !important;
-  font-weight: 500;
-}
-#buzonesPanel #buzonesResumen {
-  color: var(--bs-uf-blue) !important;
-}
-
-/* ---- Grupos auto-revelados (Accidentes A2) — borde sutil ---- */
-#descansoGroup, #goceGroup, #horasGroup {
+.bs-modal #buzonesResumen { color: var(--bs-uf-blue) !important; }
+.bs-modal #descansoGroup,
+.bs-modal #goceGroup,
+.bs-modal #horasGroup {
   background: #fafbff;
   border: 1px dashed var(--bs-uf-border);
   border-radius: 10px;
@@ -263,21 +208,13 @@
   margin-bottom: 0.7rem;
 }
 
-/* ---- Responsive ---- */
+/* ============ Responsive ============ */
 @media (max-width: 768px) {
-  .bs-modal-content {
+  .bs-modal {
     max-width: 100vw !important;
-    width: 100vw;
+    width: 100vw !important;
+    max-height: 100vh !important;
     border-radius: 0 !important;
   }
-  .bs-modal-content > h2,
-  .bs-modal-content > h3 {
-    font-size: 1.2rem;
-    padding: 1.1rem 1.2rem 0.9rem !important;
-  }
-  .bs-modal-content > form,
-  .bs-modal-content > .bs-modal-body,
-  .bs-modal-content > div:not(:first-child) {
-    padding: 1.1rem 1.2rem;
-  }
+  .bs-modal .bs-modal-title { font-size: 1.15rem !important; }
 }
