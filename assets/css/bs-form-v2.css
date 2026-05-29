@@ -1,0 +1,280 @@
+/* ============================================================
+   Bienestar Social — Form V2 (Unifrutti corporate)
+   Overlay sobre styles.css. AdItivo, no destructivo.
+   Paleta: azul Unifrutti, rojo Unifrutti, blanco.
+   ============================================================ */
+
+:root {
+  --bs-uf-blue:        #0033A0;
+  --bs-uf-blue-dark:   #002472;
+  --bs-uf-blue-soft:   #eef3ff;
+  --bs-uf-red:         #E2231A;
+  --bs-uf-red-soft:    #fff0ef;
+  --bs-uf-border:      #d8e0ec;
+  --bs-uf-text:        #0b1e45;
+  --bs-uf-muted:       #64748b;
+  --bs-uf-shadow:      0 24px 60px rgba(0, 51, 160, 0.18);
+}
+
+/* ---- Fondo del modal: oscuro azulado, ligero blur ---- */
+.bs-modal {
+  background: rgba(11, 30, 69, 0.55) !important;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+/* ---- Caja del modal: ancha, redondeada, banda corporativa arriba ---- */
+.bs-modal-content {
+  max-width: min(960px, 96vw) !important;
+  width: 96vw;
+  border-radius: 16px !important;
+  border: 1px solid var(--bs-uf-border);
+  box-shadow: var(--bs-uf-shadow);
+  overflow: hidden !important;
+  padding: 0 !important;
+  background: #ffffff;
+}
+
+/* Banda corporativa azul + rojo en el borde superior */
+.bs-modal-content::before {
+  content: "";
+  display: block;
+  height: 5px;
+  background: linear-gradient(90deg,
+    var(--bs-uf-blue) 0%,
+    var(--bs-uf-blue) 65%,
+    var(--bs-uf-red)  65%,
+    var(--bs-uf-red)  100%);
+}
+
+/* ---- Tipografia del header (h2/h3 directos del modal) ---- */
+.bs-modal-content > h2,
+.bs-modal-content > h3 {
+  margin: 0 !important;
+  padding: 1.4rem 1.8rem 1rem !important;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--bs-uf-blue);
+  letter-spacing: -0.01em;
+  background: linear-gradient(to bottom, #ffffff, var(--bs-uf-blue-soft));
+  border-bottom: 1px solid var(--bs-uf-border);
+}
+
+/* ---- Cuerpo del modal con padding generoso ---- */
+.bs-modal-content > form,
+.bs-modal-content > .bs-modal-body,
+.bs-modal-content > div:not(:first-child) {
+  padding: 1.3rem 1.8rem 1rem;
+}
+
+/* Padding al ultimo elemento (footer/botones) */
+.bs-modal-content > form > *:last-child,
+.bs-modal-content > .bs-modal-body > *:last-child {
+  margin-bottom: 0.3rem;
+}
+
+/* ---- Labels: azul, semibold, espaciado, MAYUSCULAS pequeñas ---- */
+.bs-modal-content .bs-label {
+  color: var(--bs-uf-blue) !important;
+  font-weight: 600;
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+.bs-modal-content .bs-required {
+  color: var(--bs-uf-red) !important;
+  margin-left: 0.15rem;
+  font-weight: 700;
+}
+
+/* ---- Inputs/selects/textareas: borde corporativo + focus suave ---- */
+.bs-modal-content .bs-input,
+.bs-modal-content .bs-select,
+.bs-modal-content .bs-textarea {
+  border: 1.5px solid var(--bs-uf-border) !important;
+  border-radius: 8px !important;
+  padding: 0.6rem 0.8rem !important;
+  font-size: 0.93rem !important;
+  color: var(--bs-uf-text);
+  background: #ffffff;
+  transition: border-color .15s ease, box-shadow .15s ease;
+  width: 100%;
+  font-family: inherit;
+}
+.bs-modal-content .bs-textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+.bs-modal-content .bs-input:hover,
+.bs-modal-content .bs-select:hover,
+.bs-modal-content .bs-textarea:hover {
+  border-color: var(--bs-uf-blue) !important;
+}
+.bs-modal-content .bs-input:focus,
+.bs-modal-content .bs-select:focus,
+.bs-modal-content .bs-textarea:focus {
+  outline: none !important;
+  border-color: var(--bs-uf-blue) !important;
+  box-shadow: 0 0 0 3px rgba(0, 51, 160, 0.18) !important;
+}
+
+/* Inputs auto-calculados (readonly): fondo sutil para que se note que no se editan */
+.bs-modal-content .bs-input[readonly],
+.bs-modal-content .bs-textarea[readonly] {
+  background: #f1f5f9 !important;
+  color: var(--bs-uf-muted);
+  cursor: default;
+}
+
+/* Number input sin spinners (mas limpio) */
+.bs-modal-content input[type="number"]::-webkit-inner-spin-button,
+.bs-modal-content input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.bs-modal-content input[type="number"] { -moz-appearance: textfield; }
+
+/* ---- Espaciado de form-groups y grids ---- */
+.bs-modal-content .bs-form-group {
+  margin-bottom: 1.05rem;
+}
+.bs-modal-content .bs-grid {
+  gap: 1.1rem !important;
+}
+
+/* Helptext sutil */
+.bs-modal-content .bs-helptext,
+.bs-modal-content p.bs-helptext {
+  color: var(--bs-uf-muted) !important;
+  font-size: 0.78rem !important;
+  margin-top: 0.35rem !important;
+  font-style: italic;
+}
+
+/* ---- Boton cerrar (x) ---- */
+.bs-modal-content [onclick*="closeModal"] {
+  color: var(--bs-uf-muted);
+  transition: color .15s ease, transform .1s ease;
+}
+.bs-modal-content [onclick*="closeModal"]:hover {
+  color: var(--bs-uf-red);
+  transform: scale(1.1);
+}
+
+/* ---- Boton primario (Guardar) ---- */
+.bs-modal-content [id="btnSubmit"],
+.bs-modal-content .bs-btn-primary,
+.bs-modal-content button[type="submit"] {
+  background: var(--bs-uf-blue) !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 0.75rem 1.6rem !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  font-size: 0.95rem !important;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 51, 160, 0.28);
+  transition: background .15s ease, transform .1s ease, box-shadow .15s ease;
+}
+.bs-modal-content [id="btnSubmit"]:hover,
+.bs-modal-content .bs-btn-primary:hover {
+  background: var(--bs-uf-blue-dark) !important;
+  box-shadow: 0 6px 16px rgba(0, 51, 160, 0.35);
+}
+.bs-modal-content [id="btnSubmit"]:active,
+.bs-modal-content .bs-btn-primary:active {
+  transform: translateY(1px);
+}
+.bs-modal-content [id="btnSubmit"]:disabled {
+  background: #9aa9c1 !important;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Botones secundarios (Cancelar, etc) */
+.bs-modal-content .bs-btn-secondary,
+.bs-modal-content button.bs-btn:not([id="btnSubmit"]):not(.bs-btn-primary) {
+  background: #ffffff !important;
+  color: var(--bs-uf-blue) !important;
+  border: 1.5px solid var(--bs-uf-blue) !important;
+  border-radius: 8px !important;
+  padding: 0.7rem 1.4rem !important;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.bs-modal-content .bs-btn-secondary:hover {
+  background: var(--bs-uf-blue-soft) !important;
+}
+
+/* ---- Alertas dentro del modal ---- */
+.bs-modal-content .bs-alert {
+  border-radius: 8px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+.bs-modal-content .bs-alert-danger {
+  background: var(--bs-uf-red-soft) !important;
+  border: 1px solid var(--bs-uf-red) !important;
+  color: #7f1d1d !important;
+}
+.bs-modal-content .bs-alert-info {
+  background: var(--bs-uf-blue-soft) !important;
+  border: 1px solid #bfdbfe !important;
+  color: var(--bs-uf-blue-dark) !important;
+}
+
+/* ---- Scrollbar interno ---- */
+.bs-modal-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bs-uf-blue) #eef3ff;
+}
+.bs-modal-content::-webkit-scrollbar { width: 8px; }
+.bs-modal-content::-webkit-scrollbar-track { background: #eef3ff; }
+.bs-modal-content::-webkit-scrollbar-thumb {
+  background: var(--bs-uf-blue);
+  border-radius: 4px;
+}
+
+/* ---- Panel de buzones (Quejas) — armoniza con la paleta ---- */
+#buzonesPanel #buzonesMsg {
+  background: var(--bs-uf-blue-soft) !important;
+  border: 1px solid #bfdbfe !important;
+  color: var(--bs-uf-blue-dark) !important;
+  font-weight: 500;
+}
+#buzonesPanel #buzonesResumen {
+  color: var(--bs-uf-blue) !important;
+}
+
+/* ---- Grupos auto-revelados (Accidentes A2) — borde sutil ---- */
+#descansoGroup, #goceGroup, #horasGroup {
+  background: #fafbff;
+  border: 1px dashed var(--bs-uf-border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .bs-modal-content {
+    max-width: 100vw !important;
+    width: 100vw;
+    border-radius: 0 !important;
+  }
+  .bs-modal-content > h2,
+  .bs-modal-content > h3 {
+    font-size: 1.2rem;
+    padding: 1.1rem 1.2rem 0.9rem !important;
+  }
+  .bs-modal-content > form,
+  .bs-modal-content > .bs-modal-body,
+  .bs-modal-content > div:not(:first-child) {
+    padding: 1.1rem 1.2rem;
+  }
+}
