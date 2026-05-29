@@ -20,12 +20,14 @@
 
 /* ---- Caja del modal: ancha, redondeada, banda corporativa arriba ---- */
 .bs-modal-content {
-  max-width: min(960px, 96vw) !important;
-  width: 96vw;
+  max-width: min(1320px, 95vw) !important;
+  width: 95vw;
+  max-height: 95vh !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   border-radius: 16px !important;
   border: 1px solid var(--bs-uf-border);
   box-shadow: var(--bs-uf-shadow);
-  overflow: hidden !important;
   padding: 0 !important;
   background: #ffffff !important;
 }
@@ -49,20 +51,23 @@
 .bs-modal-content > h2,
 .bs-modal-content > h3 {
   margin: 0 !important;
-  padding: 1.4rem 1.8rem 1rem !important;
-  font-size: 1.45rem;
+  padding: 0.95rem 1.6rem 0.75rem !important;
+  font-size: 1.3rem;
   font-weight: 700;
   color: var(--bs-uf-blue);
   letter-spacing: -0.01em;
   background: linear-gradient(to bottom, #ffffff, var(--bs-uf-blue-soft));
   border-bottom: 1px solid var(--bs-uf-border);
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 
 /* ---- Cuerpo del modal con padding generoso ---- */
 .bs-modal-content > form,
 .bs-modal-content > .bs-modal-body,
 .bs-modal-content > div:not(:first-child) {
-  padding: 1.3rem 1.8rem 1rem;
+  padding: 0.85rem 1.6rem 0.8rem;
 }
 
 /* Padding al ultimo elemento (footer/botones) */
@@ -75,10 +80,10 @@
 .bs-modal-content .bs-label {
   color: var(--bs-uf-blue) !important;
   font-weight: 600;
-  font-size: 0.76rem;
-  letter-spacing: 0.05em;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.22rem;
   display: block;
 }
 .bs-modal-content .bs-required {
@@ -93,8 +98,8 @@
 .bs-modal-content .bs-textarea {
   border: 1.5px solid var(--bs-uf-border) !important;
   border-radius: 8px !important;
-  padding: 0.6rem 0.8rem !important;
-  font-size: 0.93rem !important;
+  padding: 0.48rem 0.7rem !important;
+  font-size: 0.9rem !important;
   color: var(--bs-uf-text);
   background: #ffffff;
   transition: border-color .15s ease, box-shadow .15s ease;
@@ -102,7 +107,7 @@
   font-family: inherit;
 }
 .bs-modal-content .bs-textarea {
-  min-height: 88px;
+  min-height: 58px;
   resize: vertical;
 }
 .bs-modal-content .bs-input:hover,
@@ -136,10 +141,10 @@
 
 /* ---- Espaciado de form-groups y grids ---- */
 .bs-modal-content .bs-form-group {
-  margin-bottom: 1.05rem;
+  margin-bottom: 0.65rem;
 }
 .bs-modal-content .bs-grid {
-  gap: 1.1rem !important;
+  gap: 0.8rem !important;
 }
 
 /* Helptext sutil */
@@ -254,8 +259,8 @@
   background: #fafbff;
   border: 1px dashed var(--bs-uf-border);
   border-radius: 10px;
-  padding: 1rem 1.2rem 0.5rem;
-  margin-bottom: 1rem;
+  padding: 0.7rem 1rem 0.2rem;
+  margin-bottom: 0.7rem;
 }
 
 /* ---- Responsive ---- */
