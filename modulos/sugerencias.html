@@ -275,8 +275,13 @@
       }
       let filas = '';
       cache.forEach(function(s) {
+        const btnFin = (s.estado !== 'Finalizada')
+          ? '<button class="bs-btn" title="Marcar como finalizada" style="padding:4px 10px;font-size:0.82rem;background:#16a34a;color:#fff;margin-right:4px;" onclick="finalizarRapido('+s.id+')">✓</button>'
+          : '';
         const accion = isAdmin
-          ? '<button class="bs-btn bs-btn-ghost" style="padding:4px 12px;font-size:0.82rem;" onclick="gestionar('+s.id+')">Gestionar</button>'
+          ? '<button class="bs-btn bs-btn-ghost" style="padding:4px 12px;font-size:0.82rem;margin-right:4px;" onclick="gestionar('+s.id+')">Gestionar</button>' +
+            btnFin +
+            '<button class="bs-btn" title="Eliminar" style="padding:4px 10px;font-size:0.82rem;background:#dc2626;color:#fff;" onclick="eliminar('+s.id+')">🗑</button>'
           : (s.respuesta_admin ? '<span class="bs-text-sm" style="color:#16a34a;">Con respuesta</span>' : '<span class="bs-text-sm" style="color:#94a3b8;">—</span>');
         filas +=
           '<tr>' +
@@ -333,8 +338,12 @@
         };
         const r = await api('bs_crearSugerencia', { usuario: user.usuario, datos: datos });
         if (r && r.ok) {
-          closeModal();
-          cargar();
+          document.getElementById('titulo').value = '';
+          document.getElementById('modulo').value = '';
+          document.getElementById('prioridad').value = 'Media';
+          document.getElementById('descripcion').value = '';
+          document.getElementById('formAlert').innerHTML = '<div class="bs-alert" style="background:#dcfce7;border:1px solid #16a34a;color:#166534;border-radius:8px;padding:0.85rem 1rem;font-weight:500;">\u2705 ¡Hola! Gracias por tu sugerencia. En el transcurso del día el administrador dará solución a tu solicitud.</div>';
+          setTimeout(function(){ closeModal(); cargar(); }, 3500);
         } else {
           document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">' + esc((r && r.message) || 'Error al enviar') + '</div>';
         }
@@ -386,6 +395,24 @@
       try { document.getElementById('g_estado').value = 'Finalizada'; await _guardarGestion('Finalizada'); }
       catch(e) { document.getElementById('gestionAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + esc(e.message) + '</div>'; }
       finally { btn.disabled = false; btn.textContent = t; }
+    }
+
+    // ===== Acciones rapidas (admin) =====
+    async function finalizarRapido(id) {
+      if (!isAdmin) return;
+      if (!confirm('¿Marcar esta sugerencia como FINALIZADA?')) return;
+      try {
+        const r = await api('bs_actualizarSugerencia', { usuario: user.usuario, id: id, datos: { estado: 'Finalizada' } });
+        if (r && r.ok) cargar(); else alert((r && r.message) || 'No se pudo actualizar');
+      } catch(e) { alert('Error: ' + e.message); }
+    }
+    async function eliminar(id) {
+      if (!isAdmin) return;
+      if (!confirm('¿Eliminar esta sugerencia? Esta acción no se puede deshacer.')) return;
+      try {
+        const r = await api('bs_eliminarSugerencia', { usuario: user.usuario, id: id });
+        if (r && r.ok) cargar(); else alert((r && r.message) || 'No se pudo eliminar');
+      } catch(e) { alert('Error: ' + e.message); }
     }
 
     // ===== INIT =====
