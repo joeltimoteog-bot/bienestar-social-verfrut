@@ -112,13 +112,24 @@
         desc: 'Resumen consolidado de todos los modulos (KPIs y graficos).',
         icon: '📊',
         color: '#16a34a'
+      },
+      {
+        id: 'estadisticas',
+        adminOnly: true,
+        url: 'modulos/estadisticas.html',
+        title: 'Estadísticas Empresariales',
+        desc: 'Indicadores y cumplimiento de todos los módulos. Solo gerencia.',
+        icon: '📈',
+        color: '#0033A0'
       }
     ];
 
     function renderModules() {
       const grid = document.getElementById('moduleGrid');
-      const html = MODULOS.map(function(m) {
-        const tienePermiso = m.siempre === true || (user.permisos && user.permisos[m.permiso]);
+      const ADMINS = ['jtimoteo','ovilela','jchavez'];
+      const isAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test((user && user.rol) || '');
+      const html = MODULOS.filter(function(m) { return !m.adminOnly || isAdmin; }).map(function(m) {
+        const tienePermiso = m.adminOnly ? true : (m.siempre === true || (user.permisos && user.permisos[m.permiso]));
         const disabledClass = tienePermiso ? '' : 'bs-disabled';
         const onclick = tienePermiso ? 'onclick="window.location.href=\'' + m.url + '\'"' : '';
         let badge = '';

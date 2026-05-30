@@ -149,7 +149,8 @@
     } catch(e) {
       window.location.href = '../index.html';
     }
-    const isAdmin = /admin|geren/i.test(user.rol || '');
+    const ADMINS = ['jtimoteo','ovilela','jchavez'];
+    const isAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test(user.rol || '');
     if (!isAdmin) {
       alert('Esta sección es solo para administración / gerencia.');
       window.location.href = '../portal.html';
