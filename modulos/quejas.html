@@ -65,8 +65,6 @@
               <option value="">Todos</option>
               <option value="En proceso">En proceso</option>
               <option value="Monitoreo">Monitoreo</option>
-              <option value="Resuelto">Resuelto</option>
-              <option value="Finalizado">Finalizado</option>
               <option value="Cerrado">Cerrado</option>
             </select>
           </div>
@@ -126,7 +124,6 @@
               <option value="">Seleccionar...</option>
               <option value="Buzón">Buzón</option>
               <option value="Email">Email</option>
-              <option value="Presencial">Presencial</option>
               <option value="Trabajadora Social">Trabajadora Social</option>
               <option value="Comité de Bienestar del Trabajador">Comité de Bienestar del Trabajador</option>
               <option value="Jefe Inmediato">Jefe Inmediato</option>
@@ -134,7 +131,7 @@
             </select>
           </div>
           <div class="bs-form-group">
-            <label class="bs-label">Calificación</label>
+            <label class="bs-label">Categoría</label>
             <select id="categoria" class="bs-select">
               <option value="">Seleccionar...</option>
               <option value="Condición de Trabajo">Condición de Trabajo</option>
@@ -142,16 +139,31 @@
               <option value="Trato al Personal">Trato al Personal</option>
               <option value="Trato de Jefe y/o Supervisores">Trato de Jefe y/o Supervisores</option>
               <option value="Trato entre Compañeros">Trato entre Compañeros</option>
-              <option value="Aplicación de Sanción">Aplicación de Sanción</option>
               <option value="Clima Laboral">Clima Laboral</option>
             </select>
           </div>
           <div class="bs-form-group">
-            <label class="bs-label">Sector / Lugar</label>
-            <select id="sector" class="bs-select" onchange="onSectorChange()">
-              <option value="">Seleccionar...</option>
+            <label class="bs-label">Tipo de registro <span class="bs-required">*</span></label>
+            <select id="tipo_lugar" class="bs-select" onchange="onTipoLugarChange()">
+              <option value="">Selecciona tipo de sector o área...</option>
+              <option value="Campo">Campo (sectores y buzones)</option>
+              <option value="Área">Área (escribir el área)</option>
             </select>
           </div>
+        </div>
+
+        <!-- Si es Campo: sector + buzones -->
+        <div class="bs-form-group" id="sectorWrap" style="display:none;">
+          <label class="bs-label">Sector / Lugar</label>
+          <select id="sector" class="bs-select" onchange="onSectorChange()">
+            <option value="">Seleccionar...</option>
+          </select>
+        </div>
+
+        <!-- Si es Área: texto libre -->
+        <div class="bs-form-group" id="areaWrap" style="display:none;">
+          <label class="bs-label">Área <span class="bs-required">*</span></label>
+          <input type="text" id="area_texto" class="bs-input" placeholder="Escribe el área...">
         </div>
 
         <!-- Panel de buzones (Q2) -->
@@ -186,8 +198,6 @@
             <select id="resultado" class="bs-select">
               <option value="En proceso">En proceso</option>
               <option value="Monitoreo">Monitoreo</option>
-              <option value="Resuelto">Resuelto</option>
-              <option value="Finalizado">Finalizado</option>
               <option value="Cerrado">Cerrado</option>
             </select>
           </div>
@@ -304,7 +314,7 @@
 
     // ===== MODAL =====
     // ===== NAVEGACION INTELIGENTE =====
-    const FORM_ORDER = ['fecha_recepcion','empresa','clasificacion','canal','categoria','sector','detalle','accion_correctiva','accion_mejora','coordinacion','resultado','observaciones'];
+    const FORM_ORDER = ['fecha_recepcion','empresa','clasificacion','canal','categoria','tipo_lugar','sector','area_texto','detalle','accion_correctiva','accion_mejora','coordinacion','resultado','observaciones'];
 
     // Salta al PROXIMO campo vacio + editable + visible + habilitado. Omite llenos/readonly/disabled/ocultos.
     function focusNext(currentId) {
@@ -355,6 +365,10 @@
       const hoy = new Date().toISOString().split('T')[0];
       document.getElementById('fecha_recepcion').value = hoy;
       document.getElementById('resultado').value = 'En proceso';
+      document.getElementById("tipo_lugar").value = "";
+      document.getElementById("area_texto").value = "";
+      document.getElementById("sectorWrap").style.display = "none";
+      document.getElementById("areaWrap").style.display = "none";
       if (!_buzonesCargado) { cargarBuzones().then(poblarSectores); }
       poblarSectores();
       _resetBuzones();
@@ -384,10 +398,20 @@
           el.value = v;
         }
       });
-      // buzones (Q2): repoblar sector y panel desde el registro
-      poblarSectores();
-      document.getElementById('sector').value = q.sector || '';
-      onSectorChange();
+      // Determinar tipo: si el sector guardado es un sector conocido -> Campo; si es texto libre -> Área
+      const _sec = q.sector || '';
+      const _conocido = _buzones.some(function(b){ return b.sector === _sec; });
+      if (_sec && !_conocido) {
+        document.getElementById("tipo_lugar").value = "Área";
+        onTipoLugarChange();
+        document.getElementById("area_texto").value = _sec;
+      } else {
+        document.getElementById("tipo_lugar").value = "Campo";
+        onTipoLugarChange();
+        poblarSectores();
+        document.getElementById('sector').value = _sec;
+        onSectorChange();
+      }
       if (q.buzones_detalle) {
         try {
           const det = JSON.parse(q.buzones_detalle);
@@ -408,7 +432,15 @@
         datos[f] = document.getElementById(f).value;
       });
 
-      const REQUIRED_FIELDS = ['fecha_recepcion','clasificacion','empresa','detalle'];
+      // Tipo de registro: Campo (sector+buzones) o Área (texto)
+      const _tipoLugar = document.getElementById("tipo_lugar").value;
+      datos.tipo_lugar = _tipoLugar;
+      if (_tipoLugar === "Área") {
+        datos.sector = document.getElementById("area_texto").value.trim();
+      }
+
+      const REQUIRED_FIELDS = ['fecha_recepcion','clasificacion','empresa','detalle','tipo_lugar'];
+      if (_tipoLugar === 'Área') REQUIRED_FIELDS.push('area_texto');
       const _req = bsValidarRequeridos(REQUIRED_FIELDS);
       if (!_req.ok) {
         document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Falta completar: <strong>' + _req.label + '</strong></div>';
@@ -494,6 +526,25 @@
       document.getElementById('buzonesLista').innerHTML = '';
       document.getElementById('buzonesMsg').textContent = '';
       document.getElementById('buzonesResumen').textContent = '';
+    }
+
+    function onTipoLugarChange() {
+      const tipo = document.getElementById("tipo_lugar").value;
+      const sw = document.getElementById("sectorWrap");
+      const aw = document.getElementById("areaWrap");
+      if (tipo === "Campo") {
+        sw.style.display = "block"; aw.style.display = "none";
+        document.getElementById("area_texto").value = "";
+        poblarSectores();
+      } else if (tipo === "Área") {
+        sw.style.display = "none"; aw.style.display = "block";
+        document.getElementById("sector").value = "";
+        _resetBuzones();
+      } else {
+        sw.style.display = "none"; aw.style.display = "none";
+        document.getElementById("sector").value = "";
+        _resetBuzones();
+      }
     }
 
     function onEmpresaChange() { poblarSectores(); _resetBuzones(); }
