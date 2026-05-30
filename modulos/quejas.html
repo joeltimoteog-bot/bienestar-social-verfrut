@@ -71,6 +71,9 @@
         </div>
       </div>
 
+      <!-- Aviso de seguimientos por vencer/vencidos -->
+      <div id="seguimientoBanner"></div>
+
       <!-- Tabla -->
       <div id="tablaContainer">
         <div class="bs-text-center" style="padding: 2rem;">
@@ -311,6 +314,37 @@
     }
 
     // ===== LISTAR =====
+    // ===== ESTADO DE SEGUIMIENTO (calculado en cliente) =====
+    function _segEstado(q) {
+      if ((q.seguimiento || "") !== "Sí" || !q.seguimiento_fin) return { tipo:"none", label:"—", color:"#94a3b8", dias:null };
+      if (q.resultado === "Cerrado") return { tipo:"cumplido", label:"✓ Cumplido", color:"#16a34a", dias:null };
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
+      const fin = new Date(_fechaInput(q.seguimiento_fin) + "T00:00:00");
+      if (isNaN(fin.getTime())) return { tipo:"none", label:"—", color:"#94a3b8", dias:null };
+      const dias = Math.round((fin - hoy) / 86400000);
+      const alerta = parseInt(q.seguimiento_alerta) || 1;
+      if (dias < 0) return { tipo:"vencido", label:"⚠ Vencido ("+Math.abs(dias)+"d)", color:"#dc2626", dias:dias };
+      if (dias === 0) return { tipo:"porvencer", label:"⏰ Vence hoy", color:"#d97706", dias:0 };
+      if (dias <= alerta) return { tipo:"porvencer", label:"⏰ Vence en "+dias+"d", color:"#d97706", dias:dias };
+      return { tipo:"encurso", label:"En curso ("+dias+"d)", color:"#0891b2", dias:dias };
+    }
+    function _segBadge(q) {
+      const e = _segEstado(q);
+      return '<span style="background:'+e.color+'20;color:'+e.color+';border:1px solid '+e.color+'55;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600;white-space:nowrap;">'+e.label+'</span>';
+    }
+    function _renderSegBanner(items) {
+      const cont = document.getElementById("seguimientoBanner");
+      if (!cont) return;
+      const urg = items.filter(function(q){ const e=_segEstado(q); return e.tipo==="vencido"||e.tipo==="porvencer"; });
+      if (!urg.length) { cont.innerHTML = ""; return; }
+      urg.sort(function(a,b){ return (_segEstado(a).dias) - (_segEstado(b).dias); });
+      const li = urg.slice(0,8).map(function(q){
+        const e=_segEstado(q);
+        return '<li style="margin:.15rem 0;"><strong>#'+q.id+'</strong> · '+(q.sector||q.empresa||"")+' — <span style="color:'+e.color+';font-weight:600;">'+e.label+'</span></li>';
+      }).join("");
+      cont.innerHTML = '<div class="bs-card" style="border-left:4px solid #d97706;background:#fffbeb;margin-bottom:1rem;"><div style="font-weight:700;color:#92400e;margin-bottom:.3rem;">⏰ Seguimientos que requieren atención ('+urg.length+')</div><ul style="margin:0;padding-left:1.2rem;color:#78350f;font-size:.9rem;">'+li+'</ul></div>';
+    }
+
     async function cargarQuejas() {
       const filtros = {
         empresa: document.getElementById('filterEmpresa').value,
@@ -332,7 +366,7 @@
         }
 
         let html = '<div class="bs-table-wrap"><table class="bs-table">';
-        html += '<thead><tr><th>ID</th><th>Fecha</th><th>Clasif.</th><th>Empresa</th><th>Sector</th><th>Detalle</th><th>Estado</th><th></th></tr></thead><tbody>';
+        html += '<thead><tr><th>ID</th><th>Fecha</th><th>Clasif.</th><th>Empresa</th><th>Sector</th><th>Detalle</th><th>Estado</th><th>Seguimiento</th><th></th></tr></thead><tbody>';
         res.items.forEach(function(q) {
           const fecha = q.fecha_recepcion ? new Date(q.fecha_recepcion).toLocaleDateString('es-PE') : '-';
           const det = (q.detalle || '').replace(/</g,'&lt;');
@@ -346,11 +380,13 @@
             '<td>' + (q.sector || '-') + '</td>' +
             '<td style="max-width: 280px;">' + detalleCorto + '</td>' +
             '<td><span class="bs-badge ' + estadoBadge + '">' + (q.resultado || '-') + '</span></td>' +
+            '<td>' + _segBadge(q) + '</td>' +
             '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + q.id + ')">Editar</button></td>' +
           '</tr>';
         });
         html += '</tbody></table></div>';
         cont.innerHTML = html;
+        _renderSegBanner(res.items);
       } catch(err) {
         cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
       }
@@ -358,7 +394,7 @@
 
     // ===== MODAL =====
     // ===== NAVEGACION INTELIGENTE =====
-    const FORM_ORDER = ['fecha_recepcion','empresa','clasificacion','canal','categoria','tipo_lugar','sector','area_texto','detalle','accion_correctiva','accion_mejora','coordinacion','resultado','observaciones'];
+    const FORM_ORDER = ['fecha_recepcion','empresa','clasificacion','canal','categoria','tipo_lugar','sector','area_texto','detalle','accion_correctiva','accion_mejora','coordinacion','resultado','observaciones','seguimiento','seguimiento_inicio','seguimiento_frecuencia','seguimiento_alerta','seguimiento_fin','seguimiento_dias'];
 
     // Salta al PROXIMO campo vacio + editable + visible + habilitado. Omite llenos/readonly/disabled/ocultos.
     function focusNext(currentId) {
@@ -382,7 +418,7 @@
     function setupAutoTab() {
       // Selects: auto-avance al elegir. Sector NO entra porque al elegirlo se abre el panel de buzones
       // y el usuario debe quedarse para capturar las cantidades.
-      ['empresa','clasificacion','canal','categoria','resultado'].forEach(function(id){
+      ['empresa','clasificacion','canal','categoria','resultado','tipo_lugar','seguimiento','seguimiento_frecuencia','seguimiento_alerta'].forEach(function(id){
         const el = document.getElementById(id);
         if (el && el.tagName === 'SELECT') el.addEventListener('change', function(){ if (el.value) focusNext(id); });
       });
@@ -681,11 +717,22 @@
         inp.setAttribute('data-ubicacion', u.ubicacion);
         inp.setAttribute('data-numero', u.numero);
         inp.oninput = recalcBuzones;
+        inp.addEventListener("keydown", function(ev){
+          if ((ev.key === "Tab" && !ev.shiftKey) || ev.key === "Enter") {
+            ev.preventDefault();
+            const all = Array.prototype.slice.call(document.querySelectorAll("#buzonesLista input"));
+            const idx = all.indexOf(inp);
+            if (idx >= 0 && idx < all.length - 1) { all[idx+1].focus(); all[idx+1].select(); }
+            else { focusNext("sector"); }
+          }
+        });
         row.appendChild(lab); row.appendChild(inp);
         lista.appendChild(row);
       });
       panel.style.display = 'block';
       recalcBuzones();
+      const _first = document.querySelector("#buzonesLista input");
+      if (_first) { _first.focus(); _first.select(); }
     }
 
     function _leerBuzones() {
