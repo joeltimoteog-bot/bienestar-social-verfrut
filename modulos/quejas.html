@@ -208,6 +208,50 @@
           <textarea id="observaciones" class="bs-textarea"></textarea>
         </div>
 
+        <!-- Seguimiento de la queja -->
+        <div class="bs-form-group">
+          <label class="bs-label">¿Requiere seguimiento?</label>
+          <select id="seguimiento" class="bs-select" onchange="onSeguimientoChange()">
+            <option value="No">No</option>
+            <option value="Sí">Sí</option>
+          </select>
+        </div>
+
+        <div id="seguimientoGroup" style="display:none;border:1px dashed #d8e0ec;border-radius:10px;padding:.8rem 1rem .2rem;background:#fafbff;margin-bottom:.7rem;">
+          <div class="bs-grid bs-grid-2 bs-gap">
+            <div class="bs-form-group">
+              <label class="bs-label">Frecuencia</label>
+              <select id="seguimiento_frecuencia" class="bs-select" onchange="onFrecuenciaChange()">
+                <option value="">Seleccionar...</option>
+                <option value="Semanal">Semanal</option>
+                <option value="Quincenal">Quincenal</option>
+                <option value="Mensual">Mensual</option>
+              </select>
+            </div>
+            <div class="bs-form-group">
+              <label class="bs-label">Alerta</label>
+              <select id="seguimiento_alerta" class="bs-select">
+                <option value="1">1 día antes de vencer</option>
+                <option value="2">2 días antes de vencer</option>
+              </select>
+            </div>
+          </div>
+          <div class="bs-grid bs-grid-3 bs-gap">
+            <div class="bs-form-group">
+              <label class="bs-label">Inicio del seguimiento</label>
+              <input type="date" id="seguimiento_inicio" class="bs-input" onchange="recalcSeguimiento()">
+            </div>
+            <div class="bs-form-group">
+              <label class="bs-label">Fin del seguimiento</label>
+              <input type="date" id="seguimiento_fin" class="bs-input" onchange="recalcSeguimiento()">
+            </div>
+            <div class="bs-form-group">
+              <label class="bs-label">Cantidad de días</label>
+              <input type="number" id="seguimiento_dias" class="bs-input" readonly>
+            </div>
+          </div>
+        </div>
+
         <div id="formAlert"></div>
       </div>
       <div class="bs-modal-footer">
@@ -355,6 +399,45 @@
       });
     }
 
+    // ===== SEGUIMIENTO =====
+    function _fechaInput(v) {
+      if (!v) return "";
+      try { return new Date(v).toISOString().split("T")[0]; } catch(e) { return ""; }
+    }
+    function onSeguimientoChange() {
+      const v = document.getElementById("seguimiento").value;
+      document.getElementById("seguimientoGroup").style.display = (v === "Sí") ? "block" : "none";
+      if (v !== "Sí") {
+        document.getElementById("seguimiento_frecuencia").value = "";
+        document.getElementById("seguimiento_inicio").value = "";
+        document.getElementById("seguimiento_fin").value = "";
+        document.getElementById("seguimiento_dias").value = "";
+      }
+    }
+    function onFrecuenciaChange() {
+      const frec = document.getElementById("seguimiento_frecuencia").value;
+      let ini = document.getElementById("seguimiento_inicio").value;
+      if (!ini) { ini = new Date().toISOString().split("T")[0]; document.getElementById("seguimiento_inicio").value = ini; }
+      const dias = frec === "Semanal" ? 7 : frec === "Quincenal" ? 15 : frec === "Mensual" ? 30 : 0;
+      if (dias > 0) {
+        const d = new Date(ini + "T00:00:00");
+        d.setDate(d.getDate() + dias);
+        document.getElementById("seguimiento_fin").value = d.toISOString().split("T")[0];
+      }
+      recalcSeguimiento();
+    }
+    function recalcSeguimiento() {
+      const ini = document.getElementById("seguimiento_inicio").value;
+      const fin = document.getElementById("seguimiento_fin").value;
+      if (ini && fin) {
+        const d1 = new Date(ini + "T00:00:00"), d2 = new Date(fin + "T00:00:00");
+        const dias = Math.round((d2 - d1) / 86400000);
+        document.getElementById("seguimiento_dias").value = dias >= 0 ? dias : 0;
+      } else {
+        document.getElementById("seguimiento_dias").value = "";
+      }
+    }
+
     function openModal() {
       document.getElementById('formTitle').textContent = 'Nueva Queja';
       document.getElementById('quejaId').value = '';
@@ -369,6 +452,13 @@
       document.getElementById("area_texto").value = "";
       document.getElementById("sectorWrap").style.display = "none";
       document.getElementById("areaWrap").style.display = "none";
+      document.getElementById("seguimiento").value = "No";
+      document.getElementById("seguimiento_frecuencia").value = "";
+      document.getElementById("seguimiento_inicio").value = "";
+      document.getElementById("seguimiento_fin").value = "";
+      document.getElementById("seguimiento_dias").value = "";
+      document.getElementById("seguimiento_alerta").value = "1";
+      document.getElementById("seguimientoGroup").style.display = "none";
       if (!_buzonesCargado) { cargarBuzones().then(poblarSectores); }
       poblarSectores();
       _resetBuzones();
@@ -422,6 +512,16 @@
           recalcBuzones();
         } catch(e) {}
       }
+      // Restaurar seguimiento
+      document.getElementById("seguimiento").value = q.seguimiento || "No";
+      onSeguimientoChange();
+      if ((q.seguimiento || "") === "Sí") {
+        document.getElementById("seguimiento_frecuencia").value = q.seguimiento_frecuencia || "";
+        document.getElementById("seguimiento_inicio").value = _fechaInput(q.seguimiento_inicio);
+        document.getElementById("seguimiento_fin").value = _fechaInput(q.seguimiento_fin);
+        document.getElementById("seguimiento_alerta").value = String(q.seguimiento_alerta || 1);
+        recalcSeguimiento();
+      }
       document.getElementById('formAlert').innerHTML = '';
       document.getElementById('formModal').classList.add('bs-active');
     }
@@ -438,6 +538,14 @@
       if (_tipoLugar === "Área") {
         datos.sector = document.getElementById("area_texto").value.trim();
       }
+
+      // Seguimiento
+      datos.seguimiento = document.getElementById("seguimiento").value;
+      datos.seguimiento_frecuencia = document.getElementById("seguimiento_frecuencia").value;
+      datos.seguimiento_inicio = document.getElementById("seguimiento_inicio").value;
+      datos.seguimiento_fin = document.getElementById("seguimiento_fin").value;
+      datos.seguimiento_dias = document.getElementById("seguimiento_dias").value;
+      datos.seguimiento_alerta = document.getElementById("seguimiento_alerta").value;
 
       const REQUIRED_FIELDS = ['fecha_recepcion','clasificacion','empresa','detalle','tipo_lugar'];
       if (_tipoLugar === 'Área') REQUIRED_FIELDS.push('area_texto');
