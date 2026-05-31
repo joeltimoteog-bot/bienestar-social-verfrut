@@ -860,6 +860,22 @@
     return XLSX.utils.aoa_to_sheet(aoa);
   }
   async function _traerSeguimientos(casos){
+    // 1) Robusto: una sola llamada al backend (con respaldo caso por caso)
+    if (typeof api === 'function'){
+      try {
+        var rt = await api('bs_listarTodosSeguimientos', {});
+        if (rt && rt.ok && Array.isArray(rt.items)){
+          var byId = {};
+          casos.forEach(function(c){ byId[String(c.id)] = c; });
+          return rt.items.map(function(sg){
+            var cc = byId[String(sg.id_caso)] || {};
+            var fila = { dni_caso: cc.dni || '', nombre_caso: cc.nombre || '' };
+            for (var k in sg){ if (Object.prototype.hasOwnProperty.call(sg,k)) fila[k]=sg[k]; }
+            return fila;
+          });
+        }
+      } catch(e){}
+    }
     var out = [];
     var LOTE = 4;
     for (var i=0; i<casos.length; i+=LOTE){
