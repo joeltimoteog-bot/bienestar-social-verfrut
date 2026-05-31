@@ -852,25 +852,66 @@
     tablas.sort(function(a,b){ return b.querySelectorAll('tbody tr').length - a.querySelectorAll('tbody tr').length; });
     return tablas[0];
   }
-  function exportar(){
-    if (typeof XLSX === 'undefined'){ alert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
-    var wb = XLSX.utils.book_new();
-    var ws;
-    var data = window.__BS_EXPORT_DATA__;
-    if (Array.isArray(data) && data.length){
-      var headers = [];
-      data.forEach(function(row){ Object.keys(row).forEach(function(k){ if(headers.indexOf(k)<0) headers.push(k); }); });
-      var aoa = [headers];
-      data.forEach(function(row){ aoa.push(headers.map(function(h){ var v=row[h]; return (v===null||v===undefined)?'':v; })); });
-      ws = XLSX.utils.aoa_to_sheet(aoa);
-    } else {
-      var tabla = tablaPrincipal();
-      if(!tabla || !tabla.querySelectorAll('tbody tr').length){ alert('No hay datos para exportar.'); return; }
-      ws = XLSX.utils.table_to_sheet(tabla, {raw:true});
+  function _aoaDe(arr){
+    var headers = [];
+    arr.forEach(function(row){ Object.keys(row).forEach(function(k){ if(headers.indexOf(k)<0) headers.push(k); }); });
+    var aoa = [headers];
+    arr.forEach(function(row){ aoa.push(headers.map(function(h){ var v=row[h]; return (v===null||v===undefined)?'':v; })); });
+    return XLSX.utils.aoa_to_sheet(aoa);
+  }
+  async function _traerSeguimientos(casos){
+    var out = [];
+    var LOTE = 4;
+    for (var i=0; i<casos.length; i+=LOTE){
+      var grupo = casos.slice(i, i+LOTE);
+      var res = await Promise.all(grupo.map(function(c){
+        return api('bs_listarSeguimientos', { id_caso: c.id }).then(function(r){
+          return ((r && r.items) || []).map(function(sg){
+            var fila = { id_caso: c.id, dni_caso: c.dni, nombre_caso: c.nombre };
+            for (var k in sg){ if (Object.prototype.hasOwnProperty.call(sg,k)) fila[k]=sg[k]; }
+            return fila;
+          });
+        }).catch(function(){ return []; });
+      }));
+      res.forEach(function(a){ out = out.concat(a); });
     }
-    XLSX.utils.book_append_sheet(wb, ws, 'Datos');
-    var nombre = (document.title || 'Bienestar').replace(/[^\w\-]+/g,'_').slice(0,40);
-    XLSX.writeFile(wb, nombre + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    return out;
+  }
+  async function exportar(){
+    if (typeof XLSX === 'undefined'){ alert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
+    if (btn.disabled) return;
+    var oldTxt = btn.textContent;
+    btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = 'Generando...';
+    try {
+      var wb = XLSX.utils.book_new();
+      var data = window.__BS_EXPORT_DATA__;
+      var ws;
+      if (Array.isArray(data) && data.length){
+        ws = _aoaDe(data);
+      } else {
+        var tabla = tablaPrincipal();
+        if(!tabla || !tabla.querySelectorAll('tbody tr').length){ alert('No hay datos para exportar.'); return; }
+        ws = XLSX.utils.table_to_sheet(tabla, {raw:true});
+      }
+      XLSX.utils.book_append_sheet(wb, ws, 'Datos');
+      if (Array.isArray(data) && data.length && typeof api === 'function'){
+        var segs = await _traerSeguimientos(data);
+        if (segs.length){ XLSX.utils.book_append_sheet(wb, _aoaDe(segs), 'Seguimientos'); }
+      }
+      if (typeof api === 'function'){
+        try {
+          var rh = await api('bs_listarTodoHistorialAccidentes', {});
+          var hist = (rh && rh.items) || [];
+          if (hist.length){ XLSX.utils.book_append_sheet(wb, _aoaDe(hist), 'Historial'); }
+        } catch(e){}
+      }
+      var nombre = (document.title || 'Bienestar').replace(/[^\w\-]+/g,'_').slice(0,40);
+      XLSX.writeFile(wb, nombre + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    } catch(err){
+      alert('Ocurrio un error al exportar: ' + (err && err.message ? err.message : err));
+    } finally {
+      btn.disabled = false; btn.style.opacity = '1'; btn.textContent = oldTxt;
+    }
   }
   var btn = document.createElement('button');
   btn.textContent = '\u2B07\uFE0F Exportar Excel';
