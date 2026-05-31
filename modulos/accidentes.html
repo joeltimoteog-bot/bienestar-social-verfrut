@@ -631,6 +631,7 @@
         }
         let html = '<div class="bs-table-wrap"><table class="bs-table">';
         html += '<thead><tr><th>ID</th><th>DNI</th><th>Trabajador</th><th>Sector</th><th>Empresa</th><th>Fecha accidente</th><th>Parte cuerpo</th><th>Tipo</th><th># Atenc.</th><th>Estado caso</th><th>Acciones</th></tr></thead><tbody>';
+        window.__BS_EXPORT_DATA__ = res.items || [];
         res.items.forEach(function(c) {
           const fecha = c.dia_accidente ? new Date(c.dia_accidente).toLocaleDateString('es-PE') : '-';
           const estadoBadge = c.estado_caso === 'Cerrado' || c.estado_caso === 'Reincorporado' ? 'bs-badge-success'
@@ -854,10 +855,20 @@
   }
   function exportar(){
     if (typeof XLSX === 'undefined'){ alert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
-    var tabla = tablaPrincipal();
-    if(!tabla || !tabla.querySelectorAll('tbody tr').length){ alert('No hay datos en la tabla para exportar.'); return; }
     var wb = XLSX.utils.book_new();
-    var ws = XLSX.utils.table_to_sheet(tabla, {raw:true});
+    var ws;
+    var data = window.__BS_EXPORT_DATA__;
+    if (Array.isArray(data) && data.length){
+      var headers = [];
+      data.forEach(function(row){ Object.keys(row).forEach(function(k){ if(headers.indexOf(k)<0) headers.push(k); }); });
+      var aoa = [headers];
+      data.forEach(function(row){ aoa.push(headers.map(function(h){ var v=row[h]; return (v===null||v===undefined)?'':v; })); });
+      ws = XLSX.utils.aoa_to_sheet(aoa);
+    } else {
+      var tabla = tablaPrincipal();
+      if(!tabla || !tabla.querySelectorAll('tbody tr').length){ alert('No hay datos para exportar.'); return; }
+      ws = XLSX.utils.table_to_sheet(tabla, {raw:true});
+    }
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
     var nombre = (document.title || 'Bienestar').replace(/[^\w\-]+/g,'_').slice(0,40);
     XLSX.writeFile(wb, nombre + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
