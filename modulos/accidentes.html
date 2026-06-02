@@ -276,11 +276,6 @@
             <label class="bs-label">Hora de Reporte de Accidente</label>
             <input type="time" id="accidente_hora_fin" class="bs-input">
           </div>
-          <div class="bs-form-group">
-            <label class="bs-label">Horas transcurridas <span class="bs-text-xs bs-text-subtle">(auto)</span></label>
-            <input type="number" id="accidente_horas" class="bs-input" min="0" step="0.01" readonly style="background: var(--bs-surface-alt);">
-            <p class="bs-helptext">Se calcula de las horas</p>
-          </div>
         </div>
 
         <h4 style="color: var(--bs-mod-accidentes); margin: 1rem 0 0.5rem;">🏥 Atención médica</h4>
@@ -313,7 +308,7 @@
         <h4 style="color: var(--bs-mod-accidentes); margin: 1rem 0 0.5rem;">🔄 Restricciones y reincorporación</h4>
         <div class="bs-grid bs-grid-3 bs-gap">
           <div class="bs-form-group">
-            <label class="bs-label">Fecha reincorporo</label>
+            <label class="bs-label">Fecha Reincorporación</label>
             <input type="date" id="fecha_reincorporo" class="bs-input">
           </div>
           <div class="bs-form-group">
@@ -416,7 +411,12 @@
           </div>
           <div class="bs-form-group">
             <label class="bs-label">Responsable autorizar</label>
-            <input type="text" id="responsable_autorizar" class="bs-input">
+            <input type="text" id="responsable_autorizar" class="bs-input" list="dl_responsable_autorizar">
+            <datalist id="dl_responsable_autorizar">
+              <option value="FIGUEROA FLORES ELIZABETH"></option>
+              <option value="VERA LLAVE TANIA ELIZABETH"></option>
+              <option value="REYNA RUIZ DANIELA MERCEDES"></option>
+            </datalist>
           </div>
           <div class="bs-form-group">
             <label class="bs-label"># Atenciones</label>
@@ -519,7 +519,7 @@
     }
 
     // ===== AUTO-TAB =====
-    const FORM_ORDER = ['dni','nombre','edad','telefono','sexo','empresa','fundo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','tipo_accidente','seguro','diagnostico','detalle','accidente_hora_inicio','accidente_hora_fin','accidente_horas','centro_atencion','especialidades','staff_medico','estatus_accidente','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','descanso_medico','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','formulario_con_goce','goce_inicio','goce_fin','goce_dias','estado','situacion','responsable','responsable_autorizar','estado_caso'];
+    const FORM_ORDER = ['dni','nombre','edad','telefono','sexo','empresa','fundo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','tipo_accidente','seguro','diagnostico','detalle','accidente_hora_inicio','accidente_hora_fin','centro_atencion','especialidades','staff_medico','estatus_accidente','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','descanso_medico','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','formulario_con_goce','goce_inicio','goce_fin','goce_dias','estado','situacion','responsable','responsable_autorizar','estado_caso'];
 
     // focusNext inteligente: salta al PROXIMO campo vacio + editable + visible + habilitado.
     // Omite: llenos, readonly, disabled, ocultos (display:none o ancestro oculto).
@@ -661,7 +661,7 @@
       }
     }
 
-    const ALL_FIELDS = ['dni','nombre','edad','telefono','fundo','sexo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','diagnostico','tipo_accidente','seguro','detalle','estatus_accidente','centro_atencion','especialidades','staff_medico','estado','situacion','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','responsable','descanso_medico','formulario_con_goce','responsable_autorizar','numero_atenciones','estado_caso','empresa','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','goce_inicio','goce_fin','goce_dias','accidente_hora_inicio','accidente_hora_fin','accidente_horas'];
+    const ALL_FIELDS = ['dni','nombre','edad','telefono','fundo','sexo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','diagnostico','tipo_accidente','seguro','detalle','estatus_accidente','centro_atencion','especialidades','staff_medico','estado','situacion','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','responsable','descanso_medico','formulario_con_goce','responsable_autorizar','numero_atenciones','estado_caso','empresa','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','goce_inicio','goce_fin','goce_dias','accidente_hora_inicio','accidente_hora_fin'];
     const DATE_FIELDS = ['fecha_ingreso','dia_accidente','dia_reportado','fecha_reincorporo','fecha_fin_restriccion','descanso_medico_inicio','descanso_medico_fin','goce_inicio','goce_fin'];
 
     function openModalCaso() {
@@ -807,17 +807,7 @@
     function toggleHoras() {
       const t = (document.getElementById('detalle').value || '').trim().length > 0;
       document.getElementById('horasGroup').style.display = t ? '' : 'none';
-      if (!t) { ['accidente_hora_inicio','accidente_hora_fin','accidente_horas'].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=''; }); }
-    }
-    function _horasDecimal(ini, fin) {
-      if (!ini || !fin) return 0;
-      const a=ini.split(':'), b=fin.split(':');
-      if (a.length<2 || b.length<2) return 0;
-      const m1=parseInt(a[0])*60+parseInt(a[1]);
-      const m2=parseInt(b[0])*60+parseInt(b[1]);
-      let diff = m2 - m1;
-      if (diff < 0) diff += 24*60;
-      return Math.round((diff/60) * 100) / 100;
+      if (!t) { ['accidente_hora_inicio','accidente_hora_fin'].forEach(function(id){ const e=document.getElementById(id); if(e) e.value=''; }); }
     }
     function setupA2() {
       document.getElementById('descanso_medico').addEventListener('input', toggleDescanso);
@@ -829,9 +819,6 @@
       document.getElementById('goce_inicio').addEventListener('change', calcG);
       document.getElementById('goce_fin').addEventListener('change', calcG);
       document.getElementById('detalle').addEventListener('input', toggleHoras);
-      const calcH = function(){ document.getElementById('accidente_horas').value = _horasDecimal(document.getElementById('accidente_hora_inicio').value, document.getElementById('accidente_hora_fin').value); };
-      document.getElementById('accidente_hora_inicio').addEventListener('change', calcH);
-      document.getElementById('accidente_hora_fin').addEventListener('change', calcH);
     }
 
     setupAutoTab();
