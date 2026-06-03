@@ -63,8 +63,8 @@
             <input type="text" class="bs-input" id="filterFundo" placeholder="Buscar sector..." onchange="cargar()">
           </div>
           <div class="bs-form-group" style="margin: 0;">
-            <label class="bs-label">DNI</label>
-            <input type="text" class="bs-input" id="filterDni" placeholder="8 dígitos" maxlength="8" onchange="cargar()">
+            <label class="bs-label">DNI / C.E.</label>
+            <input type="text" class="bs-input" id="filterDni" placeholder="DNI o C.E." maxlength="12" onchange="cargar()">
           </div>
         </div>
       </div>
@@ -103,40 +103,44 @@
   </datalist>
 
   <datalist id="dl_parte_cuerpo">
-    <option value="MIEMBRO SUPERIOR"></option>
-    <option value="MIEMBRO INFERIOR"></option>
-    <option value="MANO Y MUÑECA"></option>
-    <option value="BRAZO Y ANTEBRAZO"></option>
-    <option value="HOMBRO Y BRAZO"></option>
-    <option value="CODO"></option>
-    <option value="HOMBRO"></option>
-    <option value="RODILLA"></option>
-    <option value="PIERNA"></option>
-    <option value="PIE Y TOBILLO"></option>
-    <option value="PIERNA Y PIE"></option>
-    <option value="CADERA Y PELVIS"></option>
-    <option value="CABEZA"></option>
-    <option value="OJO"></option>
-    <option value="OÍDO"></option>
-    <option value="NARIZ Y CUELLO"></option>
-    <option value="TÓRAX"></option>
-    <option value="ABDOMEN Y ESPALDA"></option>
-    <option value="ZONA LUMBAR/LUMBOSACRA"></option>
-    <option value="ZONA CERVICAL"></option>
-    <option value="DEDO DE LA MANO"></option>
-    <option value="DEDO DEL PIE"></option>
-    <option value="PULGAR"></option>
-    <option value="COSTILLA"></option>
-    <option value="CEJA"></option>
-    <option value="LABIO/LENGUA"></option>
-    <option value="CLAVÍCULA"></option>
-    <option value="CONTUSIÓN"></option>
-    <option value="TRAUMATISMO"></option>
-    <option value="TRAUMATISMO EN MIEMBRO INFERIOR"></option>
-    <option value="TRAUMATISMO EN TOBILLO"></option>
-    <option value="TRAUMATISMO EN CODO"></option>
-    <option value="LACERACIÓN CORNEAL"></option>
-    <option value="OTROS"></option>
+    <option value="Ojos"></option>
+    <option value="Orejas"></option>
+    <option value="Nariz"></option>
+    <option value="Boca"></option>
+    <option value="Cabeza"></option>
+    <option value="Cuello"></option>
+    <option value="Hombro"></option>
+    <option value="Columna"></option>
+    <option value="Antebrazo"></option>
+    <option value="Brazo"></option>
+    <option value="Tórax"></option>
+    <option value="Abdomen"></option>
+    <option value="Cadera"></option>
+    <option value="Pelvis"></option>
+    <option value="Pierna"></option>
+    <option value="Pie"></option>
+    <option value="Codo"></option>
+    <option value="Mano"></option>
+    <option value="Dedos de la mano"></option>
+    <option value="Muslo"></option>
+    <option value="Tobillo"></option>
+    <option value="Dedos de los pies"></option>
+    <option value="Zona Lumbar"></option>
+    <option value="Clavícula"></option>
+    <option value="Otro"></option>
+  </datalist>
+
+  <datalist id="dl_tipo_lesion">
+    <option value="Fractura"></option>
+    <option value="Esguince"></option>
+    <option value="Contusión"></option>
+    <option value="Distención muscular"></option>
+    <option value="Distención tendinosa"></option>
+    <option value="Ocular"></option>
+    <option value="Quemadura"></option>
+    <option value="Laceración"></option>
+    <option value="Herida contusocortante"></option>
+    <option value="Otros"></option>
   </datalist>
 
   <datalist id="dl_tipo_accidente">
@@ -249,6 +253,10 @@
             <input type="text" id="parte_cuerpo" class="bs-input" list="dl_parte_cuerpo" placeholder="Seleccionar o escribir nuevo...">
           </div>
           <div class="bs-form-group">
+            <label class="bs-label">Tipo de lesión</label>
+            <input type="text" id="tipo_lesion" class="bs-input" list="dl_tipo_lesion" placeholder="Seleccionar o escribir nuevo...">
+          </div>
+          <div class="bs-form-group">
             <label class="bs-label">Tipo de accidente</label>
             <input type="text" id="tipo_accidente" class="bs-input" list="dl_tipo_accidente" placeholder="Seleccionar o escribir nuevo...">
           </div>
@@ -283,6 +291,14 @@
           <div class="bs-form-group">
             <label class="bs-label">Centro de atención</label>
             <input type="text" id="centro_atencion" class="bs-input" list="dl_centro" placeholder="Seleccionar o escribir nuevo...">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Tipo de derivación</label>
+            <select id="tipo_derivacion" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="Emergencia">Emergencia</option>
+              <option value="Ambulatoria">Ambulatoria</option>
+            </select>
           </div>
           <div class="bs-form-group">
             <label class="bs-label">Especialidades</label>
@@ -519,7 +535,7 @@
     }
 
     // ===== AUTO-TAB =====
-    const FORM_ORDER = ['dni','nombre','edad','telefono','sexo','empresa','fundo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','tipo_accidente','seguro','diagnostico','detalle','accidente_hora_inicio','accidente_hora_fin','centro_atencion','especialidades','staff_medico','estatus_accidente','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','descanso_medico','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','formulario_con_goce','goce_inicio','goce_fin','goce_dias','estado','situacion','responsable','responsable_autorizar','estado_caso'];
+    const FORM_ORDER = ['dni','nombre','edad','telefono','sexo','empresa','fundo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','tipo_lesion','tipo_accidente','seguro','diagnostico','detalle','accidente_hora_inicio','accidente_hora_fin','centro_atencion','tipo_derivacion','especialidades','staff_medico','estatus_accidente','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','descanso_medico','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','formulario_con_goce','goce_inicio','goce_fin','goce_dias','estado','situacion','responsable','responsable_autorizar','estado_caso'];
 
     // focusNext inteligente: salta al PROXIMO campo vacio + editable + visible + habilitado.
     // Omite: llenos, readonly, disabled, ocultos (display:none o ancestro oculto).
@@ -600,11 +616,18 @@
     }
 
     // ===== CÁLCULO AUTOMÁTICO DE DÍAS DE RESTRICCIÓN =====
+    function _diasIncl(ini, fin){
+      if(!ini || !fin) return '';
+      var a = new Date(ini), b = new Date(fin);
+      if(isNaN(a.getTime()) || isNaN(b.getTime())) return '';
+      var d = Math.round((b - a)/86400000) + 1;
+      return d > 0 ? d : '';
+    }
     function setupDiasRestriccion() {
       const calc = function() {
         const ini = document.getElementById('fecha_reincorporo').value;
         const fin = document.getElementById('fecha_fin_restriccion').value;
-        document.getElementById('dias_restriccion').value = bsDiasEntre(ini, fin);
+        document.getElementById('dias_restriccion').value = _diasIncl(ini, fin);
       };
       document.getElementById('fecha_reincorporo').addEventListener('change', calc);
       document.getElementById('fecha_fin_restriccion').addEventListener('change', calc);
@@ -661,7 +684,7 @@
       }
     }
 
-    const ALL_FIELDS = ['dni','nombre','edad','telefono','fundo','sexo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','diagnostico','tipo_accidente','seguro','detalle','estatus_accidente','centro_atencion','especialidades','staff_medico','estado','situacion','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','responsable','descanso_medico','formulario_con_goce','responsable_autorizar','numero_atenciones','estado_caso','empresa','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','goce_inicio','goce_fin','goce_dias','accidente_hora_inicio','accidente_hora_fin'];
+    const ALL_FIELDS = ['dni','nombre','edad','telefono','fundo','sexo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','tipo_lesion','diagnostico','tipo_accidente','seguro','detalle','estatus_accidente','centro_atencion','tipo_derivacion','especialidades','staff_medico','estado','situacion','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','responsable','descanso_medico','formulario_con_goce','responsable_autorizar','numero_atenciones','estado_caso','empresa','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','goce_inicio','goce_fin','goce_dias','accidente_hora_inicio','accidente_hora_fin'];
     const DATE_FIELDS = ['fecha_ingreso','dia_accidente','dia_reportado','fecha_reincorporo','fecha_fin_restriccion','descanso_medico_inicio','descanso_medico_fin','goce_inicio','goce_fin'];
 
     function openModalCaso() {
@@ -811,11 +834,11 @@
     }
     function setupA2() {
       document.getElementById('descanso_medico').addEventListener('input', toggleDescanso);
-      const calcD = function(){ document.getElementById('descanso_medico_dias').value = bsDiasEntre(document.getElementById('descanso_medico_inicio').value, document.getElementById('descanso_medico_fin').value); };
+      const calcD = function(){ document.getElementById('descanso_medico_dias').value = _diasIncl(document.getElementById('descanso_medico_inicio').value, document.getElementById('descanso_medico_fin').value); };
       document.getElementById('descanso_medico_inicio').addEventListener('change', calcD);
       document.getElementById('descanso_medico_fin').addEventListener('change', calcD);
       document.getElementById('formulario_con_goce').addEventListener('change', toggleGoce);
-      const calcG = function(){ document.getElementById('goce_dias').value = bsDiasEntre(document.getElementById('goce_inicio').value, document.getElementById('goce_fin').value); };
+      const calcG = function(){ document.getElementById('goce_dias').value = _diasIncl(document.getElementById('goce_inicio').value, document.getElementById('goce_fin').value); };
       document.getElementById('goce_inicio').addEventListener('change', calcG);
       document.getElementById('goce_fin').addEventListener('change', calcG);
       document.getElementById('detalle').addEventListener('input', toggleHoras);
