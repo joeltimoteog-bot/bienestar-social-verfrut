@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quejas y Sugerencias · Bienestar Social</title>
+  <title>Hallazgos y Sugerencias · Bienestar Social</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
       <div class="bs-topbar-inner">
         <div class="bs-topbar-brand">
           <div class="bs-topbar-brand-icon"><img src="../images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
-          <span>Bienestar Social · <strong>Quejas</strong></span>
+          <span>Bienestar Social · <strong>Hallazgos</strong></span>
         </div>
         <div class="bs-topbar-user">
           <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
@@ -33,10 +33,10 @@
       <!-- Header -->
       <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg" style="flex-wrap: wrap; gap: 1rem;">
         <div>
-          <h1 style="color: var(--bs-mod-quejas);">📋 Quejas y Sugerencias</h1>
-          <p class="bs-text-subtle" style="margin: 0;">Registro y seguimiento de quejas, reclamos y sugerencias del personal.</p>
+          <h1 style="color: var(--bs-mod-quejas);">📋 Hallazgos y Sugerencias</h1>
+          <p class="bs-text-subtle" style="margin: 0;">Registro y seguimiento de hallazgos, reclamos y sugerencias del personal.</p>
         </div>
-        <button class="bs-btn" style="background: var(--bs-mod-quejas); color: white;" onclick="openModal()">+ Nueva Queja</button>
+        <button class="bs-btn" style="background: var(--bs-mod-quejas); color: white;" onclick="openModal()">+ Nuevo Hallazgo</button>
       </div>
 
       <!-- Filtros -->
@@ -78,7 +78,7 @@
       <div id="tablaContainer">
         <div class="bs-text-center" style="padding: 2rem;">
           <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
-          <p class="bs-mt">Cargando quejas...</p>
+          <p class="bs-mt">Cargando hallazgos...</p>
         </div>
       </div>
 
@@ -93,7 +93,7 @@
   <div class="bs-modal-overlay" id="formModal">
     <div class="bs-modal" style="max-width: 760px;">
       <div class="bs-modal-header">
-        <h3 class="bs-modal-title" id="formTitle">Nueva Queja</h3>
+        <h3 class="bs-modal-title" id="formTitle">Nuevo Hallazgo</h3>
         <button class="bs-modal-close" onclick="closeModal()">×</button>
       </div>
       <div class="bs-modal-body">
@@ -178,7 +178,7 @@
 
         <div class="bs-form-group">
           <label class="bs-label">Detalle <span class="bs-required">*</span></label>
-          <textarea id="detalle" class="bs-textarea" required placeholder="Describir la queja, reclamo o sugerencia..."></textarea>
+          <textarea id="detalle" class="bs-textarea" required placeholder="Describir el hallazgo, reclamo o sugerencia..."></textarea>
         </div>
 
         <div class="bs-form-group">
@@ -211,7 +211,7 @@
           <textarea id="observaciones" class="bs-textarea"></textarea>
         </div>
 
-        <!-- Seguimiento de la queja -->
+        <!-- Seguimiento del hallazgo -->
         <div class="bs-form-group">
           <label class="bs-label">¿Requiere seguimiento?</label>
           <select id="seguimiento" class="bs-select" onchange="onSeguimientoChange()">
@@ -361,7 +361,7 @@
           return;
         }
         if (res.items.length === 0) {
-          cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay quejas registradas con esos filtros.</p></div>';
+          cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay hallazgos registrados con esos filtros.</p></div>';
           return;
         }
 
@@ -476,7 +476,7 @@
     }
 
     function openModal() {
-      document.getElementById('formTitle').textContent = 'Nueva Queja';
+      document.getElementById('formTitle').textContent = 'Nuevo Hallazgo';
       document.getElementById('quejaId').value = '';
       ['fecha_recepcion','clasificacion','canal','categoria','sector','detalle','accion_correctiva','accion_mejora','coordinacion','observaciones','empresa'].forEach(function(f) {
         const el = document.getElementById(f);
@@ -511,9 +511,9 @@
       const res = await api('bs_listarQuejas', {});
       if (!res.ok) return alert('Error: ' + res.message);
       const q = res.items.find(function(x) { return parseInt(x.id) === parseInt(id); });
-      if (!q) return alert('Queja no encontrada');
+      if (!q) return alert('Hallazgo no encontrado');
 
-      document.getElementById('formTitle').textContent = 'Editar Queja #' + q.id;
+      document.getElementById('formTitle').textContent = 'Editar Hallazgo #' + q.id;
       document.getElementById('quejaId').value = q.id;
       ['fecha_recepcion','clasificacion','canal','categoria','sector','detalle','accion_correctiva','accion_mejora','coordinacion','resultado','observaciones','empresa'].forEach(function(f) {
         const el = document.getElementById(f);
@@ -535,6 +535,7 @@
       } else {
         document.getElementById("tipo_lugar").value = "Campo";
         onTipoLugarChange();
+        if (!_buzonesCargado) { await cargarBuzones(); }
         poblarSectores();
         document.getElementById('sector').value = _sec;
         onSectorChange();
@@ -544,7 +545,12 @@
           const det = JSON.parse(q.buzones_detalle);
           const inputs = document.querySelectorAll('#buzonesLista input');
           det.forEach(function(d) {
-            inputs.forEach(function(inp){ if (inp.getAttribute('data-ubicacion') === d.ubicacion) inp.value = d.cantidad; });
+            inputs.forEach(function(inp){
+              if (inp.getAttribute('data-ubicacion') === d.ubicacion ||
+                  (d.numero != null && parseInt(inp.getAttribute('data-numero')) === parseInt(d.numero))) {
+                inp.value = d.cantidad;
+              }
+            });
           });
           recalcBuzones();
         } catch(e) {}
@@ -603,7 +609,7 @@
       if (_panelBz && _bz.total > 0) {
         let _res = 'Resumen por buzón — ' + document.getElementById('sector').value + ':\n';
         _bz.detalle.forEach(function(d){ _res += '  • ' + d.ubicacion + ': ' + d.cantidad + '\n'; });
-        _res += '\nTotal de quejas: ' + _bz.total + '  (sobre ' + _bz.cantidadBuzones + ' buzones)\n\n¿Guardar?';
+        _res += '\nTotal de hallazgos: ' + _bz.total + '  (sobre ' + _bz.cantidadBuzones + ' buzones)\n\n¿Guardar?';
         if (!confirm(_res)) return;
       }
 
@@ -703,7 +709,7 @@
       if (!sec) { _resetBuzones(); return; }
       const b = _buscarSector(emp, sec);
       if (!b) { _resetBuzones(); return; }
-      msg.textContent = 'Has seleccionado ' + b.sector + ', que cuenta con ' + b.cantidad + ' ' + (b.cantidad === 1 ? 'buzón' : 'buzones') + '. Ingresa la cantidad de quejas por cada buzón:';
+      msg.textContent = 'Has seleccionado ' + b.sector + ', que cuenta con ' + b.cantidad + ' ' + (b.cantidad === 1 ? 'buzón' : 'buzones') + '. Ingresa la cantidad de hallazgos por cada buzón:';
       lista.innerHTML = '';
       b.ubicaciones.forEach(function(u) {
         const row = document.createElement('div');
@@ -749,7 +755,7 @@
 
     function recalcBuzones() {
       const r = _leerBuzones();
-      document.getElementById('buzonesResumen').textContent = 'Total de quejas: ' + r.total + '  ·  Buzones: ' + r.cantidadBuzones;
+      document.getElementById('buzonesResumen').textContent = 'Total de hallazgos: ' + r.total + '  ·  Buzones: ' + r.cantidadBuzones;
     }
 
     // ===== LOGOUT =====
