@@ -211,8 +211,8 @@
           <textarea id="observaciones" class="bs-textarea"></textarea>
         </div>
 
-        <!-- Seguimiento del hallazgo -->
-        <div class="bs-form-group">
+        <!-- Seguimiento del hallazgo (reemplazado por seguimiento acumulable) -->
+        <div class="bs-form-group" style="display:none">
           <label class="bs-label">¿Requiere seguimiento?</label>
           <select id="seguimiento" class="bs-select" onchange="onSeguimientoChange()">
             <option value="No">No</option>
@@ -264,6 +264,39 @@
     </div>
   </div>
 
+  <div class="bs-modal-overlay" id="seguimientosModalQ">
+    <div class="bs-modal" style="max-width: 720px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="segTitleQ">Seguimientos del Hallazgo</h3>
+        <button class="bs-modal-close" onclick="closeModalSegQ()">&times;</button>
+      </div>
+      <div class="bs-modal-body">
+        <div id="quejaResumen" style="background: var(--bs-surface-alt); padding: 0.85rem; border-radius: var(--bs-radius); margin-bottom: 1rem;"></div>
+        <h4 style="color: var(--bs-mod-quejas); margin-bottom: 0.5rem;">📅 Historial de seguimientos</h4>
+        <div id="listaSeguimientosQ">
+          <div class="bs-text-center"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>
+        </div>
+        <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--bs-border);">
+        <h4 style="color: var(--bs-mod-quejas); margin-bottom: 0.5rem;">➕ Agregar nuevo seguimiento</h4>
+        <div class="bs-grid bs-grid-2 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Fecha del seguimiento <span class="bs-required">*</span></label>
+            <input type="date" id="segq_fecha" class="bs-input" required>
+          </div>
+        </div>
+        <div class="bs-form-group">
+          <label class="bs-label">Detalle <span class="bs-required">*</span></label>
+          <textarea id="segq_detalle" class="bs-textarea" required placeholder="Acción realizada, avance, resultado..."></textarea>
+        </div>
+        <div id="segqAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeModalSegQ()">Cerrar</button>
+        <button class="bs-btn" id="btnSegQ" onclick="submitSeguimientoQ()" style="background: var(--bs-mod-quejas); color: white;">+ Agregar Seguimiento</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
 
@@ -291,6 +324,7 @@
     const session = localStorage.getItem('bienestarSocialAuth');
     if (!session) window.location.href = '../index.html';
     let user;
+    let seguimientoQActualId = null;
     try {
       user = JSON.parse(session);
       if (!user || !user.usuario) throw new Error();
@@ -382,7 +416,7 @@
             '<td style="max-width: 280px;">' + detalleCorto + '</td>' +
             '<td><span class="bs-badge ' + estadoBadge + '">' + (q.resultado || '-') + '</span></td>' +
             '<td>' + _segBadge(q) + '</td>' +
-            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + q.id + ')">Editar</button></td>' +
+            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + q.id + ')">Editar</button> <button class="bs-btn bs-btn-sm" style="background: var(--bs-mod-quejas); color: white;" onclick="verSeguimientosQ(' + q.id + ')">Seguim.</button></td>' +
           '</tr>';
         });
         html += '</tbody></table></div>';
@@ -756,6 +790,64 @@
     function recalcBuzones() {
       const r = _leerBuzones();
       document.getElementById('buzonesResumen').textContent = 'Total de hallazgos: ' + r.total + '  ·  Buzones: ' + r.cantidadBuzones;
+    }
+
+    async function verSeguimientosQ(id) {
+      seguimientoQActualId = id;
+      const lista = window.__BS_EXPORT_DATA__ || [];
+      const q = lista.find(function(x) { return parseInt(x.id) === parseInt(id); });
+      document.getElementById('segTitleQ').textContent = 'Seguimientos \u00b7 Hallazgo #' + id;
+      document.getElementById('quejaResumen').innerHTML = q
+        ? '<div><strong>' + (q.clasificacion || 'Hallazgo') + '</strong> \u00b7 ' + (q.empresa || '-') + ' \u00b7 ' + (q.sector || q.area_texto || '-') + '<br>' +
+          '<small class="bs-text-muted">' + String(q.detalle || '-').replace(/</g,'&lt;').slice(0,160) + '</small></div>'
+        : '<small class="bs-text-muted">Hallazgo #' + id + '</small>';
+      document.getElementById('segq_fecha').value = new Date().toISOString().split('T')[0];
+      document.getElementById('segq_detalle').value = '';
+      document.getElementById('segqAlert').innerHTML = '';
+      document.getElementById('seguimientosModalQ').classList.add('bs-active');
+      await cargarSeguimientosQ(id);
+    }
+    function closeModalSegQ() { document.getElementById('seguimientosModalQ').classList.remove('bs-active'); seguimientoQActualId = null; }
+
+    async function cargarSeguimientosQ(id) {
+      const cont = document.getElementById('listaSeguimientosQ');
+      cont.innerHTML = '<div class="bs-text-center"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+      try {
+        const res = await api('bs_listarSeguimientosQueja', { id_queja: id });
+        if (!res.ok) { cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>'; return; }
+        if (!res.items || res.items.length === 0) { cont.innerHTML = '<p class="bs-text-muted bs-text-sm">No hay seguimientos registrados a\u00fan. Agrega el primero abajo \u2b07\ufe0f</p>'; return; }
+        let html = '';
+        res.items.forEach(function(sg) {
+          const fecha = sg.fecha_seguimiento ? new Date(sg.fecha_seguimiento).toLocaleDateString('es-PE') : '-';
+          html += '<div style="padding: 0.85rem; border-left: 3px solid var(--bs-mod-quejas); background: var(--bs-surface-alt); margin-bottom: 0.5rem; border-radius: 0 var(--bs-radius-sm) var(--bs-radius-sm) 0;">' +
+            '<div class="bs-flex bs-justify-between bs-items-center"><strong>Seguimiento #' + sg.numero_seguimiento + '</strong>' +
+            '<span class="bs-text-xs bs-text-muted">' + fecha + '</span></div>' +
+            '<p class="bs-text-sm" style="margin: 0.4rem 0 0; white-space: pre-wrap;">' + String(sg.detalle || '-').replace(/</g,'&lt;') + '</p>' +
+            '<p class="bs-text-xs bs-text-subtle" style="margin: 0.3rem 0 0;">por ' + (sg.created_by || '-') + '</p></div>';
+        });
+        cont.innerHTML = html;
+      } catch(err) { cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>'; }
+    }
+
+    async function submitSeguimientoQ() {
+      if (!seguimientoQActualId) return;
+      const datos = { fecha_seguimiento: document.getElementById('segq_fecha').value, detalle: document.getElementById('segq_detalle').value };
+      if (!datos.fecha_seguimiento || !datos.detalle) { document.getElementById('segqAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Completa fecha y detalle</div>'; return; }
+      const btn = document.getElementById('btnSegQ');
+      btn.disabled = true; btn.textContent = 'Agregando...';
+      try {
+        const res = await api('bs_crearSeguimientoQueja', { usuario: user.usuario, id_queja: seguimientoQActualId, datos: datos });
+        if (res.ok) {
+          document.getElementById('segq_detalle').value = '';
+          document.getElementById('segqAlert').innerHTML = '<div class="bs-alert bs-alert-success">' + (res.message || 'Seguimiento agregado') + '</div>';
+          await cargarSeguimientosQ(seguimientoQActualId);
+          await cargarQuejas();
+        } else {
+          document.getElementById('segqAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
+        }
+      } catch(err) {
+        document.getElementById('segqAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
+      } finally { btn.disabled = false; btn.textContent = '+ Agregar Seguimiento'; }
     }
 
     // ===== LOGOUT =====
