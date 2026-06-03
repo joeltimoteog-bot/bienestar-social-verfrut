@@ -248,14 +248,6 @@
             </select>
           </div>
           <div class="bs-form-group">
-            <label class="bs-label">Tipo pago planilla</label>
-            <select id="tipo_pago_planilla" class="bs-select">
-              <option value="">Seleccionar...</option>
-              <option value="Recuperado">Recuperado</option>
-              <option value="Compensado">Compensado</option>
-            </select>
-          </div>
-          <div class="bs-form-group">
             <label class="bs-label">Estado general</label>
             <select id="estado_general" class="bs-select">
               <option value="En proceso">En proceso</option>
@@ -387,11 +379,11 @@
     }
 
     // ===== MODAL =====
-    const ALL_FIELDS = ['anio','mes','tipo','numero','apellido_paterno','apellido_materno','nombres','estado','dias','calculo_por_dia','pago_empresa','reembolso_por_mes','recuperado_essalud','monto_total','periodo','expediente','inicio','termino','observaciones','diferencias','tipo_pago_planilla','estado_general','empresa'];
+    const ALL_FIELDS = ['anio','mes','tipo','numero','apellido_paterno','apellido_materno','nombres','estado','dias','calculo_por_dia','pago_empresa','reembolso_por_mes','recuperado_essalud','monto_total','periodo','expediente','inicio','termino','observaciones','diferencias','estado_general','empresa'];
     const DATE_FIELDS = ['inicio','termino'];
 
     // ===== NAVEGACION INTELIGENTE =====
-    const FORM_ORDER = ['numero','empresa','expediente','apellido_paterno','apellido_materno','nombres','anio','mes','tipo','periodo','inicio','termino','dias','remuneracion_mensual','calculo_por_dia','reembolso_por_mes','pago_empresa','recuperado_essalud','monto_total','diferencias','estado','tipo_pago_planilla','estado_general','observaciones'];
+    const FORM_ORDER = ['numero','empresa','expediente','apellido_paterno','apellido_materno','nombres','anio','mes','tipo','periodo','inicio','termino','dias','remuneracion_mensual','calculo_por_dia','reembolso_por_mes','pago_empresa','recuperado_essalud','monto_total','diferencias','estado','estado_general','observaciones'];
 
     // Salta al PROXIMO campo vacio + editable + visible + habilitado. Omite llenos/readonly/disabled/ocultos.
     function focusNext(currentId) {
@@ -414,7 +406,7 @@
 
     function setupAutoTab() {
       // Selects: auto-avance al elegir
-      ['empresa','mes','tipo','tipo_pago_planilla','estado_general'].forEach(function(id){
+      ['empresa','mes','tipo','estado_general'].forEach(function(id){
         const el = document.getElementById(id);
         if (el && el.tagName === 'SELECT') el.addEventListener('change', function(){ if (el.value) focusNext(id); });
       });

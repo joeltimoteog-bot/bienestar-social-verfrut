@@ -176,13 +176,7 @@
           </div>
           <div class="bs-form-group">
             <label class="bs-label">Decisión final</label>
-            <select id="decision" class="bs-select">
-              <option value="">Seleccionar...</option>
-              <option value="EN EVALUACIÓN">EN EVALUACIÓN</option>
-              <option value="EN INVESTIGACIÓN">EN INVESTIGACIÓN</option>
-              <option value="PROCESO DE RESOLUCIÓN">PROCESO DE RESOLUCIÓN</option>
-              <option value="IMPROCEDENTE">IMPROCEDENTE</option>
-            </select>
+            <input type="text" id="decision" class="bs-input" placeholder="Escribir la decisión final...">
           </div>
         </div>
 
@@ -346,7 +340,7 @@
 
     function setupAutoTab() {
       // Selects: auto-avance al cambiar
-      ['empresa','status','decision'].forEach(function(id){
+      ['empresa','status'].forEach(function(id){
         const el = document.getElementById(id);
         if (el && el.tagName === 'SELECT') el.addEventListener('change', function(){ if (el.value) focusNext(id); });
       });
