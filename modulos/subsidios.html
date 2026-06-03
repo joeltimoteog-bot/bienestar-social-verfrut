@@ -240,7 +240,12 @@
         <div class="bs-grid bs-grid-3 bs-gap">
           <div class="bs-form-group">
             <label class="bs-label">Estado documento</label>
-            <input type="text" id="estado" class="bs-input" placeholder="Ej: Presentado, Observado, Aprobado">
+            <select id="estado" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="Presentado">Presentado</option>
+              <option value="Observado">Observado</option>
+              <option value="Aprobado">Aprobado</option>
+            </select>
           </div>
           <div class="bs-form-group">
             <label class="bs-label">Tipo pago planilla</label>
@@ -546,11 +551,18 @@
       const ini = document.getElementById('inicio').value;
       const fin = document.getElementById('termino').value;
       if (ini && fin) {
-        const d = bsDiasEntre(ini, fin);
+        const d = _diasIncl(ini, fin);
         if (d >= 0) document.getElementById('dias').value = d + 1; // inclusivo
       }
     }
 
+    function _diasIncl(ini, fin){
+      if(!ini || !fin) return '';
+      var a = new Date(ini), b = new Date(fin);
+      if(isNaN(a.getTime()) || isNaN(b.getTime())) return '';
+      var d = Math.round((b - a)/86400000) + 1;
+      return d > 0 ? d : '';
+    }
     function calcularSubsidio() {
       // 1) Cálculo por día: si hay remuneración mensual, lo deriva (rem / 30)
       const rem = parseFloat(document.getElementById('remuneracion_mensual').value) || 0;

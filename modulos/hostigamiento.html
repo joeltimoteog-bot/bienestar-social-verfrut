@@ -63,7 +63,6 @@
               <option value="Medidas dictadas">Medidas dictadas</option>
               <option value="Resuelto">Resuelto</option>
               <option value="Archivado">Archivado</option>
-              <option value="Sin lugar">Sin lugar</option>
             </select>
           </div>
           <div class="bs-form-group" style="margin: 0;">
@@ -173,7 +172,6 @@
               <option value="Medidas dictadas">Medidas dictadas</option>
               <option value="Resuelto">Resuelto</option>
               <option value="Archivado">Archivado</option>
-              <option value="Sin lugar">Sin lugar</option>
             </select>
           </div>
           <div class="bs-form-group">
@@ -186,6 +184,11 @@
               <option value="IMPROCEDENTE">IMPROCEDENTE</option>
             </select>
           </div>
+        </div>
+
+        <div class="bs-form-group">
+          <label class="bs-label">Observaciones</label>
+          <textarea id="observaciones" class="bs-textarea" placeholder="Observaciones adicionales..."></textarea>
         </div>
 
         <div id="formAlert"></div>
@@ -316,11 +319,11 @@
     }
 
     // ===== MODAL =====
-    const ALL_FIELDS = ['fecha_denuncia','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','fundo','decision','status','empresa'];
+    const ALL_FIELDS = ['fecha_denuncia','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','fundo','decision','status','observaciones','empresa'];
     const DATE_FIELDS = ['fecha_denuncia'];
 
     // ===== NAVEGACION INTELIGENTE =====
-    const FORM_ORDER = ['fecha_denuncia','empresa','fundo','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','status','decision'];
+    const FORM_ORDER = ['fecha_denuncia','empresa','fundo','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','status','decision','observaciones'];
 
     // Salta al PROXIMO campo vacio + editable + visible + habilitado. Omite llenos/readonly/disabled/ocultos.
     function focusNext(currentId) {
