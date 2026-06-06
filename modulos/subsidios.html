@@ -179,7 +179,7 @@
 
 
         <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Cálculo del subsidio (S/)</h4>
-        <p class="bs-helptext" style="margin: -0.25rem 0 0.6rem; line-height: 1.4;">💡 <strong>Auto-cálculo ESSALUD:</strong> ingresa la <strong>remuneración mensual</strong> y las fechas (o los días). El sistema calcula todo solo. Incapacidad: primeros 20 días = empresa, resto = ESSALUD. Maternidad: todo ESSALUD. Todos los montos son editables.</p>
+        <p class="bs-helptext" style="margin: -0.25rem 0 0.6rem; line-height: 1.4;">💡 <strong>Auto-cálculo EsSalud:</strong> ingresa el <strong>total de remuneraciones computables de los 12 meses</strong> previos al mes de la contingencia y las fechas (o los días). <strong>Subsidio diario = total ÷ 360</strong> (si hay menos de 12 meses computados, ÷ meses×30). Incapacidad: primeros 20 días = empresa, del día 21 = EsSalud. Maternidad: todo EsSalud. Todos los montos son editables.</p>
 
         <!-- FECHAS Y DÍAS (necesarios para el cálculo) -->
         <div class="bs-grid bs-grid-3 bs-gap">
@@ -197,14 +197,18 @@
           </div>
         </div>
 
-        <!-- ENTRADAS BASE -->
-        <div class="bs-grid bs-grid-3 bs-gap">
+        <!-- ENTRADAS BASE (método EsSalud: total 12 meses ÷ 360) -->
+        <div class="bs-grid bs-grid-4 bs-gap">
           <div class="bs-form-group">
-            <label class="bs-label">Remuneración mensual <span class="bs-text-xs bs-text-subtle">(base)</span></label>
-            <input type="number" id="remuneracion_mensual" class="bs-input" min="0" step="0.01" placeholder="Ej: 1500">
+            <label class="bs-label">Total remun. 12 meses <span class="bs-text-xs bs-text-subtle">(computables)</span></label>
+            <input type="number" id="total_remun_12m" class="bs-input" min="0" step="0.01" placeholder="Ej: 37686.01">
           </div>
           <div class="bs-form-group">
-            <label class="bs-label">Cálculo por día <span class="bs-text-xs bs-text-subtle">(rem ÷ 30)</span></label>
+            <label class="bs-label">N° meses computados <span class="bs-text-xs bs-text-subtle">(≥12 → /360)</span></label>
+            <input type="number" id="meses_computados" class="bs-input" min="1" max="12" step="1" value="12">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Cálculo por día <span class="bs-text-xs bs-text-subtle">(total ÷ 360)</span></label>
             <input type="number" id="calculo_por_dia" class="bs-input" min="0" step="0.01" placeholder="Auto o manual">
           </div>
           <div class="bs-form-group">
@@ -383,7 +387,7 @@
     const DATE_FIELDS = ['inicio','termino'];
 
     // ===== NAVEGACION INTELIGENTE =====
-    const FORM_ORDER = ['numero','empresa','expediente','apellido_paterno','apellido_materno','nombres','anio','mes','tipo','periodo','inicio','termino','dias','remuneracion_mensual','calculo_por_dia','reembolso_por_mes','pago_empresa','recuperado_essalud','monto_total','diferencias','estado','estado_general','observaciones'];
+    const FORM_ORDER = ['numero','empresa','expediente','apellido_paterno','apellido_materno','nombres','anio','mes','tipo','periodo','inicio','termino','dias','total_remun_12m','meses_computados','calculo_por_dia','reembolso_por_mes','pago_empresa','recuperado_essalud','monto_total','diferencias','estado','estado_general','observaciones'];
 
     // Salta al PROXIMO campo vacio + editable + visible + habilitado. Omite llenos/readonly/disabled/ocultos.
     function focusNext(currentId) {
@@ -430,7 +434,8 @@
         const el = document.getElementById(f);
         if (el) el.value = '';
       });
-      document.getElementById('remuneracion_mensual').value = '';
+      document.getElementById('total_remun_12m').value = '';
+      document.getElementById('meses_computados').value = '12';
       document.getElementById('anio').value = new Date().getFullYear();
       document.getElementById('estado_general').value = 'En proceso';
       document.getElementById('formAlert').innerHTML = '';
@@ -460,6 +465,9 @@
           el.value = v;
         }
       });
+      // Auxiliares de cálculo (no persistidos): el diario ya viene en calculo_por_dia
+      var _t12 = document.getElementById('total_remun_12m'); if (_t12) _t12.value = '';
+      var _mc = document.getElementById('meses_computados'); if (_mc) _mc.value = '12';
       document.getElementById('formAlert').innerHTML = '';
       document.getElementById('formModal').classList.add('bs-active');
     }
@@ -556,10 +564,15 @@
       return d > 0 ? d : '';
     }
     function calcularSubsidio() {
-      // 1) Cálculo por día: si hay remuneración mensual, lo deriva (rem / 30)
-      const rem = parseFloat(document.getElementById('remuneracion_mensual').value) || 0;
-      if (rem > 0) {
-        document.getElementById('calculo_por_dia').value = +(rem / 30).toFixed(2);
+      // 1) Subsidio diario (método EsSalud): total remun. computables 12 meses ÷ 360.
+      //    Si hay menos de 12 meses computados, el divisor es meses × 30.
+      const total12 = parseFloat(document.getElementById('total_remun_12m').value) || 0;
+      let meses = parseInt(document.getElementById('meses_computados').value) || 12;
+      if (meses < 1) meses = 1;
+      if (meses > 12) meses = 12;
+      const divisor = (meses >= 12) ? 360 : (meses * 30);
+      if (total12 > 0) {
+        document.getElementById('calculo_por_dia').value = +(total12 / divisor).toFixed(2);
       }
       const cpd = parseFloat(document.getElementById('calculo_por_dia').value) || 0;
       const dias = parseInt(document.getElementById('dias').value) || 0;
@@ -597,7 +610,7 @@
         if (el) el.addEventListener('change', function() { recalcularDias(); calcularSubsidio(); });
       });
       // entradas que recalculan en tiempo real (mientras escribes)
-      ['remuneracion_mensual','calculo_por_dia','dias'].forEach(function(id) {
+      ['total_remun_12m','meses_computados','calculo_por_dia','dias'].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) el.addEventListener('input', calcularSubsidio);
       });
