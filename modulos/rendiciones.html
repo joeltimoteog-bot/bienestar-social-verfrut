@@ -203,7 +203,8 @@
     } catch(e) {
       window.location.href = '../index.html';
     }
-    const _esAdmin = /admin/i.test(String(user.rol || ''));
+    const BS_ADMINS = ['jtimoteo','ovilela','jchavez'];
+    const _esAdmin = BS_ADMINS.indexOf(String(user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test(String(user.rol || ''));
     if (!_esAdmin && (!user.permisos || !user.permisos.rendiciones)) {
       alert('No tienes permiso para acceder a este módulo');
       window.location.href = '../portal.html';
@@ -295,7 +296,9 @@
             '<td style="text-align:right;"><strong>' + fmtMoney(r.monto_total) + '</strong></td>' +
             '<td>' + (r.responsable || '-') + '</td>' +
             '<td><span class="bs-badge ' + badge + '">' + (r.estado || '-') + '</span></td>' +
-            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + r.id + ')">Editar</button></td>' +
+            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + r.id + ')">Editar</button>' +
+              (_esAdmin ? '<button class="bs-btn bs-btn-sm bs-btn-outline" style="margin-left:.3rem;border-color:#dc2626;color:#dc2626;" onclick="eliminar(' + r.id + ')">Eliminar</button>' : '') +
+            '</td>' +
           '</tr>';
         });
         html += '</tbody></table></div>';
@@ -394,6 +397,18 @@
 
     function closeModal() {
       document.getElementById('formModal').classList.remove('bs-active');
+    }
+
+    async function eliminar(id) {
+      if (!_esAdmin) return;
+      if (!confirm('¿Eliminar la rendición #' + id + '?\n\nEsta acción no se puede deshacer.')) return;
+      try {
+        const res = await api('bs_eliminarRendicion', { usuario: user.usuario, id: parseInt(id) });
+        if (res.ok) cargarRendiciones();
+        else alert('Error: ' + (res.message || 'No se pudo eliminar'));
+      } catch(err) {
+        alert('Error de conexión: ' + err.message);
+      }
     }
 
     async function editar(id) {
