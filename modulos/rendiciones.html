@@ -9,7 +9,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
-  <style>:root{ --bs-mod-rend:#059669; }</style>
+  <style>
+    :root{ --bs-mod-rend:#059669; }
+    .bs-main{ max-width: 1500px; }
+    #tablaContainer table{ font-size: .82rem; }
+    #tablaContainer th, #tablaContainer td{ white-space: nowrap; padding: 6px 8px; }
+    #reporteContainer table th, #reporteContainer table td{ white-space: nowrap; }
+  </style>
 </head>
 <body>
   <div class="bs-appshell">
@@ -42,7 +48,7 @@
 
       <!-- Filtros -->
       <div class="bs-card bs-mb">
-        <div class="bs-grid bs-grid-4 bs-gap">
+        <div class="bs-grid bs-gap" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Año</label>
             <select class="bs-select" id="filterAnio" onchange="cargarRendiciones()">
@@ -71,6 +77,16 @@
               <option value="">Todos</option>
               <option value="NO DEPOSITADO">No depositado</option>
               <option value="DEPOSITADO">Depositado</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Categoría</label>
+            <select class="bs-select" id="filterCategoria" onchange="cargarRendiciones()">
+              <option value="">Todas</option>
+              <option value="monto_reclutamiento">Reclutamiento</option>
+              <option value="monto_relaciones_laborales">Relaciones Laborales</option>
+              <option value="monto_capacitaciones">Capacitaciones</option>
+              <option value="monto_bienestar">Bienestar</option>
             </select>
           </div>
         </div>
@@ -267,9 +283,12 @@
           document.getElementById('reporteContainer').innerHTML = '';
           return;
         }
-        const items = res.items || [];
+        const allItems = res.items || [];
+        _poblarResponsables(allItems);
+        // Filtro de categoría (cliente): solo rendiciones con monto > 0 en esa categoría
+        const catField = document.getElementById('filterCategoria').value;
+        const items = catField ? allItems.filter(function(r){ return (parseFloat(r[catField]) || 0) > 0; }) : allItems;
         window.__BS_EXPORT_DATA__ = items;
-        _poblarResponsables(items);
         renderReporte(items);
 
         if (items.length === 0) {
