@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rendiciones · Bienestar Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
+  <style>:root{ --bs-mod-rend:#059669; }</style>
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <!-- TOPBAR -->
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon"><img src="../images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
+          <span>Bienestar Social · <strong>Rendiciones</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+
+      <!-- Header -->
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h1 style="color: var(--bs-mod-rend);">📑 Rendiciones</h1>
+          <p class="bs-text-subtle" style="margin: 0;">Rendiciones de gastos RAPEL y VERFRUT (Reclutamiento, RR.LL., Capacitaciones, Bienestar) y control de depósito.</p>
+        </div>
+        <button class="bs-btn" style="background: var(--bs-mod-rend); color: white;" onclick="openModal()">+ Nueva Rendición</button>
+      </div>
+
+      <!-- Filtros -->
+      <div class="bs-card bs-mb">
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Año</label>
+            <select class="bs-select" id="filterAnio" onchange="cargarRendiciones()">
+              <option value="">Todos</option>
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Empresa</label>
+            <select class="bs-select" id="filterEmpresa" onchange="cargarRendiciones()">
+              <option value="">Todas</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Responsable</label>
+            <select class="bs-select" id="filterResponsable" onchange="cargarRendiciones()">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Estado</label>
+            <select class="bs-select" id="filterEstado" onchange="cargarRendiciones()">
+              <option value="">Todos</option>
+              <option value="NO DEPOSITADO">No depositado</option>
+              <option value="DEPOSITADO">Depositado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel de reporte (KPIs en vivo) -->
+      <div id="reporteContainer" class="bs-mb"></div>
+
+      <!-- Tabla -->
+      <div id="tablaContainer">
+        <div class="bs-text-center" style="padding: 2rem;">
+          <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
+          <p class="bs-mt">Cargando rendiciones...</p>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="bs-footer">
+      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0
+    </footer>
+  </div>
+
+  <!-- MODAL FORM -->
+  <div class="bs-modal-overlay" id="formModal">
+    <div class="bs-modal" style="max-width: 880px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="formTitle">Nueva Rendición</h3>
+        <button class="bs-modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <input type="hidden" id="rendicionId">
+        <input type="hidden" id="anio">
+
+        <h4 style="color: var(--bs-mod-rend); margin-bottom: 0.5rem;">Datos de la rendición</h4>
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Empresa <span class="bs-required">*</span></label>
+            <select id="empresa" class="bs-select" required>
+              <option value="">Seleccionar...</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">N° Rendición <span class="bs-required">*</span></label>
+            <input type="text" id="rendicion" class="bs-input" placeholder="Ej: 013522" required>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Fecha <span class="bs-required">*</span></label>
+            <input type="date" id="fecha" class="bs-input" required>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Semana <span class="bs-text-xs bs-text-subtle">(auto)</span></label>
+            <input type="number" id="semana" class="bs-input" min="1" max="53" placeholder="Auto">
+          </div>
+        </div>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Responsable</label>
+            <input type="text" id="responsable" class="bs-input" list="dlResponsables" placeholder="Nombre del responsable">
+            <datalist id="dlResponsables">
+              <option value="OLGA VILELA"></option>
+              <option value="JORGE CHAVEZ"></option>
+              <option value="DANIELA REYNA"></option>
+            </datalist>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Estado</label>
+            <select id="estado" class="bs-select">
+              <option value="NO DEPOSITADO">No depositado</option>
+              <option value="DEPOSITADO">Depositado</option>
+            </select>
+          </div>
+          <div class="bs-form-group" id="wrapFechaDeposito" style="display:none;">
+            <label class="bs-label">Fecha de depósito</label>
+            <input type="date" id="fecha_deposito" class="bs-input">
+          </div>
+        </div>
+
+        <h4 style="color: var(--bs-mod-rend); margin: 1rem 0 0.5rem;">Montos por categoría (S/)</h4>
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Reclutamiento</label>
+            <input type="number" id="monto_reclutamiento" class="bs-input" min="0" step="0.01" value="0">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Relaciones Laborales</label>
+            <input type="number" id="monto_relaciones_laborales" class="bs-input" min="0" step="0.01" value="0">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Capacitaciones</label>
+            <input type="number" id="monto_capacitaciones" class="bs-input" min="0" step="0.01" value="0">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Bienestar</label>
+            <input type="number" id="monto_bienestar" class="bs-input" min="0" step="0.01" value="0">
+          </div>
+        </div>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Monto Total <span class="bs-text-xs bs-text-subtle">(auto = suma · editable)</span></label>
+            <input type="number" id="monto_total" class="bs-input" min="0" step="0.01" value="0">
+          </div>
+          <div class="bs-form-group" style="grid-column: span 2;">
+            <label class="bs-label">Observaciones</label>
+            <input type="text" id="observaciones" class="bs-input" placeholder="Detalle u observación (opcional)">
+          </div>
+        </div>
+
+        <div id="formAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-outline" onclick="closeModal()">Cancelar</button>
+        <button class="bs-btn" id="btnSubmit" onclick="submitForm()" style="background: var(--bs-mod-rend); color: white;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+
+    // ===== AUTH =====
+    const session = localStorage.getItem('bienestarSocialAuth');
+    if (!session) window.location.href = '../index.html';
+    let user;
+    try {
+      user = JSON.parse(session);
+      if (!user || !user.usuario) throw new Error();
+    } catch(e) {
+      window.location.href = '../index.html';
+    }
+    const _esAdmin = /admin/i.test(String(user.rol || ''));
+    if (!_esAdmin && (!user.permisos || !user.permisos.rendiciones)) {
+      alert('No tienes permiso para acceder a este módulo');
+      window.location.href = '../portal.html';
+    }
+    document.getElementById('userName').textContent = user.nombre || user.usuario;
+
+    // ===== API HELPER =====
+    async function api(action, payload) {
+      const res = await fetch(BS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+      });
+      return await res.json();
+    }
+
+    // ===== FORMATO MONEDA =====
+    function fmtMoney(n) {
+      if (n === '' || n === null || n === undefined || isNaN(parseFloat(n))) return 'S/ 0.00';
+      return 'S/ ' + parseFloat(n).toFixed(2);
+    }
+    function _fechaInput(v) {
+      if (!v) return '';
+      try { return new Date(v).toISOString().split('T')[0]; } catch(e) { return ''; }
+    }
+    function _fechaCorta(v) {
+      if (!v) return '-';
+      try {
+        const d = new Date(v);
+        return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
+      } catch(e) { return '-'; }
+    }
+    // Semana ISO a partir de una fecha (YYYY-MM-DD)
+    function _isoWeek(str) {
+      if (!str) return '';
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return '';
+      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const dayNum = (date.getUTCDay() + 6) % 7;
+      date.setUTCDate(date.getUTCDate() - dayNum + 3);
+      const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+      return 1 + Math.round(((date - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+    }
+
+    // ===== LISTAR + REPORTE =====
+    async function cargarRendiciones() {
+      const filtros = {
+        anio: document.getElementById('filterAnio').value,
+        empresa: document.getElementById('filterEmpresa').value,
+        responsable: document.getElementById('filterResponsable').value,
+        estado: document.getElementById('filterEstado').value
+      };
+      const cont = document.getElementById('tablaContainer');
+      cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+
+      try {
+        const res = await api('bs_listarRendiciones', { filtros: filtros });
+        if (!res.ok) {
+          cont.innerHTML = '<div class="bs-alert bs-alert-warning">No se pudieron cargar las rendiciones. Es posible que el backend (GAS) aún no esté desplegado.<br><small>' + (res.message || '') + '</small></div>';
+          document.getElementById('reporteContainer').innerHTML = '';
+          return;
+        }
+        const items = res.items || [];
+        window.__BS_EXPORT_DATA__ = items;
+        _poblarResponsables(items);
+        renderReporte(items);
+
+        if (items.length === 0) {
+          cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay rendiciones registradas con esos filtros.</p></div>';
+          return;
+        }
+
+        let html = '<div class="bs-table-wrap"><table class="bs-table">';
+        html += '<thead><tr><th>ID</th><th>Fecha</th><th>Sem</th><th>N° Rend.</th><th>Empresa</th>' +
+                '<th>Reclut.</th><th>RR.LL.</th><th>Capac.</th><th>Bienestar</th><th>Total</th>' +
+                '<th>Responsable</th><th>Estado</th><th></th></tr></thead><tbody>';
+        items.forEach(function(r) {
+          const badge = String(r.estado).toUpperCase() === 'DEPOSITADO' ? 'bs-badge-success' : 'bs-badge-warning';
+          html += '<tr>' +
+            '<td><strong>#' + r.id + '</strong></td>' +
+            '<td>' + _fechaCorta(r.fecha) + '</td>' +
+            '<td style="text-align:center;">' + (r.semana || '-') + '</td>' +
+            '<td>' + (r.rendicion || '-') + '</td>' +
+            '<td>' + (r.empresa || '-') + '</td>' +
+            '<td style="text-align:right;">' + fmtMoney(r.monto_reclutamiento) + '</td>' +
+            '<td style="text-align:right;">' + fmtMoney(r.monto_relaciones_laborales) + '</td>' +
+            '<td style="text-align:right;">' + fmtMoney(r.monto_capacitaciones) + '</td>' +
+            '<td style="text-align:right;">' + fmtMoney(r.monto_bienestar) + '</td>' +
+            '<td style="text-align:right;"><strong>' + fmtMoney(r.monto_total) + '</strong></td>' +
+            '<td>' + (r.responsable || '-') + '</td>' +
+            '<td><span class="bs-badge ' + badge + '">' + (r.estado || '-') + '</span></td>' +
+            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + r.id + ')">Editar</button></td>' +
+          '</tr>';
+        });
+        html += '</tbody></table></div>';
+        cont.innerHTML = html;
+      } catch(err) {
+        cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
+      }
+    }
+
+    function _poblarResponsables(items) {
+      const sel = document.getElementById('filterResponsable');
+      const actual = sel.value;
+      const set = {};
+      items.forEach(function(r){ if (r.responsable) set[r.responsable] = true; });
+      const nombres = Object.keys(set).sort();
+      sel.innerHTML = '<option value="">Todos</option>' + nombres.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('');
+      if (actual) sel.value = actual;
+    }
+
+    // ===== REPORTE EN VIVO (KPIs por empresa y categoría) =====
+    function renderReporte(items) {
+      const cont = document.getElementById('reporteContainer');
+      if (!items.length) { cont.innerHTML = ''; return; }
+      let total = 0, depositado = 0, pendiente = 0;
+      const cat = { rec:0, rll:0, cap:0, bien:0 };
+      const empMap = { RAPEL:{total:0,rec:0,rll:0,cap:0,bien:0}, VERFRUT:{total:0,rec:0,rll:0,cap:0,bien:0} };
+      items.forEach(function(r){
+        const mt = parseFloat(r.monto_total) || 0;
+        total += mt;
+        if (String(r.estado).toUpperCase() === 'DEPOSITADO') depositado += mt; else pendiente += mt;
+        const rec = parseFloat(r.monto_reclutamiento)||0, rll = parseFloat(r.monto_relaciones_laborales)||0,
+              cap = parseFloat(r.monto_capacitaciones)||0, bien = parseFloat(r.monto_bienestar)||0;
+        cat.rec+=rec; cat.rll+=rll; cat.cap+=cap; cat.bien+=bien;
+        const e = (String(r.empresa).toUpperCase().indexOf('VERFRUT')>=0) ? 'VERFRUT' : (String(r.empresa).toUpperCase().indexOf('RAPEL')>=0 ? 'RAPEL' : null);
+        if (e) { empMap[e].total+=mt; empMap[e].rec+=rec; empMap[e].rll+=rll; empMap[e].cap+=cap; empMap[e].bien+=bien; }
+      });
+
+      function kpi(label, val, color) {
+        return '<div class="bs-card" style="flex:1;min-width:150px;margin:0;border-left:4px solid '+color+';">' +
+          '<div class="bs-text-xs bs-text-subtle" style="text-transform:uppercase;letter-spacing:.04em;">'+label+'</div>' +
+          '<div style="font-size:1.35rem;font-weight:700;color:'+color+';">'+val+'</div></div>';
+      }
+      function filaEmp(nombre, o) {
+        return '<tr><td><strong>'+nombre+'</strong></td>' +
+          '<td style="text-align:right;">'+fmtMoney(o.rec)+'</td>' +
+          '<td style="text-align:right;">'+fmtMoney(o.rll)+'</td>' +
+          '<td style="text-align:right;">'+fmtMoney(o.cap)+'</td>' +
+          '<td style="text-align:right;">'+fmtMoney(o.bien)+'</td>' +
+          '<td style="text-align:right;"><strong>'+fmtMoney(o.total)+'</strong></td></tr>';
+      }
+
+      cont.innerHTML =
+        '<div class="bs-flex bs-gap" style="flex-wrap:wrap;margin-bottom:.8rem;">' +
+          kpi('Rendiciones', items.length, '#0033A0') +
+          kpi('Monto total', fmtMoney(total), 'var(--bs-mod-rend)') +
+          kpi('Depositado', fmtMoney(depositado), '#16a34a') +
+          kpi('Pendiente', fmtMoney(pendiente), '#d97706') +
+        '</div>' +
+        '<div class="bs-card" style="margin:0;">' +
+          '<div class="bs-text-sm" style="font-weight:700;color:var(--bs-mod-rend);margin-bottom:.5rem;">Resumen por empresa y categoría</div>' +
+          '<div class="bs-table-wrap"><table class="bs-table"><thead><tr>' +
+          '<th>Empresa</th><th style="text-align:right;">Reclutamiento</th><th style="text-align:right;">RR.LL.</th>' +
+          '<th style="text-align:right;">Capacitaciones</th><th style="text-align:right;">Bienestar</th><th style="text-align:right;">Total</th>' +
+          '</tr></thead><tbody>' +
+          filaEmp('RAPEL', empMap.RAPEL) + filaEmp('VERFRUT', empMap.VERFRUT) +
+          '<tr style="border-top:2px solid #cbd5e1;"><td><strong>TOTAL</strong></td>' +
+            '<td style="text-align:right;"><strong>'+fmtMoney(cat.rec)+'</strong></td>' +
+            '<td style="text-align:right;"><strong>'+fmtMoney(cat.rll)+'</strong></td>' +
+            '<td style="text-align:right;"><strong>'+fmtMoney(cat.cap)+'</strong></td>' +
+            '<td style="text-align:right;"><strong>'+fmtMoney(cat.bien)+'</strong></td>' +
+            '<td style="text-align:right;"><strong>'+fmtMoney(total)+'</strong></td></tr>' +
+          '</tbody></table></div>' +
+        '</div>';
+    }
+
+    // ===== MODAL =====
+    const ALL_FIELDS = ['empresa','rendicion','fecha','semana','responsable','estado','fecha_deposito',
+                        'monto_reclutamiento','monto_relaciones_laborales','monto_capacitaciones','monto_bienestar','monto_total','observaciones'];
+    const DATE_FIELDS = ['fecha','fecha_deposito'];
+
+    function openModal() {
+      document.getElementById('formTitle').textContent = 'Nueva Rendición';
+      document.getElementById('rendicionId').value = '';
+      document.getElementById('anio').value = '';
+      ALL_FIELDS.forEach(function(f){
+        const el = document.getElementById(f);
+        if (!el) return;
+        if (['monto_reclutamiento','monto_relaciones_laborales','monto_capacitaciones','monto_bienestar','monto_total'].indexOf(f) >= 0) el.value = '0';
+        else el.value = '';
+      });
+      document.getElementById('estado').value = 'NO DEPOSITADO';
+      toggleDeposito();
+      document.getElementById('formAlert').innerHTML = '';
+      document.getElementById('formModal').classList.add('bs-active');
+    }
+
+    function closeModal() {
+      document.getElementById('formModal').classList.remove('bs-active');
+    }
+
+    async function editar(id) {
+      const res = await api('bs_listarRendiciones', {});
+      if (!res.ok) return alert('Error: ' + res.message);
+      const r = (res.items || []).find(function(x){ return parseInt(x.id) === parseInt(id); });
+      if (!r) return alert('Rendición no encontrada');
+
+      document.getElementById('formTitle').textContent = 'Editar Rendición #' + r.id;
+      document.getElementById('rendicionId').value = r.id;
+      document.getElementById('anio').value = r.anio || '';
+      ALL_FIELDS.forEach(function(f){
+        const el = document.getElementById(f);
+        if (!el) return;
+        let v = r[f];
+        if (DATE_FIELDS.indexOf(f) >= 0) v = _fechaInput(v);
+        el.value = (v === null || v === undefined) ? '' : v;
+      });
+      if (!document.getElementById('estado').value) document.getElementById('estado').value = 'NO DEPOSITADO';
+      toggleDeposito();
+      document.getElementById('formAlert').innerHTML = '';
+      document.getElementById('formModal').classList.add('bs-active');
+    }
+
+    async function submitForm() {
+      const datos = {};
+      ALL_FIELDS.forEach(function(f){ datos[f] = document.getElementById(f).value; });
+
+      // Año derivado de la fecha (para reporte/búsqueda por año)
+      datos.anio = datos.fecha ? new Date(datos.fecha).getFullYear() : (new Date().getFullYear());
+
+      // Validación mínima
+      if (!datos.empresa || !datos.rendicion || !datos.fecha) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Completa: <strong>Empresa, N° Rendición y Fecha</strong></div>';
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true; btn.textContent = 'Guardando...';
+      try {
+        const id = document.getElementById('rendicionId').value;
+        const action = id ? 'bs_actualizarRendicion' : 'bs_crearRendicion';
+        const payload = id
+          ? { usuario: user.usuario, id: parseInt(id), datos: datos }
+          : { usuario: user.usuario, datos: datos };
+        const res = await api(action, payload);
+        if (res.ok) { closeModal(); cargarRendiciones(); }
+        else document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
+      } catch(err) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
+      } finally {
+        btn.disabled = false; btn.textContent = 'Guardar';
+      }
+    }
+
+    // ===== AUTOMATISMOS DEL FORMULARIO =====
+    function recalcTotal() {
+      const suma = ['monto_reclutamiento','monto_relaciones_laborales','monto_capacitaciones','monto_bienestar']
+        .reduce(function(a, id){ return a + (parseFloat(document.getElementById(id).value) || 0); }, 0);
+      document.getElementById('monto_total').value = +suma.toFixed(2);
+    }
+    function toggleDeposito() {
+      const dep = document.getElementById('estado').value === 'DEPOSITADO';
+      document.getElementById('wrapFechaDeposito').style.display = dep ? '' : 'none';
+    }
+    function onFechaChange() {
+      const f = document.getElementById('fecha').value;
+      if (!f) return;
+      const w = _isoWeek(f);
+      if (w) document.getElementById('semana').value = w;
+      document.getElementById('anio').value = new Date(f).getFullYear();
+    }
+    function setupForm() {
+      ['monto_reclutamiento','monto_relaciones_laborales','monto_capacitaciones','monto_bienestar'].forEach(function(id){
+        document.getElementById(id).addEventListener('input', recalcTotal);
+      });
+      document.getElementById('estado').addEventListener('change', toggleDeposito);
+      document.getElementById('fecha').addEventListener('change', onFechaChange);
+    }
+
+    // ===== LOGOUT =====
+    function logout() {
+      if (confirm('¿Cerrar sesión?')) {
+        localStorage.removeItem('bienestarSocialAuth');
+        window.location.href = '../index.html';
+      }
+    }
+
+    // ===== INIT =====
+    setupForm();
+    cargarRendiciones();
+  </script>
+
+  <!-- === BS-EXPORT-EXCEL : Exportar a Excel (reutilizable) === -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+  (function(){
+    function exportar(){
+      if (typeof XLSX === 'undefined'){ alert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
+      var wb = XLSX.utils.book_new(); var ws;
+      var data = window.__BS_EXPORT_DATA__;
+      if (Array.isArray(data) && data.length){
+        var headers = [];
+        data.forEach(function(row){ Object.keys(row).forEach(function(k){ if(headers.indexOf(k)<0) headers.push(k); }); });
+        var aoa = [headers];
+        data.forEach(function(row){ aoa.push(headers.map(function(h){ var v=row[h]; return (v===null||v===undefined)?'':v; })); });
+        ws = XLSX.utils.aoa_to_sheet(aoa);
+      } else {
+        var tabla = document.querySelector('#tablaContainer table');
+        if(!tabla || !tabla.querySelectorAll('tbody tr').length){ alert('No hay datos para exportar.'); return; }
+        ws = XLSX.utils.table_to_sheet(tabla, {raw:true});
+      }
+      XLSX.utils.book_append_sheet(wb, ws, 'Rendiciones');
+      XLSX.writeFile(wb, 'Rendiciones_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    }
+    var btn = document.createElement('button');
+    btn.textContent = '\u2B07\uFE0F Exportar Excel';
+    btn.onclick = exportar;
+    btn.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;background:#059669;color:#fff;border:none;padding:11px 16px;border-radius:10px;cursor:pointer;font:600 14px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+    function poner(){ document.body.appendChild(btn); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
+  })();
+  </script>
+</body>
+</html>
