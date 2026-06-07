@@ -16,6 +16,7 @@
     #tablaContainer th, #tablaContainer td{ white-space: nowrap; padding: 6px 8px; }
     #reporteContainer table th, #reporteContainer table td{ white-space: nowrap; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="bs-appshell">
@@ -81,13 +82,25 @@
           </div>
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Categoría</label>
-            <select class="bs-select" id="filterCategoria" onchange="cargarRendiciones()">
+            <select class="bs-select" id="filterCategoria" onchange="render()">
               <option value="">Todas</option>
               <option value="monto_reclutamiento">Reclutamiento</option>
               <option value="monto_relaciones_laborales">Relaciones Laborales</option>
               <option value="monto_capacitaciones">Capacitaciones</option>
               <option value="monto_bienestar">Bienestar</option>
             </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Buscar N° Rend.</label>
+            <input type="text" class="bs-input" id="filterBuscar" placeholder="Ej: 13522" oninput="render()">
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Desde</label>
+            <input type="date" class="bs-input" id="filterDesde" onchange="render()">
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Hasta</label>
+            <input type="date" class="bs-input" id="filterHasta" onchange="render()">
           </div>
         </div>
       </div>
@@ -265,7 +278,11 @@
       return 1 + Math.round(((date - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
     }
 
-    // ===== LISTAR + REPORTE =====
+    // ===== ESTADO LOCAL =====
+    let _CACHE = [];
+    let _chart = null;
+
+    // ===== LISTAR (fetch al servidor: año/empresa/responsable/estado) =====
     async function cargarRendiciones() {
       const filtros = {
         anio: document.getElementById('filterAnio').value,
@@ -275,7 +292,6 @@
       };
       const cont = document.getElementById('tablaContainer');
       cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
-
       try {
         const res = await api('bs_listarRendiciones', { filtros: filtros });
         if (!res.ok) {
@@ -283,48 +299,91 @@
           document.getElementById('reporteContainer').innerHTML = '';
           return;
         }
-        const allItems = res.items || [];
-        _poblarResponsables(allItems);
-        // Filtro de categoría (cliente): solo rendiciones con monto > 0 en esa categoría
-        const catField = document.getElementById('filterCategoria').value;
-        const items = catField ? allItems.filter(function(r){ return (parseFloat(r[catField]) || 0) > 0; }) : allItems;
-        window.__BS_EXPORT_DATA__ = items;
-        renderReporte(items);
-
-        if (items.length === 0) {
-          cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay rendiciones registradas con esos filtros.</p></div>';
-          return;
-        }
-
-        let html = '<div class="bs-table-wrap"><table class="bs-table">';
-        html += '<thead><tr><th>ID</th><th>Fecha</th><th>Sem</th><th>N° Rend.</th><th>Empresa</th>' +
-                '<th>Reclut.</th><th>RR.LL.</th><th>Capac.</th><th>Bienestar</th><th>Total</th>' +
-                '<th>Responsable</th><th>Estado</th><th></th></tr></thead><tbody>';
-        items.forEach(function(r) {
-          const badge = String(r.estado).toUpperCase() === 'DEPOSITADO' ? 'bs-badge-success' : 'bs-badge-warning';
-          html += '<tr>' +
-            '<td><strong>#' + r.id + '</strong></td>' +
-            '<td>' + _fechaCorta(r.fecha) + '</td>' +
-            '<td style="text-align:center;">' + (r.semana || '-') + '</td>' +
-            '<td>' + (r.rendicion || '-') + '</td>' +
-            '<td>' + (r.empresa || '-') + '</td>' +
-            '<td style="text-align:right;">' + fmtMoney(r.monto_reclutamiento) + '</td>' +
-            '<td style="text-align:right;">' + fmtMoney(r.monto_relaciones_laborales) + '</td>' +
-            '<td style="text-align:right;">' + fmtMoney(r.monto_capacitaciones) + '</td>' +
-            '<td style="text-align:right;">' + fmtMoney(r.monto_bienestar) + '</td>' +
-            '<td style="text-align:right;"><strong>' + fmtMoney(r.monto_total) + '</strong></td>' +
-            '<td>' + (r.responsable || '-') + '</td>' +
-            '<td><span class="bs-badge ' + badge + '">' + (r.estado || '-') + '</span></td>' +
-            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + r.id + ')">Editar</button>' +
-              (_esAdmin ? '<button class="bs-btn bs-btn-sm bs-btn-outline" style="margin-left:.3rem;border-color:#dc2626;color:#dc2626;" onclick="eliminar(' + r.id + ')">Eliminar</button>' : '') +
-            '</td>' +
-          '</tr>';
-        });
-        html += '</tbody></table></div>';
-        cont.innerHTML = html;
+        _CACHE = res.items || [];
+        _poblarResponsables(_CACHE);
+        render();
       } catch(err) {
         cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
       }
+    }
+
+    // ===== RENDER (filtros locales: categoría / búsqueda / rango fechas) =====
+    function render() {
+      const cont = document.getElementById('tablaContainer');
+      const catField = document.getElementById('filterCategoria').value;
+      const q = (document.getElementById('filterBuscar').value || '').trim().toLowerCase();
+      const desde = document.getElementById('filterDesde').value;
+      const hasta = document.getElementById('filterHasta').value;
+      const dDesde = desde ? new Date(desde) : null;
+      const dHasta = hasta ? new Date(hasta) : null;
+
+      let items = _CACHE.slice();
+      if (catField) items = items.filter(function(r){ return (parseFloat(r[catField]) || 0) > 0; });
+      if (q) items = items.filter(function(r){ return String(r.rendicion || '').toLowerCase().indexOf(q) >= 0; });
+      if (dDesde || dHasta) items = items.filter(function(r){
+        if (!r.fecha) return false;
+        const f = new Date(r.fecha);
+        if (isNaN(f.getTime())) return false;
+        if (dDesde && f < dDesde) return false;
+        if (dHasta && f > dHasta) return false;
+        return true;
+      });
+
+      window.__BS_EXPORT_DATA__ = items;
+      renderReporte(items);
+
+      if (items.length === 0) {
+        cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay rendiciones con esos filtros.</p></div>';
+        return;
+      }
+
+      let html = '<div class="bs-table-wrap"><table class="bs-table">';
+      html += '<thead><tr><th>ID</th><th>Fecha</th><th>Sem</th><th>N° Rend.</th><th>Empresa</th>' +
+              '<th>Reclut.</th><th>RR.LL.</th><th>Capac.</th><th>Bienestar</th><th>Total</th>' +
+              '<th>Responsable</th><th>Estado</th><th></th></tr></thead><tbody>';
+      items.forEach(function(r) {
+        const dep = String(r.estado).toUpperCase() === 'DEPOSITADO';
+        const badge = dep ? 'bs-badge-success' : 'bs-badge-warning';
+        const rec = parseFloat(r.monto_reclutamiento)||0, rll = parseFloat(r.monto_relaciones_laborales)||0,
+              cap = parseFloat(r.monto_capacitaciones)||0, bien = parseFloat(r.monto_bienestar)||0;
+        const mt = parseFloat(r.monto_total)||0;
+        const descuadre = Math.abs(mt - (rec+rll+cap+bien)) > 0.01;
+        const flag = descuadre ? '<span title="El total no coincide con la suma de categorías (suma: ' + fmtMoney(rec+rll+cap+bien) + ')" style="cursor:help;">🚩 </span>' : '';
+        const rowStyle = descuadre ? ' style="background:#fef2f2;"' : '';
+        html += '<tr' + rowStyle + '>' +
+          '<td><strong>#' + r.id + '</strong></td>' +
+          '<td>' + _fechaCorta(r.fecha) + '</td>' +
+          '<td style="text-align:center;">' + (r.semana || '-') + '</td>' +
+          '<td>' + (r.rendicion || '-') + '</td>' +
+          '<td>' + (r.empresa || '-') + '</td>' +
+          '<td style="text-align:right;">' + fmtMoney(r.monto_reclutamiento) + '</td>' +
+          '<td style="text-align:right;">' + fmtMoney(r.monto_relaciones_laborales) + '</td>' +
+          '<td style="text-align:right;">' + fmtMoney(r.monto_capacitaciones) + '</td>' +
+          '<td style="text-align:right;">' + fmtMoney(r.monto_bienestar) + '</td>' +
+          '<td style="text-align:right;">' + flag + '<strong>' + fmtMoney(r.monto_total) + '</strong></td>' +
+          '<td>' + (r.responsable || '-') + '</td>' +
+          '<td><span class="bs-badge ' + badge + '">' + (r.estado || '-') + '</span></td>' +
+          '<td style="white-space:nowrap;">' +
+            (!dep ? '<button class="bs-btn bs-btn-sm" style="background:#16a34a;color:#fff;" title="Marcar como depositado" onclick="marcarDepositado(' + r.id + ')">✓ Depositar</button> ' : '') +
+            '<button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + r.id + ')">Editar</button>' +
+            (_esAdmin ? '<button class="bs-btn bs-btn-sm bs-btn-outline" style="margin-left:.3rem;border-color:#dc2626;color:#dc2626;" onclick="eliminar(' + r.id + ')">Eliminar</button>' : '') +
+          '</td>' +
+        '</tr>';
+      });
+      html += '</tbody></table></div>';
+      cont.innerHTML = html;
+    }
+
+    // Marcar como depositado rápido (sin abrir el modal)
+    async function marcarDepositado(id) {
+      const hoy = new Date().toISOString().slice(0,10);
+      const f = prompt('Fecha de depósito (YYYY-MM-DD):', hoy);
+      if (!f) return;
+      try {
+        const res = await api('bs_actualizarRendicion', { usuario: user.usuario, id: parseInt(id), datos: { estado: 'DEPOSITADO', fecha_deposito: f } });
+        if (res.ok) cargarRendiciones();
+        else alert('Error: ' + (res.message || 'No se pudo actualizar'));
+      } catch(err) { alert('Error de conexión: ' + err.message); }
     }
 
     function _poblarResponsables(items) {
@@ -337,19 +396,21 @@
       if (actual) sel.value = actual;
     }
 
-    // ===== REPORTE EN VIVO (KPIs por empresa y categoría) =====
+    // ===== REPORTE EN VIVO (KPIs + resumen + gráfico) =====
     function renderReporte(items) {
       const cont = document.getElementById('reporteContainer');
+      if (_chart) { _chart.destroy(); _chart = null; }
       if (!items.length) { cont.innerHTML = ''; return; }
-      let total = 0, depositado = 0, pendiente = 0;
+      let total = 0, depositado = 0, pendiente = 0, flagged = 0;
       const cat = { rec:0, rll:0, cap:0, bien:0 };
       const empMap = { RAPEL:{total:0,rec:0,rll:0,cap:0,bien:0}, VERFRUT:{total:0,rec:0,rll:0,cap:0,bien:0} };
       items.forEach(function(r){
-        const mt = parseFloat(r.monto_total) || 0;
-        total += mt;
-        if (String(r.estado).toUpperCase() === 'DEPOSITADO') depositado += mt; else pendiente += mt;
         const rec = parseFloat(r.monto_reclutamiento)||0, rll = parseFloat(r.monto_relaciones_laborales)||0,
               cap = parseFloat(r.monto_capacitaciones)||0, bien = parseFloat(r.monto_bienestar)||0;
+        const mt = parseFloat(r.monto_total) || 0;
+        total += mt;
+        if (Math.abs(mt - (rec+rll+cap+bien)) > 0.01) flagged++;
+        if (String(r.estado).toUpperCase() === 'DEPOSITADO') depositado += mt; else pendiente += mt;
         cat.rec+=rec; cat.rll+=rll; cat.cap+=cap; cat.bien+=bien;
         const e = (String(r.empresa).toUpperCase().indexOf('VERFRUT')>=0) ? 'VERFRUT' : (String(r.empresa).toUpperCase().indexOf('RAPEL')>=0 ? 'RAPEL' : null);
         if (e) { empMap[e].total+=mt; empMap[e].rec+=rec; empMap[e].rll+=rll; empMap[e].cap+=cap; empMap[e].bien+=bien; }
@@ -375,22 +436,51 @@
           kpi('Monto total', fmtMoney(total), 'var(--bs-mod-rend)') +
           kpi('Depositado', fmtMoney(depositado), '#16a34a') +
           kpi('Pendiente', fmtMoney(pendiente), '#d97706') +
+          (flagged > 0 ? kpi('Con descuadre 🚩', flagged, '#dc2626') : '') +
         '</div>' +
-        '<div class="bs-card" style="margin:0;">' +
-          '<div class="bs-text-sm" style="font-weight:700;color:var(--bs-mod-rend);margin-bottom:.5rem;">Resumen por empresa y categoría</div>' +
-          '<div class="bs-table-wrap"><table class="bs-table"><thead><tr>' +
-          '<th>Empresa</th><th style="text-align:right;">Reclutamiento</th><th style="text-align:right;">RR.LL.</th>' +
-          '<th style="text-align:right;">Capacitaciones</th><th style="text-align:right;">Bienestar</th><th style="text-align:right;">Total</th>' +
-          '</tr></thead><tbody>' +
-          filaEmp('RAPEL', empMap.RAPEL) + filaEmp('VERFRUT', empMap.VERFRUT) +
-          '<tr style="border-top:2px solid #cbd5e1;"><td><strong>TOTAL</strong></td>' +
-            '<td style="text-align:right;"><strong>'+fmtMoney(cat.rec)+'</strong></td>' +
-            '<td style="text-align:right;"><strong>'+fmtMoney(cat.rll)+'</strong></td>' +
-            '<td style="text-align:right;"><strong>'+fmtMoney(cat.cap)+'</strong></td>' +
-            '<td style="text-align:right;"><strong>'+fmtMoney(cat.bien)+'</strong></td>' +
-            '<td style="text-align:right;"><strong>'+fmtMoney(total)+'</strong></td></tr>' +
-          '</tbody></table></div>' +
+        '<div class="bs-grid bs-gap" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items:start;">' +
+          '<div class="bs-card" style="margin:0;">' +
+            '<div class="bs-text-sm" style="font-weight:700;color:var(--bs-mod-rend);margin-bottom:.5rem;">Resumen por empresa y categoría</div>' +
+            '<div class="bs-table-wrap"><table class="bs-table"><thead><tr>' +
+            '<th>Empresa</th><th style="text-align:right;">Reclut.</th><th style="text-align:right;">RR.LL.</th>' +
+            '<th style="text-align:right;">Capac.</th><th style="text-align:right;">Bienestar</th><th style="text-align:right;">Total</th>' +
+            '</tr></thead><tbody>' +
+            filaEmp('RAPEL', empMap.RAPEL) + filaEmp('VERFRUT', empMap.VERFRUT) +
+            '<tr style="border-top:2px solid #cbd5e1;"><td><strong>TOTAL</strong></td>' +
+              '<td style="text-align:right;"><strong>'+fmtMoney(cat.rec)+'</strong></td>' +
+              '<td style="text-align:right;"><strong>'+fmtMoney(cat.rll)+'</strong></td>' +
+              '<td style="text-align:right;"><strong>'+fmtMoney(cat.cap)+'</strong></td>' +
+              '<td style="text-align:right;"><strong>'+fmtMoney(cat.bien)+'</strong></td>' +
+              '<td style="text-align:right;"><strong>'+fmtMoney(total)+'</strong></td></tr>' +
+            '</tbody></table></div>' +
+          '</div>' +
+          '<div class="bs-card" style="margin:0;">' +
+            '<div class="bs-text-sm" style="font-weight:700;color:var(--bs-mod-rend);margin-bottom:.5rem;">Gasto por categoría y empresa</div>' +
+            '<div style="position:relative;height:260px;"><canvas id="rendChart"></canvas></div>' +
+          '</div>' +
         '</div>';
+
+      renderChart(empMap);
+    }
+
+    function renderChart(empMap) {
+      var canvas = document.getElementById('rendChart');
+      if (!canvas || typeof Chart === 'undefined') return;
+      _chart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ['Reclutamiento','RR.LL.','Capacitaciones','Bienestar'],
+          datasets: [
+            { label:'RAPEL',   data:[empMap.RAPEL.rec, empMap.RAPEL.rll, empMap.RAPEL.cap, empMap.RAPEL.bien], backgroundColor:'#0033A0' },
+            { label:'VERFRUT', data:[empMap.VERFRUT.rec, empMap.VERFRUT.rll, empMap.VERFRUT.cap, empMap.VERFRUT.bien], backgroundColor:'#059669' }
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{ position:'bottom' } },
+          scales:{ y:{ beginAtZero:true, ticks:{ callback:function(v){ return 'S/ ' + v; } } } }
+        }
+      });
     }
 
     // ===== MODAL =====
