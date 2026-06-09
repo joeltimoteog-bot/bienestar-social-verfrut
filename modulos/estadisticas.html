@@ -153,7 +153,7 @@
     const ADMINS = ['jtimoteo','ovilela','jchavez'];
     const isAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test(user.rol || '');
     if (!isAdmin) {
-      await appAlert('Esta sección es solo para administración / gerencia.');
+      appAlert('Esta sección es solo para administración / gerencia.');
       window.location.href = '../portal.html';
     }
     document.getElementById('userName').textContent = user.nombre || user.usuario;
@@ -336,8 +336,8 @@
     }
 
     // ===== EXPORT =====
-    async function exportExcel(){
-      if (!DATA) { await appAlert('Primero carga los datos.'); return; }
+    function exportExcel(){
+      if (!DATA) { appAlert('Primero carga los datos.'); return; }
       const wb = XLSX.utils.book_new();
       const MODS = Object.keys(DATA.totales);
 

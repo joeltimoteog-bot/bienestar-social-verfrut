@@ -236,7 +236,7 @@
     const BS_ADMINS = ['jtimoteo','ovilela','jchavez'];
     const _esAdmin = BS_ADMINS.indexOf(String(user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test(String(user.rol || ''));
     if (!_esAdmin && (!user.permisos || !user.permisos.rendiciones)) {
-      await appAlert('No tienes permiso para acceder a este módulo');
+      appAlert('No tienes permiso para acceder a este módulo');
       window.location.href = '../portal.html';
     }
     document.getElementById('userName').textContent = user.nombre || user.usuario;
@@ -383,8 +383,8 @@
       try {
         const res = await api('bs_actualizarRendicion', { usuario: user.usuario, id: parseInt(id), datos: { estado: 'DEPOSITADO', fecha_deposito: f } });
         if (res.ok) cargarRendiciones();
-        else await appAlert('Error: ' + (res.message || 'No se pudo actualizar'));
-      } catch(err) { await appAlert('Error de conexión: ' + err.message); }
+        else appAlert('Error: ' + (res.message || 'No se pudo actualizar'));
+      } catch(err) { appAlert('Error de conexión: ' + err.message); }
     }
 
     function _poblarResponsables(items) {
@@ -515,17 +515,17 @@
       try {
         const res = await api('bs_eliminarRendicion', { usuario: user.usuario, id: parseInt(id) });
         if (res.ok) cargarRendiciones();
-        else await appAlert('Error: ' + (res.message || 'No se pudo eliminar'));
+        else appAlert('Error: ' + (res.message || 'No se pudo eliminar'));
       } catch(err) {
-        await appAlert('Error de conexión: ' + err.message);
+        appAlert('Error de conexión: ' + err.message);
       }
     }
 
     async function editar(id) {
       const res = await api('bs_listarRendiciones', {});
-      if (!res.ok) return await appAlert('Error: ' + res.message);
+      if (!res.ok) return appAlert('Error: ' + res.message);
       const r = (res.items || []).find(function(x){ return parseInt(x.id) === parseInt(id); });
-      if (!r) return await appAlert('Rendición no encontrada');
+      if (!r) return appAlert('Rendición no encontrada');
 
       document.getElementById('formTitle').textContent = 'Editar Rendición #' + r.id;
       document.getElementById('rendicionId').value = r.id;
@@ -616,8 +616,8 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
   (function(){
-    async function exportar(){
-      if (typeof XLSX === 'undefined'){ await appAlert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
+    function exportar(){
+      if (typeof XLSX === 'undefined'){ appAlert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
       var wb = XLSX.utils.book_new(); var ws;
       var data = window.__BS_EXPORT_DATA__;
       if (Array.isArray(data) && data.length){
@@ -628,7 +628,7 @@
         ws = XLSX.utils.aoa_to_sheet(aoa);
       } else {
         var tabla = document.querySelector('#tablaContainer table');
-        if(!tabla || !tabla.querySelectorAll('tbody tr').length){ await appAlert('No hay datos para exportar.'); return; }
+        if(!tabla || !tabla.querySelectorAll('tbody tr').length){ appAlert('No hay datos para exportar.'); return; }
         ws = XLSX.utils.table_to_sheet(tabla, {raw:true});
       }
       XLSX.utils.book_append_sheet(wb, ws, 'Rendiciones');
@@ -660,10 +660,10 @@
     }
     async function emitirPDF(){
       if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined'){
-        await appAlert('Las librerías de PDF se están cargando, intenta de nuevo en unos segundos.'); return;
+        appAlert('Las librerías de PDF se están cargando, intenta de nuevo en unos segundos.'); return;
       }
       var cont = document.getElementById('reporteContainer');
-      if (!cont || !cont.innerHTML.trim()){ await appAlert('No hay datos para el reporte con los filtros actuales.'); return; }
+      if (!cont || !cont.innerHTML.trim()){ appAlert('No hay datos para el reporte con los filtros actuales.'); return; }
       var btn = document.getElementById('btnPDF'); var txt = btn.textContent; btn.textContent = 'Generando...'; btn.disabled = true;
       try {
         var canvas = await html2canvas(cont, { scale: 2, backgroundColor: '#ffffff', logging: false });
@@ -681,7 +681,7 @@
         if (imgH > maxH){ imgH = maxH; imgW = canvas.width * imgH / canvas.height; }
         pdf.addImage(img, 'PNG', m, y, imgW, imgH);
         pdf.save('Reporte_Rendiciones_' + new Date().toISOString().slice(0,10) + '.pdf');
-      } catch(e){ await appAlert('No se pudo generar el PDF: ' + e.message); }
+      } catch(e){ appAlert('No se pudo generar el PDF: ' + e.message); }
       finally { btn.textContent = txt; btn.disabled = false; }
     }
     var btn = document.createElement('button');

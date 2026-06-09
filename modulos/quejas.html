@@ -302,7 +302,7 @@
     const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
 
     // ===== VALIDACION OBLIGATORIA (global) =====
-    async function bsValidarRequeridos(ids) {
+    function bsValidarRequeridos(ids) {
       for (let i = 0; i < ids.length; i++) {
         const el = document.getElementById(ids[i]);
         if (!el) continue;
@@ -333,7 +333,7 @@
       window.location.href = '../index.html';
     }
     if (!user.permisos || !user.permisos.quejas) {
-      await appAlert('No tienes permiso para acceder a este módulo');
+      appAlert('No tienes permiso para acceder a este módulo');
       window.location.href = '../portal.html';
     }
     document.getElementById('userName').textContent = user.nombre || user.usuario;
@@ -544,9 +544,9 @@
 
     async function editar(id) {
       const res = await api('bs_listarQuejas', {});
-      if (!res.ok) return await appAlert('Error: ' + res.message);
+      if (!res.ok) return appAlert('Error: ' + res.message);
       const q = res.items.find(function(x) { return parseInt(x.id) === parseInt(id); });
-      if (!q) return await appAlert('Hallazgo no encontrado');
+      if (!q) return appAlert('Hallazgo no encontrado');
 
       document.getElementById('formTitle').textContent = 'Editar Hallazgo #' + q.id;
       document.getElementById('quejaId').value = q.id;
@@ -877,8 +877,8 @@
     tablas.sort(function(a,b){ return b.querySelectorAll('tbody tr').length - a.querySelectorAll('tbody tr').length; });
     return tablas[0];
   }
-  async function exportar(){
-    if (typeof XLSX === 'undefined'){ await appAlert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
+  function exportar(){
+    if (typeof XLSX === 'undefined'){ appAlert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
     var wb = XLSX.utils.book_new();
     var ws;
     var data = window.__BS_EXPORT_DATA__;
@@ -890,7 +890,7 @@
       ws = XLSX.utils.aoa_to_sheet(aoa);
     } else {
       var tabla = tablaPrincipal();
-      if(!tabla || !tabla.querySelectorAll('tbody tr').length){ await appAlert('No hay datos para exportar.'); return; }
+      if(!tabla || !tabla.querySelectorAll('tbody tr').length){ appAlert('No hay datos para exportar.'); return; }
       ws = XLSX.utils.table_to_sheet(tabla, {raw:true});
     }
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');

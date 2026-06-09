@@ -404,16 +404,16 @@
       if (!await appConfirm('¿Marcar esta sugerencia como FINALIZADA?')) return;
       try {
         const r = await api('bs_actualizarSugerencia', { usuario: user.usuario, id: id, datos: { estado: 'Finalizada' } });
-        if (r && r.ok) cargar(); else await appAlert((r && r.message) || 'No se pudo actualizar');
-      } catch(e) { await appAlert('Error: ' + e.message); }
+        if (r && r.ok) cargar(); else appAlert((r && r.message) || 'No se pudo actualizar');
+      } catch(e) { appAlert('Error: ' + e.message); }
     }
     async function eliminar(id) {
       if (!isAdmin) return;
       if (!await appConfirm('¿Eliminar esta sugerencia? Esta acción no se puede deshacer.')) return;
       try {
         const r = await api('bs_eliminarSugerencia', { usuario: user.usuario, id: id });
-        if (r && r.ok) cargar(); else await appAlert((r && r.message) || 'No se pudo eliminar');
-      } catch(e) { await appAlert('Error: ' + e.message); }
+        if (r && r.ok) cargar(); else appAlert((r && r.message) || 'No se pudo eliminar');
+      } catch(e) { appAlert('Error: ' + e.message); }
     }
 
     // ===== INIT =====

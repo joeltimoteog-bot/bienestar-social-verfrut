@@ -500,7 +500,7 @@
     const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
 
     // ===== VALIDACION OBLIGATORIA (global) =====
-    async function bsValidarRequeridos(ids) {
+    function bsValidarRequeridos(ids) {
       for (let i = 0; i < ids.length; i++) {
         const el = document.getElementById(ids[i]);
         if (!el) continue;
@@ -523,7 +523,7 @@
     if (!session) window.location.href = '../index.html';
     let user;
     try { user = JSON.parse(session); if (!user || !user.usuario) throw new Error(); } catch(e) { window.location.href = '../index.html'; }
-    if (!user.permisos || !user.permisos.accidentes) { await appAlert('No tienes permiso para acceder a este módulo'); window.location.href = '../portal.html'; }
+    if (!user.permisos || !user.permisos.accidentes) { appAlert('No tienes permiso para acceder a este módulo'); window.location.href = '../portal.html'; }
     document.getElementById('userName').textContent = user.nombre || user.usuario;
 
     async function api(action, payload) {
@@ -707,7 +707,7 @@
 
     async function editarCaso(id) {
       const c = casosCache.find(function(x) { return parseInt(x.id) === parseInt(id); });
-      if (!c) return await appAlert('Caso no encontrado');
+      if (!c) return appAlert('Caso no encontrado');
       document.getElementById('formTitle').textContent = 'Caso #' + c.id + ' · ' + (c.nombre || '');
       document.getElementById('casoId').value = c.id;
       ALL_FIELDS.forEach(function(f) {
@@ -755,7 +755,7 @@
     async function verSeguimientos(id) {
       casoActualId = id;
       const c = casosCache.find(function(x) { return parseInt(x.id) === parseInt(id); });
-      if (!c) return await appAlert('Caso no encontrado');
+      if (!c) return appAlert('Caso no encontrado');
       document.getElementById('segTitle').textContent = 'Seguimientos · Caso #' + c.id;
       document.getElementById('casoResumen').innerHTML =
         '<div class="bs-flex bs-justify-between bs-items-center" style="flex-wrap: wrap;">' +
@@ -905,7 +905,7 @@
     return out;
   }
   async function exportar(){
-    if (typeof XLSX === 'undefined'){ await appAlert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
+    if (typeof XLSX === 'undefined'){ appAlert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
     if (btn.disabled) return;
     var oldTxt = btn.textContent;
     btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = 'Generando...';
@@ -917,7 +917,7 @@
         ws = _aoaDe(data);
       } else {
         var tabla = tablaPrincipal();
-        if(!tabla || !tabla.querySelectorAll('tbody tr').length){ await appAlert('No hay datos para exportar.'); return; }
+        if(!tabla || !tabla.querySelectorAll('tbody tr').length){ appAlert('No hay datos para exportar.'); return; }
         ws = XLSX.utils.table_to_sheet(tabla, {raw:true});
       }
       XLSX.utils.book_append_sheet(wb, ws, 'Datos');
@@ -935,7 +935,7 @@
       var nombre = (document.title || 'Bienestar').replace(/[^\w\-]+/g,'_').slice(0,40);
       XLSX.writeFile(wb, nombre + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
     } catch(err){
-      await appAlert('Ocurrio un error al exportar: ' + (err && err.message ? err.message : err));
+      appAlert('Ocurrio un error al exportar: ' + (err && err.message ? err.message : err));
     } finally {
       btn.disabled = false; btn.style.opacity = '1'; btn.textContent = oldTxt;
     }
