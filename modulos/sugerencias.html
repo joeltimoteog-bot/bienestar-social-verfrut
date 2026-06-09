@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
+  <script src="../assets/js/modal-system.js"></script>
 </head>
 <body>
   <div class="bs-appshell">
@@ -212,8 +213,8 @@
       return await res.json();
     }
 
-    function logout() {
-      if (confirm('¿Cerrar sesión?')) {
+    async function logout() {
+      if (await appConfirm('¿Cerrar sesión?')) {
         localStorage.removeItem('bienestarSocialAuth');
         window.location.href = '../index.html';
       }
@@ -389,7 +390,7 @@
       finally { btn.disabled = false; btn.textContent = t; }
     }
     async function finalizar() {
-      if (!confirm('¿Marcar esta sugerencia como FINALIZADA?')) return;
+      if (!await appConfirm('¿Marcar esta sugerencia como FINALIZADA?')) return;
       const btn = document.getElementById('btnFinalizar');
       btn.disabled = true; const t = btn.textContent; btn.textContent = 'Finalizando...';
       try { document.getElementById('g_estado').value = 'Finalizada'; await _guardarGestion('Finalizada'); }
@@ -400,19 +401,19 @@
     // ===== Acciones rapidas (admin) =====
     async function finalizarRapido(id) {
       if (!isAdmin) return;
-      if (!confirm('¿Marcar esta sugerencia como FINALIZADA?')) return;
+      if (!await appConfirm('¿Marcar esta sugerencia como FINALIZADA?')) return;
       try {
         const r = await api('bs_actualizarSugerencia', { usuario: user.usuario, id: id, datos: { estado: 'Finalizada' } });
-        if (r && r.ok) cargar(); else alert((r && r.message) || 'No se pudo actualizar');
-      } catch(e) { alert('Error: ' + e.message); }
+        if (r && r.ok) cargar(); else await appAlert((r && r.message) || 'No se pudo actualizar');
+      } catch(e) { await appAlert('Error: ' + e.message); }
     }
     async function eliminar(id) {
       if (!isAdmin) return;
-      if (!confirm('¿Eliminar esta sugerencia? Esta acción no se puede deshacer.')) return;
+      if (!await appConfirm('¿Eliminar esta sugerencia? Esta acción no se puede deshacer.')) return;
       try {
         const r = await api('bs_eliminarSugerencia', { usuario: user.usuario, id: id });
-        if (r && r.ok) cargar(); else alert((r && r.message) || 'No se pudo eliminar');
-      } catch(e) { alert('Error: ' + e.message); }
+        if (r && r.ok) cargar(); else await appAlert((r && r.message) || 'No se pudo eliminar');
+      } catch(e) { await appAlert('Error: ' + e.message); }
     }
 
     // ===== INIT =====

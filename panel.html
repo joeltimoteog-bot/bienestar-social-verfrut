@@ -92,6 +92,7 @@
     @page { margin:12mm; }
   }
 </style>
+  <script src="assets/js/modal-system.js"></script>
 </head>
 <body>
 
@@ -440,8 +441,8 @@ function renderCasosContrato(d){
 // ---- Exportar Excel / PDF ----
 let DATA_DASH=null, DATA_ALERTAS=null, DATA_CASOS=null;
 
-function exportarExcel(){
-  if (typeof XLSX === 'undefined'){ alert('La librería de Excel aún se está cargando. Intenta de nuevo en unos segundos.'); return; }
+async function exportarExcel(){
+  if (typeof XLSX === 'undefined'){ await appAlert('La librería de Excel aún se está cargando. Intenta de nuevo en unos segundos.'); return; }
   const wb = XLSX.utils.book_new();
   const hoy = new Date().toLocaleString('es-PE');
 
@@ -493,7 +494,7 @@ function exportarExcel(){
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Movimientos');
   }
 
-  if (!wb.SheetNames.length){ alert('Aún no hay datos cargados.'); return; }
+  if (!wb.SheetNames.length){ await appAlert('Aún no hay datos cargados.'); return; }
   XLSX.writeFile(wb, 'Panel_Bienestar_' + new Date().toISOString().slice(0,10) + '.xlsx');
 }
 

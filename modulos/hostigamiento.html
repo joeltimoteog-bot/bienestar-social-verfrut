@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
+  <script src="../assets/js/modal-system.js"></script>
 </head>
 <body>
   <div class="bs-appshell">
@@ -199,7 +200,7 @@
     const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
 
     // ===== VALIDACION OBLIGATORIA (global) =====
-    function bsValidarRequeridos(ids) {
+    async function bsValidarRequeridos(ids) {
       for (let i = 0; i < ids.length; i++) {
         const el = document.getElementById(ids[i]);
         if (!el) continue;
@@ -229,7 +230,7 @@
       window.location.href = '../index.html';
     }
     if (!user.permisos || !user.permisos.hostigamiento) {
-      alert('No tienes permiso para acceder a este módulo');
+      await appAlert('No tienes permiso para acceder a este módulo');
       window.location.href = '../portal.html';
     }
     document.getElementById('userName').textContent = user.nombre || user.usuario;
@@ -377,9 +378,9 @@
 
     async function editar(id) {
       const res = await api('bs_listarHostigamiento', {});
-      if (!res.ok) return alert('Error: ' + res.message);
+      if (!res.ok) return await appAlert('Error: ' + res.message);
       const d = res.items.find(function(x) { return parseInt(x.id) === parseInt(id); });
-      if (!d) return alert('No encontrado');
+      if (!d) return await appAlert('No encontrado');
 
       document.getElementById('formTitle').textContent = 'Denuncia #' + d.id;
       document.getElementById('denunciaId').value = d.id;
@@ -440,8 +441,8 @@
     }
 
     // ===== LOGOUT =====
-    function logout() {
-      if (confirm('¿Cerrar sesión?')) {
+    async function logout() {
+      if (await appConfirm('¿Cerrar sesión?')) {
         localStorage.removeItem('bienestarSocialAuth');
         window.location.href = '../index.html';
       }
@@ -510,8 +511,8 @@
     tablas.sort(function(a,b){ return b.querySelectorAll('tbody tr').length - a.querySelectorAll('tbody tr').length; });
     return tablas[0];
   }
-  function exportar(){
-    if (typeof XLSX === 'undefined'){ alert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
+  async function exportar(){
+    if (typeof XLSX === 'undefined'){ await appAlert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
     var wb = XLSX.utils.book_new();
     var ws;
     var data = window.__BS_EXPORT_DATA__;
@@ -523,7 +524,7 @@
       ws = XLSX.utils.aoa_to_sheet(aoa);
     } else {
       var tabla = tablaPrincipal();
-      if(!tabla || !tabla.querySelectorAll('tbody tr').length){ alert('No hay datos para exportar.'); return; }
+      if(!tabla || !tabla.querySelectorAll('tbody tr').length){ await appAlert('No hay datos para exportar.'); return; }
       ws = XLSX.utils.table_to_sheet(tabla, {raw:true});
     }
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
