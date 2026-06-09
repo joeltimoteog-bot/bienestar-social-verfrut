@@ -525,18 +525,23 @@
               datalabels: {
                 anchor: 'end',
                 align: 'top',
-                offset: 2,
+                offset: 4,
                 formatter: function(value) {
                   if (!value || value === 0) return '';
-                  return value >= 1000 ? (value/1000).toFixed(1) + 'k' : Math.round(value);
+                  return 'S/ ' + value.toLocaleString('es-PE', {minimumFractionDigits:2, maximumFractionDigits:2});
                 },
-                font: { weight: 'bold', size: 9 },
+                font: { weight: 'bold', size: 11 },
                 color: function(ctx) {
-                  return ctx.dataset.type === 'line' ? '#dc2626' : (ctx.datasetIndex === 0 ? '#0033A0' : '#059669');
-                }
+                  return ctx.dataset.type === 'line' ? '#b91c1c' : (ctx.datasetIndex === 0 ? '#1e3a8a' : '#047857');
+                },
+                backgroundColor: function(ctx) {
+                  return 'rgba(255, 255, 255, 0.85)';
+                },
+                borderRadius: 4,
+                padding: { top: 2, bottom: 2, left: 4, right: 4 }
               }
             },
-            scales: { y:{ beginAtZero:true, ticks:{ callback:function(v){ return 'S/ ' + v; } } } }
+            scales: { y:{ beginAtZero:true, ticks:{ callback:function(v){ return 'S/ ' + v; } }, suggestedMax: function(ctx){ var max = 0; ctx.chart.data.datasets.forEach(function(ds){ ds.data.forEach(function(v){ if(v>max) max=v; }); }); return max * 1.25; } } }
           },
           plugins: [ChartDataLabels]
         });
@@ -563,18 +568,23 @@
               datalabels: {
                 anchor: 'end',
                 align: 'top',
-                offset: 2,
+                offset: 4,
                 formatter: function(value) {
                   if (!value || value === 0) return '';
                   return value;
                 },
-                font: { weight: 'bold', size: 10 },
+                font: { weight: 'bold', size: 12 },
                 color: function(ctx) {
-                  return ctx.dataset.type === 'line' ? '#dc2626' : (ctx.datasetIndex === 0 ? '#0033A0' : '#059669');
-                }
+                  return ctx.dataset.type === 'line' ? '#b91c1c' : (ctx.datasetIndex === 0 ? '#1e3a8a' : '#047857');
+                },
+                backgroundColor: function(ctx) {
+                  return 'rgba(255, 255, 255, 0.85)';
+                },
+                borderRadius: 4,
+                padding: { top: 2, bottom: 2, left: 5, right: 5 }
               }
             },
-            scales: { y:{ beginAtZero:true, ticks:{ precision:0, stepSize:1 } } }
+            scales: { y:{ beginAtZero:true, ticks:{ precision:0, stepSize:1 }, suggestedMax: function(ctx){ var max = 0; ctx.chart.data.datasets.forEach(function(ds){ ds.data.forEach(function(v){ if(v>max) max=v; }); }); return max + Math.max(1, Math.ceil(max*0.25)); } } }
           },
           plugins: [ChartDataLabels]
         });
