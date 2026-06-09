@@ -282,6 +282,7 @@
     // ===== ESTADO LOCAL =====
     let _CACHE = [];
     let _chart = null;
+    let _chartMontoMes = null, _chartCantMes = null;  // _MENSUAL_V1
 
     // ===== LISTAR (fetch al servidor: año/empresa/responsable/estado) =====
     async function cargarRendiciones() {
@@ -401,10 +402,18 @@
     function renderReporte(items) {
       const cont = document.getElementById('reporteContainer');
       if (_chart) { _chart.destroy(); _chart = null; }
+      if (_chartMontoMes) { _chartMontoMes.destroy(); _chartMontoMes = null; }  // _MENSUAL_V1
+      if (_chartCantMes)  { _chartCantMes.destroy();  _chartCantMes = null; }   // _MENSUAL_V1
       if (!items.length) { cont.innerHTML = ''; return; }
       let total = 0, depositado = 0, pendiente = 0, flagged = 0;
       const cat = { rec:0, rll:0, cap:0, bien:0 };
       const empMap = { RAPEL:{total:0,rec:0,rll:0,cap:0,bien:0}, VERFRUT:{total:0,rec:0,rll:0,cap:0,bien:0} };
+      // _MENSUAL_V1: mapeo por mes (0-11) × empresa para monto y cantidad
+      const monthMap = {
+        RAPEL:   { monto: new Array(12).fill(0), count: new Array(12).fill(0) },
+        VERFRUT: { monto: new Array(12).fill(0), count: new Array(12).fill(0) },
+        TOTAL:   { monto: new Array(12).fill(0), count: new Array(12).fill(0) }
+      };
       items.forEach(function(r){
         const rec = parseFloat(r.monto_reclutamiento)||0, rll = parseFloat(r.monto_relaciones_laborales)||0,
               cap = parseFloat(r.monto_capacitaciones)||0, bien = parseFloat(r.monto_bienestar)||0;
@@ -415,6 +424,19 @@
         cat.rec+=rec; cat.rll+=rll; cat.cap+=cap; cat.bien+=bien;
         const e = (String(r.empresa).toUpperCase().indexOf('VERFRUT')>=0) ? 'VERFRUT' : (String(r.empresa).toUpperCase().indexOf('RAPEL')>=0 ? 'RAPEL' : null);
         if (e) { empMap[e].total+=mt; empMap[e].rec+=rec; empMap[e].rll+=rll; empMap[e].cap+=cap; empMap[e].bien+=bien; }
+        // _MENSUAL_V1: extraer mes de r.fecha (YYYY-MM-DD)
+        if (r.fecha) {
+          const fechaStr = String(r.fecha);
+          const partes = fechaStr.indexOf('T') >= 0 ? fechaStr.split('T')[0].split('-') : fechaStr.split('-');
+          if (partes.length >= 2) {
+            const mes = parseInt(partes[1], 10) - 1;
+            if (mes >= 0 && mes <= 11) {
+              if (e) { monthMap[e].monto[mes] += mt; monthMap[e].count[mes] += 1; }
+              monthMap.TOTAL.monto[mes] += mt;
+              monthMap.TOTAL.count[mes] += 1;
+            }
+          }
+        }
       });
 
       function kpi(label, val, color) {
@@ -459,9 +481,71 @@
             '<div class="bs-text-sm" style="font-weight:700;color:var(--bs-mod-rend);margin-bottom:.5rem;">Gasto por categoría y empresa</div>' +
             '<div style="position:relative;height:260px;"><canvas id="rendChart"></canvas></div>' +
           '</div>' +
+        '</div>' +
+        // _MENSUAL_V1: 2 gráficos mensuales (monto + cantidad)
+        '<div class="bs-grid bs-gap" style="grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); align-items:stretch; margin-top:1rem;">' +
+          '<div class="bs-card" style="margin:0;">' +
+            '<div class="bs-text-sm" style="font-weight:700;color:var(--bs-mod-rend);margin-bottom:.5rem;">Monto mensual (S/) por empresa</div>' +
+            '<div style="position:relative;height:280px;"><canvas id="rendChartMontoMes"></canvas></div>' +
+          '</div>' +
+          '<div class="bs-card" style="margin:0;">' +
+            '<div class="bs-text-sm" style="font-weight:700;color:var(--bs-mod-rend);margin-bottom:.5rem;">Cantidad de rendiciones por mes</div>' +
+            '<div style="position:relative;height:280px;"><canvas id="rendChartCantMes"></canvas></div>' +
+          '</div>' +
         '</div>';
 
       renderChart(empMap);
+      renderChartMensual(monthMap);  // _MENSUAL_V1
+    }
+
+    // _MENSUAL_V1: gráficos mensuales (monto + cantidad) con barras RAPEL/VERFRUT + línea TOTAL
+    function renderChartMensual(monthMap) {
+      var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+      // Gráfico A: Monto mensual
+      var canvasMonto = document.getElementById('rendChartMontoMes');
+      if (canvasMonto && typeof Chart !== 'undefined') {
+        _chartMontoMes = new Chart(canvasMonto.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: MESES,
+            datasets: [
+              { type:'bar',  label:'RAPEL',   data: monthMap.RAPEL.monto,   backgroundColor:'#0033A0', order:2 },
+              { type:'bar',  label:'VERFRUT', data: monthMap.VERFRUT.monto, backgroundColor:'#059669', order:2 },
+              { type:'line', label:'TOTAL',   data: monthMap.TOTAL.monto,   borderColor:'#dc2626', backgroundColor:'#dc2626', borderWidth:2, tension:0.3, pointRadius:4, pointHoverRadius:6, fill:false, order:1 }
+            ]
+          },
+          options: {
+            responsive:true, maintainAspectRatio:false,
+            plugins: {
+              legend: { position:'bottom' },
+              tooltip: { callbacks: { label: function(ctx){ return ctx.dataset.label + ': S/ ' + (ctx.parsed.y||0).toLocaleString('es-PE', {minimumFractionDigits:2, maximumFractionDigits:2}); } } }
+            },
+            scales: { y:{ beginAtZero:true, ticks:{ callback:function(v){ return 'S/ ' + v; } } } }
+          }
+        });
+      }
+
+      // Gráfico B: Cantidad mensual
+      var canvasCant = document.getElementById('rendChartCantMes');
+      if (canvasCant && typeof Chart !== 'undefined') {
+        _chartCantMes = new Chart(canvasCant.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: MESES,
+            datasets: [
+              { type:'bar',  label:'RAPEL',   data: monthMap.RAPEL.count,   backgroundColor:'#0033A0', order:2 },
+              { type:'bar',  label:'VERFRUT', data: monthMap.VERFRUT.count, backgroundColor:'#059669', order:2 },
+              { type:'line', label:'TOTAL',   data: monthMap.TOTAL.count,   borderColor:'#dc2626', backgroundColor:'#dc2626', borderWidth:2, tension:0.3, pointRadius:4, pointHoverRadius:6, fill:false, order:1 }
+            ]
+          },
+          options: {
+            responsive:true, maintainAspectRatio:false,
+            plugins: { legend: { position:'bottom' } },
+            scales: { y:{ beginAtZero:true, ticks:{ precision:0, stepSize:1 } } }
+          }
+        });
+      }
     }
 
     function renderChart(empMap) {
