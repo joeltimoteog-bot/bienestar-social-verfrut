@@ -188,6 +188,16 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3O
 // ============================================================
 const auth = JSON.parse(localStorage.getItem('bienestarSocialAuth') || 'null');
 if (!auth) { window.location.href = 'index.html'; }
+// Guard: el Panel requiere permiso 'panel' o ser admin
+(function(){
+  var ADMINS = ['jtimoteo','ovilela','jchavez'];
+  var esAdm = auth && (ADMINS.indexOf(String(auth.usuario||'').toLowerCase()) >= 0 || /admin|geren/i.test(String(auth.rol||'')));
+  var P = (auth && auth.permisos) || {};
+  if (auth && !esAdm && P.panel !== true && P.mod_panel !== true) {
+    alert('No tienes permiso para acceder al Panel consolidado');
+    window.location.href = 'portal.html';
+  }
+})();
 document.getElementById('userName').textContent = '👤 ' + (auth?.nombre || auth?.usuario || '');
 
 function esAdmin(){ return auth && auth.rol && /admin/i.test(auth.rol); }

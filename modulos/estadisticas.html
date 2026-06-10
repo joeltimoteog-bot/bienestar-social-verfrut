@@ -152,7 +152,8 @@
     }
     const ADMINS = ['jtimoteo','ovilela','jchavez'];
     const isAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test(user.rol || '');
-    if (!isAdmin) {
+    const _tieneFlagEst = !!(user.permisos && (user.permisos.estadisticas === true || user.permisos.mod_estadisticas === true));
+    if (!isAdmin && !_tieneFlagEst) {
       appAlert('Esta sección es solo para administración / gerencia.');
       window.location.href = '../portal.html';
     }

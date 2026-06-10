@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css">
-  <script src="assets/js/modal-system.js"></script>
 </head>
 <body>
   <div class="bs-appshell">
@@ -116,7 +115,6 @@
       {
         id: 'panel',
         permiso: 'panel',
-        siempre: true,
         url: 'panel.html',
         title: 'Panel / Dashboard',
         desc: 'Resumen consolidado de todos los modulos (KPIs y graficos).',
@@ -126,6 +124,7 @@
       {
         id: 'estadisticas',
         adminOnly: true,
+        permiso: 'estadisticas',
         url: 'modulos/estadisticas.html',
         title: 'Estadísticas Empresariales',
         desc: 'Indicadores y cumplimiento de todos los módulos. Solo gerencia.',
@@ -138,7 +137,7 @@
       const grid = document.getElementById('moduleGrid');
       const ADMINS = ['jtimoteo','ovilela','jchavez'];
       const isAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test((user && user.rol) || '');
-      const html = MODULOS.filter(function(m) { return !m.adminOnly || isAdmin; }).map(function(m) {
+      const html = MODULOS.filter(function(m) { return !m.adminOnly || isAdmin || (m.permiso && user.permisos && user.permisos[m.permiso]); }).map(function(m) {
         const tienePermiso = m.adminOnly ? true : (m.siempre === true || isAdmin || (user.permisos && user.permisos[m.permiso]));
         const disabledClass = tienePermiso ? '' : 'bs-disabled';
         const onclick = tienePermiso ? 'onclick="window.location.href=\'' + m.url + '\'"' : '';
@@ -163,8 +162,8 @@
     renderModules();
 
     // ===== LOGOUT =====
-    async function logout() {
-      if (await appConfirm('¿Cerrar sesión?')) {
+    function logout() {
+      if (confirm('¿Cerrar sesión?')) {
         localStorage.removeItem('bienestarSocialAuth');
         window.location.href = 'index.html';
       }
