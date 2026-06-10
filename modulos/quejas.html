@@ -948,5 +948,31 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
 })();
 </script>
+
+  <!-- === BS-TIEMPO-REAL : escucha la señal de Firebase y refresca al instante === -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+  (function(){
+    var URL_RTDB = 'https://sistema-rl-verfrut-default-rtdb.firebaseio.com';
+    try {
+      var app = firebase.initializeApp({ databaseURL: URL_RTDB }, 'bs-senales');
+      var ref = firebase.database(app).ref('bienestar/senales/global');
+      var primera = true, ultimo = null, timer = null;
+      ref.on('value', function(snap){
+        var v = snap.val();
+        if (primera) { primera = false; ultimo = v; return; }
+        if (v === ultimo || v === null) return;
+        ultimo = v;
+        clearTimeout(timer);
+        timer = setTimeout(function(){
+          if (document.hidden) return;
+          if (document.getElementById('formModal').classList.contains('bs-active')) return;
+          cargarQuejas();
+        }, 800);
+      });
+    } catch(e) { /* si Firebase no carga, el auto-refresh de 60s sigue activo */ }
+  })();
+  </script>
 </body>
 </html>
