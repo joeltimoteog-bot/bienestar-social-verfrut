@@ -198,9 +198,15 @@ function tienePermiso(p){
   return P[p] === true || P['mod_'+p] === true;
 }
 
+// ---- Gestor de charts (permite re-render sin error 'canvas in use') ----
+const _CH = {};
+function mkChart(id, cfg){ if (_CH[id]) _CH[id].destroy(); _CH[id] = new Chart(document.getElementById(id), cfg); }
+
 // ============================================================
 // CARGA DE DATOS
 // ============================================================
+const _CACHE_KEY_PANEL = 'bs_cache_panel_v1';
+
 async function cargar(){
   const permisos = {
     quejas:        tienePermiso('quejas'),
@@ -208,20 +214,47 @@ async function cargar(){
     hostigamiento: tienePermiso('hostigamiento'),
     subsidios:     tienePermiso('subsidios')
   };
+
+  // 1) Pinta AL INSTANTE desde caché (si existe)
+  let pintado = false;
   try {
-    const res = await fetch(API_URL, {
+    const c = JSON.parse(localStorage.getItem(_CACHE_KEY_PANEL) || 'null');
+    if (c && c.dash) {
+      render(c.dash); pintado = true;
+      if (c.alertas) renderAlertas(c.alertas);
+      if (c.casos) renderCasosContrato(c.casos);
+    }
+  } catch(e) {}
+
+  // 2) Refresca las 3 fuentes EN PARALELO y re-pinta al llegar
+  function post(action){
+    return fetch(API_URL, {
       method:'POST',
       headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'bs_dashboard', permisos: permisos })
-    });
-    const data = await res.json();
-    if (!data.ok) return mostrarError(data.message || 'Respuesta no válida del servidor.');
-    render(data);
-    cargarAlertas(permisos);
-    cargarCasosContrato(permisos);
-  } catch(err){
-    mostrarError('Error de conexión: ' + err.message);
+      body: JSON.stringify({ action: action, permisos: permisos })
+    }).then(function(r){ return r.json(); });
   }
+  function guardarCache(parte, data){
+    try {
+      const c = JSON.parse(localStorage.getItem(_CACHE_KEY_PANEL) || '{}');
+      c[parte] = data; c.t = Date.now();
+      localStorage.setItem(_CACHE_KEY_PANEL, JSON.stringify(c));
+    } catch(e) {}
+  }
+
+  post('bs_dashboard').then(function(data){
+    if (data.ok) { guardarCache('dash', data); render(data); }
+    else if (!pintado) mostrarError(data.message || 'Respuesta no válida del servidor.');
+  }).catch(function(err){ if (!pintado) mostrarError('Error de conexión: ' + err.message); });
+
+  post('bs_alertas').then(function(data){
+    if (data.ok) { guardarCache('alertas', data); renderAlertas(data); }
+    else document.getElementById('alertasWrap').innerHTML = '<div class="al-empty">No se pudieron cargar las alertas.</div>';
+  }).catch(function(err){ document.getElementById('alertasWrap').innerHTML = '<div class="al-empty">Error al cargar alertas: ' + esc(err.message) + '</div>'; });
+
+  post('bs_casos_contrato').then(function(data){
+    if (data.ok) { guardarCache('casos', data); renderCasosContrato(data); }
+  }).catch(function(err){ /* silencioso */ });
 }
 
 // ---- Alertas de vencimiento ----
@@ -349,7 +382,7 @@ function render(d){
     { label:'Subsidios',  data:d.tendencia.map(t=>t.subsidios),  borderColor:'#06b6d4', backgroundColor:'#06b6d422', tension:.3 }
   ];
   if (d.hostigamiento.acceso) ds.push({ label:'Hostigamiento', data:d.tendencia.map(t=>t.hostigamiento), borderColor:'#7c3aed', backgroundColor:'#7c3aed22', tension:.3 });
-  new Chart(document.getElementById('chartTendencia'), {
+  mkChart('chartTendencia', {
     type:'line',
     data:{ labels: labels.length?labels:['Sin datos'], datasets: ds },
     options:{ responsive:true, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
@@ -361,7 +394,7 @@ function render(d){
   if (tienePermiso('accidentes')) { donaLabels.push('Accidentes');    donaData.push(d.accidentes.total);    donaColors.push('#ef4444'); }
   if (d.hostigamiento.acceso)     { donaLabels.push('Hostigamiento'); donaData.push(d.hostigamiento.total); donaColors.push('#7c3aed'); }
   if (tienePermiso('subsidios'))  { donaLabels.push('Subsidios');     donaData.push(d.subsidios.total);     donaColors.push('#06b6d4'); }
-  new Chart(document.getElementById('chartDona'), {
+  mkChart('chartDona', {
     type:'doughnut',
     data:{ labels:donaLabels, datasets:[{ data:donaData, backgroundColor:donaColors, borderColor:'#fff', borderWidth:2 }] },
     options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } }
@@ -369,7 +402,7 @@ function render(d){
 
   // ---- Barras por empresa (suma quejas+accidentes+subsidios) ----
   const sumEmp = e => (d.quejas.porEmpresa[e]||0) + (d.accidentes.porEmpresa[e]||0) + (d.subsidios.porEmpresa[e]||0);
-  new Chart(document.getElementById('chartEmpresa'), {
+  mkChart('chartEmpresa', {
     type:'bar',
     data:{ labels:['RAPEL','VERFRUT'], datasets:[{ label:'Casos', data:[sumEmp('RAPEL'), sumEmp('VERFRUT')], backgroundColor:['#0033A0','#E2231A'], borderRadius:8 }] },
     options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
@@ -422,7 +455,7 @@ function renderCasosContrato(d){
     (t.sinDato ? '<span class="chip" style="background:#eef2f7;color:#475569"><span class="dot" style="background:#94a3b8"></span>Sin dato ' + fmt(t.sinDato) + '</span>' : '') +
     '<span class="chip verde" style="background:#eef2f7;color:#475569"><span class="dot" style="background:#94a3b8"></span>Total ' + fmt(d.total) + '</span>';
 
-  new Chart(document.getElementById('chartContrato'), {
+  mkChart('chartContrato', {
     type:'doughnut',
     data:{ labels:['Período de prueba','Plazo fijo','Indeterminado','Sin dato'],
       datasets:[{ data:[t.prueba, t.plazoFijo, t.indeterminado, t.sinDato||0], backgroundColor:['#2A5BD7','#f59e0b','#E2231A','#cbd5e1'], borderColor:'#fff', borderWidth:2 }] },
@@ -430,7 +463,7 @@ function renderCasosContrato(d){
   });
 
   const an = d.porAntiguedad || {};
-  new Chart(document.getElementById('chartAntiguedad'), {
+  mkChart('chartAntiguedad', {
     type:'bar',
     data:{ labels:['< 3 m','3 m–1 a','1–3 a','3–4.5 a','≥ 4.5 a','Sin dato'],
       datasets:[{ label:'Casos', data:[an.m3||0, an.m3a12||0, an.a1a3||0, an.a3a54||0, an.mas54||0, an.sinDato||0], backgroundColor:'#0033A0', borderRadius:6 }] },
@@ -501,6 +534,13 @@ function exportarExcel(){
 function exportarPDF(){ window.print(); }
 
 cargar();
+
+// ===== AUTO-ACTUALIZACIÓN (cada 60 s + al volver a la pestaña) =====
+(function(){
+  var INTERVALO_MS = 60000;
+  setInterval(function(){ if (!document.hidden) cargar(); }, INTERVALO_MS);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) cargar(); });
+})();
 </script>
 </body>
 </html>

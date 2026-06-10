@@ -895,6 +895,17 @@
     cargarBuzones();
     setupAutoTab();
     cargarQuejas();
+
+    // ===== AUTO-ACTUALIZACIÓN (cada 60 s + al volver a la pestaña) =====
+    (function(){
+      var INTERVALO_MS = 60000;
+      setInterval(function(){
+        if (!document.hidden && !document.getElementById('formModal').classList.contains('bs-active')) cargarQuejas();
+      }, INTERVALO_MS);
+      document.addEventListener('visibilitychange', function(){
+        if (!document.hidden) cargarQuejas();
+      });
+    })();
   </script>
 <!-- === BS-EXPORT-EXCEL : Exportar a Excel (reutilizable) === -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

@@ -194,33 +194,57 @@
     }
 
     // ===== CARGA =====
+    const _CACHE_KEY_EST = 'bs_cache_estadisticas_v1';
+
+    function _pintarEst(res){
+      DATA = res;
+      if (!userDropdownReady) { poblarUsuarios(res.usuariosDisponibles || []); userDropdownReady = true; }
+      document.getElementById('genStamp').textContent = res.generado ? ('· Generado: ' + res.generado) : '';
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('contenido').style.display = 'block';
+      renderKPIs(); renderCharts(); renderEstados(); renderRanking(); renderVencidos();
+    }
+
     async function cargar(){
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('contenido').style.display = 'none';
+      const filtros = {
+        modulo:  document.getElementById('fModulo').value,
+        usuario: document.getElementById('fUsuario').value,
+        empresa: document.getElementById('fEmpresa').value,
+        desde:   document.getElementById('fDesde').value,
+        hasta:   document.getElementById('fHasta').value
+      };
+      const fkey = JSON.stringify(filtros);
+
+      // 1) Pinta AL INSTANTE desde caché si coinciden los filtros
+      let pintado = false;
       try {
-        const filtros = {
-          modulo:  document.getElementById('fModulo').value,
-          usuario: document.getElementById('fUsuario').value,
-          empresa: document.getElementById('fEmpresa').value,
-          desde:   document.getElementById('fDesde').value,
-          hasta:   document.getElementById('fHasta').value
-        };
+        const c = JSON.parse(localStorage.getItem(_CACHE_KEY_EST) || 'null');
+        if (c && c.fkey === fkey && c.res) { _pintarEst(c.res); pintado = true; }
+      } catch(e) {}
+      if (!pintado) {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('contenido').style.display = 'none';
+      }
+
+      // 2) Refresca desde el servidor en segundo plano
+      try {
         const res = await api('bs_estadisticasEmpresariales', filtros);
         document.getElementById('loading').style.display = 'none';
         if (!res.ok) {
-          document.getElementById('contenido').style.display = 'block';
-          document.getElementById('contenido').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + (res.message || 'sin detalle') + '</div>';
+          if (!pintado) {
+            document.getElementById('contenido').style.display = 'block';
+            document.getElementById('contenido').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + (res.message || 'sin detalle') + '</div>';
+          }
           return;
         }
-        DATA = res;
-        if (!userDropdownReady) { poblarUsuarios(res.usuariosDisponibles || []); userDropdownReady = true; }
-        document.getElementById('genStamp').textContent = res.generado ? ('· Generado: ' + res.generado) : '';
-        document.getElementById('contenido').style.display = 'block';
-        renderKPIs(); renderCharts(); renderEstados(); renderRanking(); renderVencidos();
+        try { localStorage.setItem(_CACHE_KEY_EST, JSON.stringify({ fkey: fkey, res: res, t: Date.now() })); } catch(e) {}
+        _pintarEst(res);
       } catch(err) {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('contenido').style.display = 'block';
-        document.getElementById('contenido').innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
+        if (!pintado) {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('contenido').style.display = 'block';
+          document.getElementById('contenido').innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
+        }
       }
     }
 
@@ -367,6 +391,13 @@
 
     // ===== INIT =====
     cargar();
+
+    // ===== AUTO-ACTUALIZACIÓN (cada 90 s + al volver a la pestaña) =====
+    (function(){
+      var INTERVALO_MS = 90000;
+      setInterval(function(){ if (!document.hidden) cargar(); }, INTERVALO_MS);
+      document.addEventListener('visibilitychange', function(){ if (!document.hidden) cargar(); });
+    })();
   </script>
 </body>
 </html>
