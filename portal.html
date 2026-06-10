@@ -161,6 +161,30 @@
 
     renderModules();
 
+    // ===== SINCRONIZAR PERMISOS DESDE LA HOJA USUARIOS (fuente única de verdad) =====
+    // Corrige la sesión venga del login propio o del ancla del Sistema RR.LL.
+    (function(){
+      var BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+      fetch(BS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'bs_permisosUsuario', usuario: user.usuario })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if (res && res.ok && res.permisos) {
+          user.permisos = res.permisos;
+          if (!user.rol && res.rol) user.rol = res.rol;
+          if (!user.nombre && res.nombre) user.nombre = res.nombre;
+          try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch(e) {}
+          renderModules(); // re-pinta con los permisos reales de la hoja
+        }
+        // Si el usuario no existe en la hoja de Bienestar, se mantienen
+        // los permisos con los que llegó (comportamiento anterior).
+      })
+      .catch(function(e){ console.warn('[permisos] No se pudo sincronizar:', e); });
+    })();
+
     // ===== LOGOUT =====
     function logout() {
       if (confirm('¿Cerrar sesión?')) {
