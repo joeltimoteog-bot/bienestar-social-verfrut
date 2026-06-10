@@ -253,18 +253,27 @@
     let cache = [];
     async function cargar() {
       const cont = document.getElementById('tablaContainer');
-      cont.innerHTML = '<div class="bs-text-center" style="padding:2rem;"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto;"></div></div>';
       const filtros = {
         estado: document.getElementById('filterEstado').value,
         modulo: document.getElementById('filterModulo').value
       };
       if (!isAdmin) filtros.usuario = user.usuario; // usuario normal: solo las suyas
+      // Caché local: pinta al instante la última vista con estos filtros
+      const _fkey = JSON.stringify(filtros);
+      let _pintado = false;
+      try {
+        const _c = JSON.parse(localStorage.getItem('bs_cache_sugerencias_v1') || 'null');
+        if (_c && _c.fkey === _fkey && Array.isArray(_c.items)) { cache = _c.items; render(); _pintado = true; }
+      } catch(e) {}
+      if (!_pintado) cont.innerHTML = '<div class="bs-text-center" style="padding:2rem;"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto;"></div></div>';
       try {
         const r = await api('bs_listarSugerencias', { filtros: filtros });
-        cache = (r && r.ok && r.items) ? r.items : [];
+        if (!(r && r.ok)) { if (!_pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error al cargar: ' + esc((r && r.message) || 'sin detalle') + '</div>'; return; }
+        cache = r.items || [];
+        try { localStorage.setItem('bs_cache_sugerencias_v1', JSON.stringify({ fkey: _fkey, items: cache, t: Date.now() })); } catch(e) {}
         render();
       } catch(e) {
-        cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error al cargar: ' + esc(e.message) + '</div>';
+        if (!_pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error al cargar: ' + esc(e.message) + '</div>';
       }
     }
 
@@ -418,6 +427,43 @@
 
     // ===== INIT =====
     cargar();
+
+    // ===== AUTO-ACTUALIZACIÓN (cada 60 s + al volver a la pestaña) =====
+    (function(){
+      var INTERVALO_MS = 60000;
+      setInterval(function(){
+        if (!document.hidden && !document.getElementById('formModal').classList.contains('bs-active')) cargar();
+      }, INTERVALO_MS);
+      document.addEventListener('visibilitychange', function(){
+        if (!document.hidden) cargar();
+      });
+    })();
+  </script>
+
+  <!-- === BS-TIEMPO-REAL : escucha la señal de Firebase y refresca al instante === -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+  (function(){
+    var URL_RTDB = 'https://sistema-rl-verfrut-default-rtdb.firebaseio.com';
+    try {
+      var app = firebase.initializeApp({ databaseURL: URL_RTDB }, 'bs-senales');
+      var ref = firebase.database(app).ref('bienestar/senales/global');
+      var primera = true, ultimo = null, timer = null;
+      ref.on('value', function(snap){
+        var v = snap.val();
+        if (primera) { primera = false; ultimo = v; return; }
+        if (v === ultimo || v === null) return;
+        ultimo = v;
+        clearTimeout(timer);
+        timer = setTimeout(function(){
+          if (document.hidden) return;
+          if (document.getElementById('formModal').classList.contains('bs-active')) return;
+          cargar();
+        }, 800);
+      });
+    } catch(e) { /* si Firebase no carga, el auto-refresh de 60s sigue activo */ }
+  })();
   </script>
 </body>
 </html>

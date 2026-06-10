@@ -260,6 +260,8 @@
     }
 
     // ===== LISTAR =====
+    let _CACHE_H = [];
+
     async function cargar() {
       const filtros = {
         empresa: document.getElementById('filterEmpresa').value,
@@ -268,14 +270,26 @@
       };
       const privacyMode = document.getElementById('togglePrivacy').checked;
       const cont = document.getElementById('tablaContainer');
-      cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+      // Caché local: pinta al instante la última vista con estos filtros
+      const _fkey = JSON.stringify([filtros, privacyMode]);
+      let _pintado = false;
+      try {
+        const _c = JSON.parse(localStorage.getItem('bs_cache_hostigamiento_v1') || 'null');
+        if (_c && _c.fkey === _fkey && _c.html) {
+          cont.innerHTML = _c.html;
+          _CACHE_H = _c.items || [];
+          _pintado = true;
+        }
+      } catch(e) {}
+      if (!_pintado) cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
 
       try {
         const res = await api('bs_listarHostigamiento', { filtros: filtros });
         if (!res.ok) {
-          cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
+          if (!_pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
           return;
         }
+        _CACHE_H = res.items || [];
         if (res.items.length === 0) {
           cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay denuncias registradas con esos filtros.</p></div>';
           return;
@@ -308,6 +322,7 @@
           html += '<p class="bs-text-xs bs-text-muted bs-mt" style="text-align:right;">🔐 Modo discreto activo. Los nombres están parcialmente ocultos.</p>';
         }
         cont.innerHTML = html;
+        try { localStorage.setItem('bs_cache_hostigamiento_v1', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
       } catch(err) {
         cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
       }
@@ -377,9 +392,12 @@
     }
 
     async function editar(id) {
-      const res = await api('bs_listarHostigamiento', {});
-      if (!res.ok) return appAlert('Error: ' + res.message);
-      const d = res.items.find(function(x) { return parseInt(x.id) === parseInt(id); });
+      let d = _CACHE_H.find(function(x) { return parseInt(x.id) === parseInt(id); });
+      if (!d) {
+        const res = await api('bs_listarHostigamiento', {});
+        if (!res.ok) return appAlert('Error: ' + res.message);
+        d = (res.items || []).find(function(x) { return parseInt(x.id) === parseInt(id); });
+      }
       if (!d) return appAlert('No encontrado');
 
       document.getElementById('formTitle').textContent = 'Denuncia #' + d.id;
@@ -497,6 +515,17 @@
     setupBusquedaDNI();
     setupAutoTab();
     cargar();
+
+    // ===== AUTO-ACTUALIZACIÓN (cada 60 s + al volver a la pestaña) =====
+    (function(){
+      var INTERVALO_MS = 60000;
+      setInterval(function(){
+        if (!document.hidden && !document.getElementById('formModal').classList.contains('bs-active')) cargar();
+      }, INTERVALO_MS);
+      document.addEventListener('visibilitychange', function(){
+        if (!document.hidden) cargar();
+      });
+    })();
   </script>
 <!-- === BS-EXPORT-EXCEL : Exportar a Excel (reutilizable) === -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -539,5 +568,31 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
 })();
 </script>
+
+  <!-- === BS-TIEMPO-REAL : escucha la señal de Firebase y refresca al instante === -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+  (function(){
+    var URL_RTDB = 'https://sistema-rl-verfrut-default-rtdb.firebaseio.com';
+    try {
+      var app = firebase.initializeApp({ databaseURL: URL_RTDB }, 'bs-senales');
+      var ref = firebase.database(app).ref('bienestar/senales/global');
+      var primera = true, ultimo = null, timer = null;
+      ref.on('value', function(snap){
+        var v = snap.val();
+        if (primera) { primera = false; ultimo = v; return; }
+        if (v === ultimo || v === null) return;
+        ultimo = v;
+        clearTimeout(timer);
+        timer = setTimeout(function(){
+          if (document.hidden) return;
+          if (document.getElementById('formModal').classList.contains('bs-active')) return;
+          cargar();
+        }, 800);
+      });
+    } catch(e) { /* si Firebase no carga, el auto-refresh de 60s sigue activo */ }
+  })();
+  </script>
 </body>
 </html>

@@ -54,7 +54,7 @@
         <div class="bs-grid bs-gap" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Año</label>
-            <select class="bs-select" id="filterAnio" onchange="cargarRendiciones()">
+            <select class="bs-select" id="filterAnio" onchange="render()">
               <option value="">Todos</option>
               <option value="2025">2025</option>
               <option value="2026" selected>2026</option>
@@ -62,7 +62,7 @@
           </div>
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Empresa</label>
-            <select class="bs-select" id="filterEmpresa" onchange="cargarRendiciones()">
+            <select class="bs-select" id="filterEmpresa" onchange="render()">
               <option value="">Todas</option>
               <option value="RAPEL">RAPEL</option>
               <option value="VERFRUT">VERFRUT</option>
@@ -70,13 +70,13 @@
           </div>
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Responsable</label>
-            <select class="bs-select" id="filterResponsable" onchange="cargarRendiciones()">
+            <select class="bs-select" id="filterResponsable" onchange="render()">
               <option value="">Todos</option>
             </select>
           </div>
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Estado</label>
-            <select class="bs-select" id="filterEstado" onchange="cargarRendiciones()">
+            <select class="bs-select" id="filterEstado" onchange="render()">
               <option value="">Todos</option>
               <option value="NO DEPOSITADO">No depositado</option>
               <option value="DEPOSITADO">Depositado</option>
@@ -285,28 +285,32 @@
     let _chart = null;
     let _chartMontoMes = null, _chartCantMes = null;  // _MENSUAL_V1
 
-    // ===== LISTAR (fetch al servidor: año/empresa/responsable/estado) =====
+    // ===== LISTAR (todo desde servidor + caché; filtros 100% en cliente) =====
+    const _CACHE_KEY_R = 'bs_cache_rendiciones_v1';
+
     async function cargarRendiciones() {
-      const filtros = {
-        anio: document.getElementById('filterAnio').value,
-        empresa: document.getElementById('filterEmpresa').value,
-        responsable: document.getElementById('filterResponsable').value,
-        estado: document.getElementById('filterEstado').value
-      };
       const cont = document.getElementById('tablaContainer');
-      cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+      let pintado = false;
       try {
-        const res = await api('bs_listarRendiciones', { filtros: filtros });
+        const c = JSON.parse(localStorage.getItem(_CACHE_KEY_R) || 'null');
+        if (c && Array.isArray(c.items) && c.items.length) { _CACHE = c.items; _poblarResponsables(_CACHE); render(); pintado = true; }
+      } catch(e) {}
+      if (!pintado) cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+      try {
+        const res = await api('bs_listarRendiciones', {});
         if (!res.ok) {
-          cont.innerHTML = '<div class="bs-alert bs-alert-warning">No se pudieron cargar las rendiciones. Es posible que el backend (GAS) aún no esté desplegado.<br><small>' + (res.message || '') + '</small></div>';
-          document.getElementById('reporteContainer').innerHTML = '';
+          if (!pintado) {
+            cont.innerHTML = '<div class="bs-alert bs-alert-warning">No se pudieron cargar las rendiciones. Es posible que el backend (GAS) aún no esté desplegado.<br><small>' + (res.message || '') + '</small></div>';
+            document.getElementById('reporteContainer').innerHTML = '';
+          }
           return;
         }
         _CACHE = res.items || [];
+        try { localStorage.setItem(_CACHE_KEY_R, JSON.stringify({ items: _CACHE, t: Date.now() })); } catch(e) {}
         _poblarResponsables(_CACHE);
         render();
       } catch(err) {
-        cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
+        if (!pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
       }
     }
 
@@ -320,7 +324,15 @@
       const dDesde = desde ? new Date(desde) : null;
       const dHasta = hasta ? new Date(hasta) : null;
 
+      const fAnio = document.getElementById('filterAnio').value;
+      const fEmp = document.getElementById('filterEmpresa').value;
+      const fResp = document.getElementById('filterResponsable').value;
+      const fEst = document.getElementById('filterEstado').value;
       let items = _CACHE.slice();
+      if (fAnio) items = items.filter(function(r){ return String(r.anio) === String(fAnio); });
+      if (fEmp)  items = items.filter(function(r){ return r.empresa === fEmp; });
+      if (fResp) items = items.filter(function(r){ return r.responsable === fResp; });
+      if (fEst)  items = items.filter(function(r){ return String(r.estado).toUpperCase() === fEst.toUpperCase(); });
       if (catField) items = items.filter(function(r){ return (parseFloat(r[catField]) || 0) > 0; });
       if (q) items = items.filter(function(r){ return String(r.rendicion || '').toLowerCase().indexOf(q) >= 0; });
       if (dDesde || dHasta) items = items.filter(function(r){
@@ -737,6 +749,18 @@
     // ===== INIT =====
     setupForm();
     cargarRendiciones();
+
+    // ===== AUTO-ACTUALIZACIÓN (cada 60 s + al volver a la pestaña) =====
+    (function(){
+      var INTERVALO_MS = 60000;
+      setInterval(function(){
+        if (!document.hidden && !document.getElementById('formModal').classList.contains('bs-active')) cargarRendiciones();
+      }, INTERVALO_MS);
+      document.addEventListener('visibilitychange', function(){
+        if (!document.hidden) cargarRendiciones();
+      });
+    })();
+
   </script>
 
   <!-- === BS-EXPORT-EXCEL : Exportar a Excel (reutilizable) === -->
@@ -818,6 +842,32 @@
     btn.style.cssText = 'position:fixed;right:18px;bottom:64px;z-index:9999;background:#0033A0;color:#fff;border:none;padding:11px 16px;border-radius:10px;cursor:pointer;font:600 14px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
     function poner(){ document.body.appendChild(btn); }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
+  })();
+  </script>
+
+  <!-- === BS-TIEMPO-REAL : escucha la señal de Firebase y refresca al instante === -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+  (function(){
+    var URL_RTDB = 'https://sistema-rl-verfrut-default-rtdb.firebaseio.com';
+    try {
+      var app = firebase.initializeApp({ databaseURL: URL_RTDB }, 'bs-senales');
+      var ref = firebase.database(app).ref('bienestar/senales/global');
+      var primera = true, ultimo = null, timer = null;
+      ref.on('value', function(snap){
+        var v = snap.val();
+        if (primera) { primera = false; ultimo = v; return; }
+        if (v === ultimo || v === null) return;
+        ultimo = v;
+        clearTimeout(timer);
+        timer = setTimeout(function(){
+          if (document.hidden) return;
+          if (document.getElementById('formModal').classList.contains('bs-active')) return;
+          cargarRendiciones();
+        }, 800);
+      });
+    } catch(e) { /* si Firebase no carga, el auto-refresh de 60s sigue activo */ }
   })();
   </script>
 </body>

@@ -45,7 +45,7 @@
         <div class="bs-grid bs-grid-4 bs-gap">
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Empresa</label>
-            <select class="bs-select" id="filterEmpresa" onchange="cargarSubsidios()">
+            <select class="bs-select" id="filterEmpresa" onchange="renderSubsidios()">
               <option value="">Todas</option>
               <option value="RAPEL">RAPEL</option>
               <option value="VERFRUT">VERFRUT</option>
@@ -53,7 +53,7 @@
           </div>
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Tipo</label>
-            <select class="bs-select" id="filterTipo" onchange="cargarSubsidios()">
+            <select class="bs-select" id="filterTipo" onchange="renderSubsidios()">
               <option value="">Todos</option>
               <option value="Incapacidad Temporal">Incapacidad Temporal</option>
               <option value="Maternidad">Maternidad</option>
@@ -61,7 +61,7 @@
           </div>
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Año</label>
-            <select class="bs-select" id="filterAnio" onchange="cargarSubsidios()">
+            <select class="bs-select" id="filterAnio" onchange="renderSubsidios()">
               <option value="">Todos</option>
               <option value="2024">2024</option>
               <option value="2025">2025</option>
@@ -70,7 +70,7 @@
           </div>
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Estado</label>
-            <select class="bs-select" id="filterEstado" onchange="cargarSubsidios()">
+            <select class="bs-select" id="filterEstado" onchange="renderSubsidios()">
               <option value="">Todos</option>
               <option value="En proceso">En proceso</option>
               <option value="Pendiente">Pendiente</option>
@@ -334,27 +334,53 @@
     }
 
     // ===== LISTAR =====
+    // ===== CACHÉ LOCAL (carga instantánea + refresco en segundo plano) =====
+    let _CACHE_S = [];
+    const _CACHE_KEY_S = 'bs_cache_subsidios_v1';
+
     async function cargarSubsidios() {
-      const filtros = {
-        empresa: document.getElementById('filterEmpresa').value,
-        tipo: document.getElementById('filterTipo').value,
-        anio: document.getElementById('filterAnio').value,
-        estado_general: document.getElementById('filterEstado').value
-      };
       const cont = document.getElementById('tablaContainer');
-      cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+      let pintado = false;
+      try {
+        const c = JSON.parse(localStorage.getItem(_CACHE_KEY_S) || 'null');
+        if (c && Array.isArray(c.items) && c.items.length) { _CACHE_S = c.items; renderSubsidios(); pintado = true; }
+      } catch(e) {}
+      if (!pintado) cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
 
       try {
-        const res = await api('bs_listarSubsidios', { filtros: filtros });
+        const res = await api('bs_listarSubsidios', {});
         if (!res.ok) {
-          cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
+          if (!pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
           return;
         }
-        if (res.items.length === 0) {
-          cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay subsidios registrados con esos filtros.</p></div>';
-          return;
-        }
+        _CACHE_S = res.items || [];
+        try { localStorage.setItem(_CACHE_KEY_S, JSON.stringify({ items: _CACHE_S, t: Date.now() })); } catch(e) {}
+        renderSubsidios();
+      } catch(err) {
+        if (!pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
+      }
+    }
 
+    // Render con filtros EN CLIENTE (instantáneo)
+    function renderSubsidios() {
+      const cont = document.getElementById('tablaContainer');
+      const fEmp = document.getElementById('filterEmpresa').value;
+      const fTipo = document.getElementById('filterTipo').value;
+      const fAnio = document.getElementById('filterAnio').value;
+      const fEst = document.getElementById('filterEstado').value;
+      let items = _CACHE_S.slice();
+      if (fEmp)  items = items.filter(function(s){ return s.empresa === fEmp; });
+      if (fTipo) items = items.filter(function(s){ return s.tipo === fTipo; });
+      if (fAnio) items = items.filter(function(s){ return String(s.anio) === String(fAnio); });
+      if (fEst)  items = items.filter(function(s){ return s.estado_general === fEst; });
+
+      if (items.length === 0) {
+        cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay subsidios registrados con esos filtros.</p></div>';
+        return;
+      }
+
+      {
+        const res = { items: items };
         let html = '<div class="bs-table-wrap"><table class="bs-table">';
         html += '<thead><tr><th>ID</th><th>Año-Mes</th><th>Trabajador</th><th>Empresa</th><th>Tipo</th><th>Días</th><th>Monto Total</th><th>Estado</th><th></th></tr></thead><tbody>';
         window.__BS_EXPORT_DATA__ = res.items || [];
@@ -378,8 +404,6 @@
         });
         html += '</tbody></table></div>';
         cont.innerHTML = html;
-      } catch(err) {
-        cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
       }
     }
 
@@ -448,9 +472,12 @@
     }
 
     async function editar(id) {
-      const res = await api('bs_listarSubsidios', {});
-      if (!res.ok) return appAlert('Error: ' + res.message);
-      const s = res.items.find(function(x) { return parseInt(x.id) === parseInt(id); });
+      let s = _CACHE_S.find(function(x) { return parseInt(x.id) === parseInt(id); });
+      if (!s) {
+        const res = await api('bs_listarSubsidios', {});
+        if (!res.ok) return appAlert('Error: ' + res.message);
+        s = (res.items || []).find(function(x) { return parseInt(x.id) === parseInt(id); });
+      }
       if (!s) return appAlert('Subsidio no encontrado');
 
       document.getElementById('formTitle').textContent = 'Editar Subsidio #' + s.id;
@@ -625,6 +652,17 @@
     setupCalculoSubsidio();
     setupAutoTab();
     cargarSubsidios();
+
+    // ===== AUTO-ACTUALIZACIÓN (cada 60 s + al volver a la pestaña) =====
+    (function(){
+      var INTERVALO_MS = 60000;
+      setInterval(function(){
+        if (!document.hidden && !document.getElementById('formModal').classList.contains('bs-active')) cargarSubsidios();
+      }, INTERVALO_MS);
+      document.addEventListener('visibilitychange', function(){
+        if (!document.hidden) cargarSubsidios();
+      });
+    })();
   </script>
 <!-- === BS-EXPORT-EXCEL : Exportar a Excel (reutilizable) === -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -667,5 +705,31 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
 })();
 </script>
+
+  <!-- === BS-TIEMPO-REAL : escucha la señal de Firebase y refresca al instante === -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+  (function(){
+    var URL_RTDB = 'https://sistema-rl-verfrut-default-rtdb.firebaseio.com';
+    try {
+      var app = firebase.initializeApp({ databaseURL: URL_RTDB }, 'bs-senales');
+      var ref = firebase.database(app).ref('bienestar/senales/global');
+      var primera = true, ultimo = null, timer = null;
+      ref.on('value', function(snap){
+        var v = snap.val();
+        if (primera) { primera = false; ultimo = v; return; }
+        if (v === ultimo || v === null) return;
+        ultimo = v;
+        clearTimeout(timer);
+        timer = setTimeout(function(){
+          if (document.hidden) return;
+          if (document.getElementById('formModal').classList.contains('bs-active')) return;
+          cargarSubsidios();
+        }, 800);
+      });
+    } catch(e) { /* si Firebase no carga, el auto-refresh de 60s sigue activo */ }
+  })();
+  </script>
 </body>
 </html>
