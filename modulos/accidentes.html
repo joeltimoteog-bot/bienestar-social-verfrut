@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
   <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-filtro-fecha.js"></script>
 </head>
 <body>
   <div class="bs-appshell">
@@ -69,6 +70,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Barra de filtro por periodo (Anio/Mes) -->
+      <div id="bsFiltroFecha" class="bs-card bs-mb"></div>
 
       <div id="tablaContainer">
         <div class="bs-text-center" style="padding: 2rem;">
@@ -527,12 +531,28 @@
     document.getElementById('userName').textContent = user.nombre || user.usuario;
 
     async function api(action, payload) {
-      const res = await fetch(BS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+      let res;
+      try {
+        res = await fetch(BS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+        });
+      } catch (e) {
+        throw new Error('Sin conexión con el servidor. Verifica tu internet e intenta de nuevo.');
+      }
+      if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '. Intenta de nuevo.');
+      try {
+        return await res.json();
+      } catch (e) {
+        throw new Error('Respuesta inválida del servidor. Intenta de nuevo en unos segundos.');
+      }
+    }
+
+    function esc(t) {
+      return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
       });
-      return await res.json();
     }
 
     // ===== AUTO-TAB =====
@@ -659,6 +679,8 @@
       try {
         const res = await api('bs_listarAccidentes', { filtros: filtros });
         if (!res.ok) { if (!_pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>'; return; }
+        BSFiltroFecha.refrescar(res.items);
+        res.items = res.items.filter(BSFiltroFecha.pasa);
         casosCache = res.items;
         if (res.items.length === 0) {
           cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay casos registrados con esos filtros.</p></div>';
@@ -675,15 +697,15 @@
             : c.tipo_accidente === 'Incapacitante' ? 'bs-badge-warning' : 'bs-badge';
           html += '<tr>' +
             '<td><strong>#' + c.id + '</strong></td>' +
-            '<td>' + (c.dni || '-') + '</td>' +
-            '<td>' + (c.nombre || '-') + '</td>' +
-            '<td>' + (c.fundo || '-') + '</td>' +
-            '<td>' + (c.empresa || '-') + '</td>' +
+            '<td>' + esc(c.dni || '-') + '</td>' +
+            '<td>' + esc(c.nombre || '-') + '</td>' +
+            '<td>' + esc(c.fundo || '-') + '</td>' +
+            '<td>' + esc(c.empresa || '-') + '</td>' +
             '<td>' + fecha + '</td>' +
-            '<td>' + (c.parte_cuerpo || '-') + '</td>' +
-            '<td><span class="bs-badge ' + tipoBadge + '">' + (c.tipo_accidente || '-') + '</span></td>' +
+            '<td>' + esc(c.parte_cuerpo || '-') + '</td>' +
+            '<td><span class="bs-badge ' + tipoBadge + '">' + esc(c.tipo_accidente || '-') + '</span></td>' +
             '<td style="text-align:center;"><strong>' + (c.numero_atenciones || 0) + '</strong></td>' +
-            '<td><span class="bs-badge ' + estadoBadge + '">' + (c.estado_caso || '-') + '</span></td>' +
+            '<td><span class="bs-badge ' + estadoBadge + '">' + esc(c.estado_caso || '-') + '</span></td>' +
             '<td style="white-space: nowrap;">' +
               '<button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editarCaso(' + c.id + ')" style="margin-right: 4px;">Editar</button>' +
               '<button class="bs-btn bs-btn-sm" style="background: var(--bs-mod-accidentes); color: white;" onclick="verSeguimientos(' + c.id + ')">Seguim.</button>' +
@@ -798,8 +820,8 @@
           html += '<div style="padding: 0.85rem; border-left: 3px solid var(--bs-mod-accidentes); background: var(--bs-surface-alt); margin-bottom: 0.5rem; border-radius: 0 var(--bs-radius-sm) var(--bs-radius-sm) 0;">' +
             '<div class="bs-flex bs-justify-between bs-items-center"><strong>Seguimiento #' + s.numero_seguimiento + '</strong>' +
             '<span class="bs-text-xs bs-text-muted">' + fecha + '</span></div>' +
-            '<p class="bs-text-sm" style="margin: 0.4rem 0 0; white-space: pre-wrap;">' + (s.detalle || '-').replace(/</g,'&lt;') + '</p>' +
-            '<p class="bs-text-xs bs-text-subtle" style="margin: 0.3rem 0 0;">por ' + (s.created_by || '-') + '</p></div>';
+            '<p class="bs-text-sm" style="margin: 0.4rem 0 0; white-space: pre-wrap;">' + esc(s.detalle || '-') + '</p>' +
+            '<p class="bs-text-xs bs-text-subtle" style="margin: 0.3rem 0 0;">por ' + esc(s.created_by || '-') + '</p></div>';
         });
         cont.innerHTML = html;
       } catch(err) { cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>'; }
@@ -861,6 +883,7 @@
     setupAutoTab();
     setupDiasRestriccion();
     setupA2();
+    BSFiltroFecha.init({ campoFecha: 'dia_accidente', color: 'var(--bs-mod-accidentes)', onChange: cargar });
     cargar();
 
     // ===== AUTO-ACTUALIZACIÓN (cada 60 s + al volver a la pestaña) =====

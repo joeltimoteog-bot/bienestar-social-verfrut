@@ -77,13 +77,13 @@ window.BSFiltroFecha = (function () {
     var html = '';
     html += '<div class="bs-text-xs bs-text-subtle" style="text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4rem;">Periodo</div>';
     html += '<div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.55rem;">';
-    html += btn('Todos los anios', estado.anio === '', 'anio', '');
+    html += btn('Todos los años', estado.anio === '', 'anio', '');
     aniosDisponibles.forEach(function (a) {
       html += btn(a, String(estado.anio) === String(a), 'anio', a);
     });
     html += '</div>';
     html += '<div style="display:flex;gap:.35rem;flex-wrap:wrap;">';
-    html += btn('Todo el anio', estado.mes === '', 'mes', '');
+    html += btn('Todo el año', estado.mes === '', 'mes', '');
     MESES.forEach(function (nombre, i) {
       var mm = ('0' + (i + 1)).slice(-2);
       html += btn(nombre, estado.mes === mm, 'mes', mm);
