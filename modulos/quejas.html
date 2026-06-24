@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
+  <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-filtro-fecha.js"></script>
 </head>
 <body>
   <div class="bs-appshell">
@@ -70,6 +72,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Barra de filtro por periodo (Anio/Mes) -->
+      <div id="bsFiltroFecha" class="bs-card bs-mb"></div>
 
       <!-- Aviso de seguimientos por vencer/vencidos -->
       <div id="seguimientoBanner"></div>
@@ -332,19 +337,35 @@
       window.location.href = '../index.html';
     }
     if (!user.permisos || !user.permisos.quejas) {
-      alert('No tienes permiso para acceder a este módulo');
+      appAlert('No tienes permiso para acceder a este módulo');
       window.location.href = '../portal.html';
     }
     document.getElementById('userName').textContent = user.nombre || user.usuario;
 
     // ===== API HELPER =====
     async function api(action, payload) {
-      const res = await fetch(BS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+      let res;
+      try {
+        res = await fetch(BS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+        });
+      } catch (e) {
+        throw new Error('Sin conexión con el servidor. Verifica tu internet e intenta de nuevo.');
+      }
+      if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '. Intenta de nuevo.');
+      try {
+        return await res.json();
+      } catch (e) {
+        throw new Error('Respuesta inválida del servidor. Intenta de nuevo en unos segundos.');
+      }
+    }
+
+    function esc(t) {
+      return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
       });
-      return await res.json();
     }
 
     // ===== LISTAR =====
@@ -414,10 +435,12 @@
       const fEmp = document.getElementById('filterEmpresa').value;
       const fCla = document.getElementById('filterClasif').value;
       const fEst = document.getElementById('filterEstado').value;
+      BSFiltroFecha.refrescar(_CACHE_Q);
       let items = _CACHE_Q.slice();
       if (fEmp) items = items.filter(function(q){ return q.empresa === fEmp; });
       if (fCla) items = items.filter(function(q){ return q.clasificacion === fCla; });
       if (fEst) items = items.filter(function(q){ return q.resultado === fEst; });
+      items = items.filter(BSFiltroFecha.pasa);
 
       if (items.length === 0) {
         cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay hallazgos registrados con esos filtros.</p></div>';
@@ -432,17 +455,17 @@
         window.__BS_EXPORT_DATA__ = res.items || [];
         res.items.forEach(function(q) {
           const fecha = q.fecha_recepcion ? new Date(q.fecha_recepcion).toLocaleDateString('es-PE') : '-';
-          const det = (q.detalle || '').replace(/</g,'&lt;');
-          const detalleCorto = det.substring(0, 80) + (det.length > 80 ? '...' : '');
+          const detRaw = (q.detalle || '');
+          const detalleCorto = esc(detRaw.substring(0, 80)) + (detRaw.length > 80 ? '...' : '');
           const estadoBadge = q.resultado === 'Resuelto' ? 'bs-badge-success' : q.resultado === 'Cerrado' ? 'bs-badge-info' : 'bs-badge-warning';
           html += '<tr>' +
             '<td><strong>#' + q.id + '</strong></td>' +
             '<td>' + fecha + '</td>' +
-            '<td>' + (q.clasificacion || '-') + '</td>' +
-            '<td>' + (q.empresa || '-') + '</td>' +
-            '<td>' + (q.sector || '-') + '</td>' +
+            '<td>' + esc(q.clasificacion || '-') + '</td>' +
+            '<td>' + esc(q.empresa || '-') + '</td>' +
+            '<td>' + esc(q.sector || '-') + '</td>' +
             '<td style="max-width: 280px;">' + detalleCorto + '</td>' +
-            '<td><span class="bs-badge ' + estadoBadge + '">' + (q.resultado || '-') + '</span></td>' +
+            '<td><span class="bs-badge ' + estadoBadge + '">' + esc(q.resultado || '-') + '</span></td>' +
             '<td>' + _segBadge(q) + '</td>' +
             '<td style="white-space:nowrap;"><div style="display:flex;gap:.35rem;align-items:center;">' +
               '<button class="bs-btn bs-btn-sm bs-btn-outline" style="min-width:74px;" onclick="editar(' + q.id + ')">✏️ Editar</button>' +
@@ -575,10 +598,10 @@
       let q = _CACHE_Q.find(function(x) { return parseInt(x.id) === parseInt(id); });
       if (!q) {
         const res = await api('bs_listarQuejas', {});
-        if (!res.ok) return alert('Error: ' + res.message);
+        if (!res.ok) return appAlert('Error: ' + res.message);
         q = (res.items || []).find(function(x) { return parseInt(x.id) === parseInt(id); });
       }
-      if (!q) return alert('Hallazgo no encontrado');
+      if (!q) return appAlert('Hallazgo no encontrado');
 
       document.getElementById('formTitle').textContent = 'Editar Hallazgo #' + q.id;
       document.getElementById('quejaId').value = q.id;
@@ -677,7 +700,7 @@
         let _res = 'Resumen por buzón — ' + document.getElementById('sector').value + ':\n';
         _bz.detalle.forEach(function(d){ _res += '  • ' + d.ubicacion + ': ' + d.cantidad + '\n'; });
         _res += '\nTotal de hallazgos: ' + _bz.total + '  (sobre ' + _bz.cantidadBuzones + ' buzones)\n\n¿Guardar?';
-        if (!confirm(_res)) return;
+        if (!(await appConfirm(_res))) return;
       }
 
       const btn = document.getElementById('btnSubmit');
@@ -831,8 +854,8 @@
       const q = lista.find(function(x) { return parseInt(x.id) === parseInt(id); });
       document.getElementById('segTitleQ').textContent = 'Seguimientos \u00b7 Hallazgo #' + id;
       document.getElementById('quejaResumen').innerHTML = q
-        ? '<div><strong>' + (q.clasificacion || 'Hallazgo') + '</strong> \u00b7 ' + (q.empresa || '-') + ' \u00b7 ' + (q.sector || q.area_texto || '-') + '<br>' +
-          '<small class="bs-text-muted">' + String(q.detalle || '-').replace(/</g,'&lt;').slice(0,160) + '</small></div>'
+        ? '<div><strong>' + esc(q.clasificacion || 'Hallazgo') + '</strong> \u00b7 ' + esc(q.empresa || '-') + ' \u00b7 ' + esc(q.sector || q.area_texto || '-') + '<br>' +
+          '<small class="bs-text-muted">' + esc(String(q.detalle || '-').slice(0,160)) + '</small></div>'
         : '<small class="bs-text-muted">Hallazgo #' + id + '</small>';
       document.getElementById('segq_fecha').value = new Date().toISOString().split('T')[0];
       document.getElementById('segq_detalle').value = '';
@@ -855,8 +878,8 @@
           html += '<div style="padding: 0.85rem; border-left: 3px solid var(--bs-mod-quejas); background: var(--bs-surface-alt); margin-bottom: 0.5rem; border-radius: 0 var(--bs-radius-sm) var(--bs-radius-sm) 0;">' +
             '<div class="bs-flex bs-justify-between bs-items-center"><strong>Seguimiento #' + sg.numero_seguimiento + '</strong>' +
             '<span class="bs-text-xs bs-text-muted">' + fecha + '</span></div>' +
-            '<p class="bs-text-sm" style="margin: 0.4rem 0 0; white-space: pre-wrap;">' + String(sg.detalle || '-').replace(/</g,'&lt;') + '</p>' +
-            '<p class="bs-text-xs bs-text-subtle" style="margin: 0.3rem 0 0;">por ' + (sg.created_by || '-') + '</p></div>';
+            '<p class="bs-text-sm" style="margin: 0.4rem 0 0; white-space: pre-wrap;">' + esc(sg.detalle || '-') + '</p>' +
+            '<p class="bs-text-xs bs-text-subtle" style="margin: 0.3rem 0 0;">por ' + esc(sg.created_by || '-') + '</p></div>';
         });
         cont.innerHTML = html;
       } catch(err) { cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>'; }
@@ -884,14 +907,15 @@
     }
 
     // ===== LOGOUT =====
-    function logout() {
-      if (confirm('¿Cerrar sesión?')) {
+    async function logout() {
+      if (await appConfirm('¿Cerrar sesión?')) {
         localStorage.removeItem('bienestarSocialAuth');
         window.location.href = '../index.html';
       }
     }
 
     // ===== INIT =====
+    BSFiltroFecha.init({ campoFecha: 'fecha_recepcion', color: 'var(--bs-mod-quejas)', onChange: renderQuejas });
     cargarBuzones();
     setupAutoTab();
     cargarQuejas();
@@ -921,7 +945,7 @@
     return tablas[0];
   }
   function exportar(){
-    if (typeof XLSX === 'undefined'){ alert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
+    if (typeof XLSX === 'undefined'){ appAlert('La libreria de Excel se esta cargando, intenta de nuevo en unos segundos.'); return; }
     var wb = XLSX.utils.book_new();
     var ws;
     var data = window.__BS_EXPORT_DATA__;
@@ -933,7 +957,7 @@
       ws = XLSX.utils.aoa_to_sheet(aoa);
     } else {
       var tabla = tablaPrincipal();
-      if(!tabla || !tabla.querySelectorAll('tbody tr').length){ alert('No hay datos para exportar.'); return; }
+      if(!tabla || !tabla.querySelectorAll('tbody tr').length){ appAlert('No hay datos para exportar.'); return; }
       ws = XLSX.utils.table_to_sheet(tabla, {raw:true});
     }
     XLSX.utils.book_append_sheet(wb, ws, 'Datos');
