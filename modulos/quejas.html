@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
   <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-dash-quejas.js"></script>
   <script src="../assets/js/bs-filtro-fecha.js"></script>
 </head>
 <body>
@@ -38,7 +39,10 @@
           <h1 style="color: var(--bs-mod-quejas);">📋 Hallazgos y Sugerencias</h1>
           <p class="bs-text-subtle" style="margin: 0;">Registro y seguimiento de hallazgos, reclamos y sugerencias del personal.</p>
         </div>
-        <button class="bs-btn" style="background: var(--bs-mod-quejas); color: white;" onclick="openModal()">+ Nuevo Hallazgo</button>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+          <button class="bs-btn" style="background:#0b1e45;color:#fff;" onclick="BSDashQuejas.abrir()">📊 Estadísticas</button>
+          <button class="bs-btn" style="background: var(--bs-mod-quejas); color: white;" onclick="openModal()">+ Nuevo Hallazgo</button>
+        </div>
       </div>
 
       <!-- Filtros -->
