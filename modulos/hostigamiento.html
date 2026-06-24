@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
   <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-filtro-fecha.js"></script>
 </head>
 <body>
   <div class="bs-appshell">
@@ -80,6 +81,9 @@
       </div>
 
       <!-- Tabla -->
+      <!-- Barra de filtro por periodo (Anio/Mes) -->
+      <div id="bsFiltroFecha" class="bs-card bs-mb"></div>
+
       <div id="tablaContainer">
         <div class="bs-text-center" style="padding: 2rem;">
           <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
@@ -237,12 +241,22 @@
 
     // ===== API HELPER =====
     async function api(action, payload) {
-      const res = await fetch(BS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
-      });
-      return await res.json();
+      let res;
+      try {
+        res = await fetch(BS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+        });
+      } catch (e) {
+        throw new Error('Sin conexión con el servidor. Verifica tu internet e intenta de nuevo.');
+      }
+      if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '. Intenta de nuevo.');
+      try {
+        return await res.json();
+      } catch (e) {
+        throw new Error('Respuesta inválida del servidor. Intenta de nuevo en unos segundos.');
+      }
     }
 
     // ===== Helper: enmascarar =====
@@ -257,6 +271,11 @@
       if (!dni) return '-';
       if (!mode) return dni;
       return '****' + String(dni).slice(-2);
+    }
+    function esc(t) {
+      return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
     }
 
     // ===== LISTAR =====
@@ -290,6 +309,9 @@
           return;
         }
         _CACHE_H = res.items || [];
+        BSFiltroFecha.refrescar(_CACHE_H);
+        res.items = (res.items || []).filter(BSFiltroFecha.pasa);
+        _CACHE_H = res.items;
         if (res.items.length === 0) {
           cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay denuncias registradas con esos filtros.</p></div>';
           return;
@@ -309,11 +331,11 @@
           html += '<tr>' +
             '<td><strong>#' + d.id + '</strong></td>' +
             '<td>' + fecha + '</td>' +
-            '<td>' + denunciante + '</td>' +
-            '<td>' + denunciado + '</td>' +
-            '<td>' + (d.fundo || '-') + '</td>' +
-            '<td>' + (d.empresa || '-') + '</td>' +
-            '<td><span class="bs-badge ' + statusBadge + '">' + (d.status || '-') + '</span></td>' +
+            '<td>' + esc(denunciante) + '</td>' +
+            '<td>' + esc(denunciado) + '</td>' +
+            '<td>' + esc(d.fundo || '-') + '</td>' +
+            '<td>' + esc(d.empresa || '-') + '</td>' +
+            '<td><span class="bs-badge ' + statusBadge + '">' + esc(d.status || '-') + '</span></td>' +
             '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + d.id + ')">Ver / Editar</button></td>' +
           '</tr>';
         });
@@ -512,6 +534,7 @@
     }
 
     // ===== INIT =====
+    BSFiltroFecha.init({ campoFecha: 'fecha_denuncia', color: 'var(--bs-mod-hostigamiento)', onChange: cargar });
     setupBusquedaDNI();
     setupAutoTab();
     cargar();

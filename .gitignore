@@ -46,3 +46,13 @@ fix*.ps1
 *.bak
 # Copia suelta erronea en la raiz (la real esta en assets/css/)
 /styles.css
+# Backups de patches
+*.bak
+*.bak[0-9]
+*.bak[0-9][0-9]
+
+# Scripts de parcheo temporales
+patch_*.py
+
+# Documentacion interna (no va al sitio)
+SKILL-Bienestar-Social.md
