@@ -19,6 +19,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
   <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-saludo.js"></script>
 </head>
 <body>
   <div class="bs-appshell">
@@ -244,12 +245,28 @@
 
     // ===== API HELPER =====
     async function api(action, payload) {
-      const res = await fetch(BS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+      let res;
+      try {
+        res = await fetch(BS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+        });
+      } catch (e) {
+        throw new Error('Sin conexión con el servidor. Verifica tu internet e intenta de nuevo.');
+      }
+      if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '. Intenta de nuevo.');
+      try {
+        return await res.json();
+      } catch (e) {
+        throw new Error('Respuesta inválida del servidor. Intenta de nuevo en unos segundos.');
+      }
+    }
+
+    function esc(t) {
+      return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
       });
-      return await res.json();
     }
 
     // ===== FORMATO MONEDA =====
@@ -368,16 +385,16 @@
         html += '<tr' + rowStyle + '>' +
           '<td><strong>#' + r.id + '</strong></td>' +
           '<td>' + _fechaCorta(r.fecha) + '</td>' +
-          '<td style="text-align:center;">' + (r.semana || '-') + '</td>' +
-          '<td>' + (r.rendicion || '-') + '</td>' +
-          '<td>' + (r.empresa || '-') + '</td>' +
+          '<td style="text-align:center;">' + esc(r.semana || '-') + '</td>' +
+          '<td>' + esc(r.rendicion || '-') + '</td>' +
+          '<td>' + esc(r.empresa || '-') + '</td>' +
           '<td style="text-align:right;">' + fmtMoney(r.monto_reclutamiento) + '</td>' +
           '<td style="text-align:right;">' + fmtMoney(r.monto_relaciones_laborales) + '</td>' +
           '<td style="text-align:right;">' + fmtMoney(r.monto_capacitaciones) + '</td>' +
           '<td style="text-align:right;">' + fmtMoney(r.monto_bienestar) + '</td>' +
           '<td style="text-align:right;">' + flag + '<strong>' + fmtMoney(r.monto_total) + '</strong></td>' +
-          '<td>' + (r.responsable || '-') + '</td>' +
-          '<td><span class="bs-badge ' + badge + '">' + (r.estado || '-') + '</span></td>' +
+          '<td>' + esc(r.responsable || '-') + '</td>' +
+          '<td><span class="bs-badge ' + badge + '">' + esc(r.estado || '-') + '</span></td>' +
           '<td style="white-space:nowrap;">' +
             (!dep ? '<button class="bs-btn bs-btn-sm" style="background:#16a34a;color:#fff;" title="Marcar como depositado" onclick="marcarDepositado(' + r.id + ')">✓ Depositar</button> ' : '') +
             '<button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + r.id + ')">Editar</button>' +

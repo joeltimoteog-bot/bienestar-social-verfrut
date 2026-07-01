@@ -22,6 +22,7 @@
     }
   </style>
   <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-saludo.js"></script>
 </head>
 <body>
   <div class="bs-appshell">
@@ -166,12 +167,22 @@
 
     // ===== API HELPER =====
     async function api(action, payload) {
-      const res = await fetch(BS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
-      });
-      return await res.json();
+      let res;
+      try {
+        res = await fetch(BS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+        });
+      } catch (e) {
+        throw new Error('Sin conexión con el servidor. Verifica tu internet e intenta de nuevo.');
+      }
+      if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '. Intenta de nuevo.');
+      try {
+        return await res.json();
+      } catch (e) {
+        throw new Error('Respuesta inválida del servidor. Intenta de nuevo en unos segundos.');
+      }
     }
 
     // ===== CONFIG VISUAL =====

@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
   <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-saludo.js"></script>
 </head>
 <body>
   <div class="bs-appshell">
@@ -319,12 +320,28 @@
 
     // ===== API HELPER =====
     async function api(action, payload) {
-      const res = await fetch(BS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+      let res;
+      try {
+        res = await fetch(BS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+        });
+      } catch (e) {
+        throw new Error('Sin conexión con el servidor. Verifica tu internet e intenta de nuevo.');
+      }
+      if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '. Intenta de nuevo.');
+      try {
+        return await res.json();
+      } catch (e) {
+        throw new Error('Respuesta inválida del servidor. Intenta de nuevo en unos segundos.');
+      }
+    }
+
+    function esc(t) {
+      return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
       });
-      return await res.json();
     }
 
     // ===== FORMATO MONEDA =====
@@ -392,13 +409,13 @@
             : 'bs-badge-warning';
           html += '<tr>' +
             '<td><strong>#' + s.id + '</strong></td>' +
-            '<td>' + periodo + '</td>' +
-            '<td>' + trabajador + '</td>' +
-            '<td>' + (s.empresa || '-') + '</td>' +
-            '<td>' + (s.tipo || '-') + '</td>' +
+            '<td>' + esc(periodo) + '</td>' +
+            '<td>' + esc(trabajador) + '</td>' +
+            '<td>' + esc(s.empresa || '-') + '</td>' +
+            '<td>' + esc(s.tipo || '-') + '</td>' +
             '<td style="text-align: right;">' + (s.dias || 0) + '</td>' +
             '<td style="text-align: right;"><strong>' + fmtMoney(s.monto_total) + '</strong></td>' +
-            '<td><span class="bs-badge ' + estadoBadge + '">' + (s.estado_general || '-') + '</span></td>' +
+            '<td><span class="bs-badge ' + estadoBadge + '">' + esc(s.estado_general || '-') + '</span></td>' +
             '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + s.id + ')">Editar</button></td>' +
           '</tr>';
         });
