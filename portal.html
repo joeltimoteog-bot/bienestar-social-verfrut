@@ -6,8 +6,74 @@
   <title>Portal · Bienestar Social - RR.LL.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css">
+  <script src="assets/js/modal-system.js"></script>
+
+  <!-- ===== PORTAL PRO: estilos (marca de agua, banner, chips, tarjetas) ===== -->
+  <style>
+    :root{ --pro-navy:#0a3d91; --pro-red:#E2001A; --pro-muted:#64748b; --pro-wm:0.05; }
+
+    /* Marca de agua */
+    body::before{
+      content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+      background:url('assets/img/bienestar-logo-unifrutti.png') no-repeat center 55%;
+      background-size:min(46vw,430px);
+      opacity:var(--pro-wm);
+    }
+    .bs-appshell{position:relative;z-index:1;}
+
+    /* Banner de bienvenida */
+    .pro-welcome{position:relative;overflow:hidden;border-radius:18px;color:#fff;
+      background:linear-gradient(120deg,#0a3d91,#0d47a6 55%,#1d5fc4);
+      padding:22px 26px;margin:0 0 22px;box-shadow:0 10px 26px rgba(10,61,145,.20);}
+    .pro-welcome::after{content:"";position:absolute;right:-40px;top:-40px;width:210px;height:210px;
+      background:radial-gradient(circle,rgba(226,0,26,.35),transparent 70%);}
+    .pro-welcome .wave{font-size:1.5rem;}
+    .pro-welcome h2{margin:.2rem 0 .4rem;font-size:1.5rem;font-weight:800;letter-spacing:-.01em;}
+    .pro-welcome h2 .nm{color:#ffd7a6;}
+    .pro-welcome p{margin:0;font-size:.95rem;color:#dbe6fb;max-width:660px;line-height:1.5;}
+    .pro-welcome .firma{margin-top:10px;font-size:.8rem;color:#bcd0f2;font-style:italic;}
+    .pro-welcome .date{margin-top:8px;font-size:.78rem;color:#cddcf7;text-transform:capitalize;}
+    .pro-welcome .x{position:absolute;top:14px;right:16px;background:rgba(255,255,255,.14);border:none;color:#fff;
+      width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:1rem;line-height:1;}
+
+    .pro-h1{color:var(--pro-navy);font-size:1.35rem;font-weight:800;margin:0 0 2px;}
+    .pro-sub{color:var(--pro-muted);margin:0 0 16px;font-size:.9rem;}
+
+    /* Chips resumen */
+    .pro-chips{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 24px;}
+    .pro-chip{background:#fff;border:1px solid #e3e9f2;border-radius:999px;padding:8px 15px;font-size:.82rem;
+      color:#334155;display:flex;align-items:center;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+    .pro-chip b{color:var(--pro-navy);font-weight:800;font-size:.95rem;}
+    .pro-chip .dot{width:8px;height:8px;border-radius:50%;}
+
+    /* Grid + tarjetas PRO */
+    .pro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+    .pro-card{position:relative;background:#fff;border:1px solid #e6ebf2;border-radius:16px;padding:20px;
+      overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.05);cursor:pointer;
+      transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+      display:flex;flex-direction:column;min-height:206px;}
+    .pro-card:hover{transform:translateY(-5px);box-shadow:0 14px 30px rgba(10,61,145,.15);border-color:var(--mc);}
+    .pro-card.pro-off{opacity:.55;cursor:not-allowed;}
+    .pro-card.pro-off:hover{transform:none;box-shadow:0 1px 4px rgba(15,23,42,.05);border-color:#e6ebf2;}
+    .pro-card .strip{position:absolute;top:0;left:0;right:0;height:4px;background:var(--mc);}
+    .pro-badge{position:absolute;top:12px;right:12px;font-size:.64rem;padding:3px 8px;border-radius:999px;font-weight:700;}
+    .pro-badge.conf{color:#b45309;background:#fef3c7;border:1px solid #fde68a;}
+    .pro-badge.lock{color:#b91c1c;background:#fee2e2;border:1px solid #fecaca;}
+    .pro-ic{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin:6px 0 14px;background:var(--mc);}
+    .pro-ic svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+    .pro-card h3{margin:0 0 6px;color:var(--pro-navy);font-size:1.04rem;font-weight:700;line-height:1.2;}
+    .pro-card p{margin:0;color:var(--pro-muted);font-size:.79rem;line-height:1.45;flex:1;}
+    .pro-kpis{display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #eef2f7;}
+    .pro-kpi{flex:1;display:flex;flex-direction:column;}
+    .pro-kpi .kn{font-size:1.1rem;font-weight:800;line-height:1;color:var(--mc);}
+    .pro-kpi .kl{font-size:.62rem;color:var(--pro-muted);text-transform:uppercase;letter-spacing:.03em;margin-top:3px;}
+    .pro-open{margin-top:14px;padding-top:12px;border-top:1px solid #eef2f7;font-size:.78rem;font-weight:700;color:var(--mc);}
+
+    @media(max-width:1000px){.pro-grid{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:560px){.pro-grid{grid-template-columns:1fr;} .pro-welcome h2{font-size:1.25rem;}}
+  </style>
 </head>
 <body>
   <div class="bs-appshell">
@@ -29,10 +95,23 @@
 
     <!-- MAIN -->
     <main class="bs-main">
-      <h1>Bienvenido, <span id="userFirstName"></span></h1>
-      <p class="bs-text-subtle bs-mb-lg">Selecciona el módulo con el que deseas trabajar.</p>
+      <!-- Banner de bienvenida -->
+      <div class="pro-welcome" id="proWelcome">
+        <button class="x" title="Cerrar" onclick="this.parentNode.style.display='none'">✕</button>
+        <div class="wave">👋</div>
+        <h2>¡Hola, <span class="nm" id="proNombre"></span>!</h2>
+        <p id="proSaludo">Te saluda Joel. Te damos la bienvenida al <b>Sistema de Bienestar Social</b>. Estoy para apoyarte en lo que necesites.</p>
+        <div class="firma">— Joel Ángel Timoteo, Coordinador de Relaciones Laborales</div>
+        <div class="date" id="proFecha"></div>
+      </div>
 
-      <div class="bs-module-grid" id="moduleGrid">
+      <h1 class="pro-h1">Selecciona un módulo</h1>
+      <p class="pro-sub">Elige el módulo con el que deseas trabajar.</p>
+
+      <!-- Chips de resumen -->
+      <div class="pro-chips" id="proChips"></div>
+
+      <div class="pro-grid" id="moduleGrid">
         <!-- Cards generadas por JS según permisos -->
       </div>
     </main>
@@ -44,6 +123,15 @@
   </div>
 
   <script>
+    // ===== ENDPOINT BIENESTAR =====
+    var BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+    function bsApi(action, payload){
+      return fetch(BS_API_URL, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify(Object.assign({action:action}, payload||{}))
+      }).then(function(r){ return r.json(); });
+    }
+
     // ===== AUTH CHECK =====
     const session = localStorage.getItem('bienestarSocialAuth');
     if (!session) {
@@ -61,76 +149,66 @@
 
     // ===== UI: Header con datos del user =====
     document.getElementById('userName').textContent = user.nombre || user.usuario;
-    document.getElementById('userFirstName').textContent = (user.nombre || user.usuario).split(' ')[0];
 
-    // ===== MÓDULOS =====
+    // ===== SALUDO PERSONALIZADO + GÉNERO (~90%) =====
+    function _sinTilde(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+    function generoPorNombre(nombre){
+      var p = _sinTilde(String(nombre||'').trim().split(/\s+/)[0]);
+      if(!p) return 'M';
+      var F = ['carmen','beatriz','isabel','raquel','ruth','ester','esther','abigail','soledad','flor','pilar','mercedes','dolores','consuelo','rosario','luz','noemi','magali','jackeline','ines','lourdes','maribel','yudith','judith','nancy','ingrid','damaris','elizabeth','janet','janeth','madeleine','katherine','katerin','yobana','yobany','miriam','mirian','fanny','deysi','deisy','maricel','yoselin','yoseline'];
+      var M = ['jose','joshua','elias','isaias','tobias','matias','nicolas','andres','jesus','ismael','daniel','joel','manuel','miguel','angel','rafael','gabriel','ariel','uriel','abel','noe','ivan','adan','aldair','yeltsin','jhon','john','luca'];
+      if(F.indexOf(p)>=0) return 'F';
+      if(M.indexOf(p)>=0) return 'M';
+      if(/a$/.test(p)) return 'F';
+      if(/(o|or|el|an|in|on|us|er)$/.test(p)) return 'M';
+      return 'M';
+    }
+    (function(){
+      var full = user.nombre || user.usuario || '';
+      var first = full.trim().split(/\s+/)[0] || full;
+      first = first.charAt(0).toUpperCase()+first.slice(1).toLowerCase();
+      var g = generoPorNombre(full);
+      var bienv = (g==='F') ? 'Bienvenida' : 'Bienvenido';
+      document.getElementById('proNombre').textContent = first;
+      document.getElementById('proSaludo').innerHTML =
+        'Te saluda Joel. '+bienv+' al <b>Sistema de Bienestar Social</b>. Estoy para apoyarte en lo que necesites.';
+      try{
+        document.getElementById('proFecha').textContent =
+          new Date().toLocaleDateString('es-PE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      }catch(e){}
+    })();
+
+    // ===== ICONOS SVG POR MÓDULO =====
+    var ICONS = {
+      sugerencias:'<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z"/>',
+      quejas:'<rect x="6" y="4" width="12" height="18" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9 10h6M9 14h6M9 18h4"/>',
+      accidentes:'<path d="M12 2v6M9 5h6"/><rect x="4" y="8" width="16" height="13" rx="2"/><path d="M12 12v5M9.5 14.5h5"/>',
+      hostigamiento:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v3"/>',
+      subsidios:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5a2.5 2 0 0 1 2.5-1.5c1.4 0 2.5.7 2.5 1.6S15.4 11 12 12s-2.5.6-2.5 1.6.9 1.6 2.5 1.6a2.5 2 0 0 0 2.5-1.5"/>',
+      rendiciones:'<path d="M6 2h12v20l-2-1.5L14 22l-2-1.5L10 22l-2-1.5L6 22V2Z"/><path d="M9 7h6M9 11h6M9 15h4"/>',
+      panel:'<path d="M4 20h16"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="7" width="3" height="11"/><rect x="16" y="4" width="3" height="14"/>',
+      estadisticas:'<path d="M4 20h16M6 15l4-4 3 2 5-6"/><circle cx="6" cy="15" r="1.2"/><circle cx="10" cy="11" r="1.2"/><circle cx="13" cy="13" r="1.2"/><circle cx="18" cy="7" r="1.2"/>'
+    };
+    // KPIs por módulo: [etiqueta1, etiqueta2]. Los valores se llenan con datos reales.
+    var KPI_LABELS = {
+      sugerencias:['Recibidas','En proceso'],
+      quejas:['Casos','Resueltas'],
+      accidentes:['Activos','Cerrados'],
+      hostigamiento:['Casos','Reservado'],
+      subsidios:['Trámites','Recuperado'],
+      rendiciones:['Total','Pendientes']
+    };
+
+    // ===== MÓDULOS ===== (idéntico a tu configuración)
     const MODULOS = [
-    { id: 'sugerencias', permiso: null, url: 'modulos/sugerencias.html', title: '💡 Sugerencias de Mejora', desc: 'Propon mejoras del sistema y dale seguimiento.', icon: '💡', color: '#0033A0', confidencial: false, siempre: true },
-      {
-        id: 'quejas',
-        permiso: 'quejas',
-        url: 'modulos/quejas.html',
-        title: 'Quejas y Sugerencias',
-        desc: 'Registro y seguimiento de quejas, reclamos y sugerencias del personal.',
-        icon: '📋',
-        color: 'var(--bs-mod-quejas)'
-      },
-      {
-        id: 'accidentes',
-        permiso: 'accidentes',
-        url: 'modulos/accidentes.html',
-        title: 'Accidentes Laborales',
-        desc: 'Reporte y seguimiento de accidentes laborales con seguimientos médicos.',
-        icon: '🩺',
-        color: 'var(--bs-mod-accidentes)'
-      },
-      {
-        id: 'hostigamiento',
-        permiso: 'hostigamiento',
-        url: 'modulos/hostigamiento.html',
-        title: 'Hostigamiento Sexual',
-        desc: 'Denuncias por hostigamiento sexual. Acceso restringido (Ley 29733).',
-        icon: '🔒',
-        color: 'var(--bs-mod-hostigamiento)',
-        confidencial: true
-      },
-      {
-        id: 'subsidios',
-        permiso: 'subsidios',
-        url: 'modulos/subsidios.html',
-        title: 'Subsidios',
-        desc: 'Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, etc.).',
-        icon: '💰',
-        color: 'var(--bs-mod-subsidios)'
-      },
-      {
-        id: 'rendiciones',
-        permiso: 'rendiciones',
-        url: 'modulos/rendiciones.html',
-        title: 'Rendiciones',
-        desc: 'Rendiciones de gastos RAPEL y VERFRUT por categoría y control de depósito.',
-        icon: '📑',
-        color: '#059669'
-      },
-      {
-        id: 'panel',
-        permiso: 'panel',
-        url: 'panel.html',
-        title: 'Panel / Dashboard',
-        desc: 'Resumen consolidado de todos los modulos (KPIs y graficos).',
-        icon: '📊',
-        color: '#16a34a'
-      },
-      {
-        id: 'estadisticas',
-        adminOnly: true,
-        permiso: 'estadisticas',
-        url: 'modulos/estadisticas.html',
-        title: 'Estadísticas Empresariales',
-        desc: 'Indicadores y cumplimiento de todos los módulos. Solo gerencia.',
-        icon: '📈',
-        color: '#0033A0'
-      }
+      { id: 'sugerencias', permiso: null, url: 'modulos/sugerencias.html', title: 'Sugerencias de Mejora', desc: 'Propon mejoras del sistema y dale seguimiento.', icon: '💡', color: '#0033A0', confidencial: false, siempre: true },
+      { id: 'quejas', permiso: 'quejas', url: 'modulos/quejas.html', title: 'Quejas y Sugerencias', desc: 'Registro y seguimiento de quejas, reclamos y sugerencias del personal.', icon: '📋', color: 'var(--bs-mod-quejas)' },
+      { id: 'accidentes', permiso: 'accidentes', url: 'modulos/accidentes.html', title: 'Accidentes Laborales', desc: 'Reporte y seguimiento de accidentes laborales con seguimientos médicos.', icon: '🩺', color: 'var(--bs-mod-accidentes)' },
+      { id: 'hostigamiento', permiso: 'hostigamiento', url: 'modulos/hostigamiento.html', title: 'Hostigamiento Sexual', desc: 'Denuncias por hostigamiento sexual. Acceso restringido (Ley 29733).', icon: '🔒', color: 'var(--bs-mod-hostigamiento)', confidencial: true },
+      { id: 'subsidios', permiso: 'subsidios', url: 'modulos/subsidios.html', title: 'Subsidios', desc: 'Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, etc.).', icon: '💰', color: 'var(--bs-mod-subsidios)' },
+      { id: 'rendiciones', permiso: 'rendiciones', url: 'modulos/rendiciones.html', title: 'Rendiciones', desc: 'Rendiciones de gastos RAPEL y VERFRUT por categoría y control de depósito.', icon: '📑', color: '#059669' },
+      { id: 'panel', permiso: 'panel', url: 'panel.html', title: 'Panel / Dashboard', desc: 'Resumen consolidado de todos los modulos (KPIs y graficos).', icon: '📊', color: '#16a34a' },
+      { id: 'estadisticas', adminOnly: true, permiso: 'estadisticas', url: 'modulos/estadisticas.html', title: 'Estadísticas Empresariales', desc: 'Indicadores y cumplimiento de todos los módulos. Solo gerencia.', icon: '📈', color: '#0033A0' }
     ];
 
     function renderModules() {
@@ -139,55 +217,122 @@
       const isAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test((user && user.rol) || '');
       const html = MODULOS.filter(function(m) { return !m.adminOnly || isAdmin || (m.permiso && user.permisos && user.permisos[m.permiso]); }).map(function(m) {
         const tienePermiso = m.adminOnly ? true : (m.siempre === true || isAdmin || (user.permisos && user.permisos[m.permiso]));
-        const disabledClass = tienePermiso ? '' : 'bs-disabled';
+        const offClass = tienePermiso ? '' : 'pro-off';
         const onclick = tienePermiso ? 'onclick="window.location.href=\'' + m.url + '\'"' : '';
-        let badge = '';
-        if (!tienePermiso) {
-          badge = '<span class="bs-module-lock">❌ Sin acceso</span>';
-        } else if (m.confidencial) {
-          badge = '<span class="bs-module-lock">🔐 Confidencial</span>';
+        var badge = '';
+        if (!tienePermiso) badge = '<span class="pro-badge lock">❌ Sin acceso</span>';
+        else if (m.confidencial) badge = '<span class="pro-badge conf">🔐 Confidencial</span>';
+
+        var svg = ICONS[m.id] || '';
+        var iconHtml = svg
+          ? '<div class="pro-ic" style="--mc:'+m.color+'"><svg viewBox="0 0 24 24">'+svg+'</svg></div>'
+          : '<div class="pro-ic" style="--mc:'+m.color+';font-size:1.4rem;color:#fff;">'+m.icon+'</div>';
+
+        // bloque KPIs (o acceso)
+        var foot = '';
+        if (tienePermiso && KPI_LABELS[m.id]) {
+          var L = KPI_LABELS[m.id];
+          foot = '<div class="pro-kpis">' +
+                   '<div class="pro-kpi"><span class="kn" id="kpi_'+m.id+'_1">—</span><span class="kl">'+L[0]+'</span></div>' +
+                   '<div class="pro-kpi"><span class="kn" id="kpi_'+m.id+'_2">—</span><span class="kl">'+L[1]+'</span></div>' +
+                 '</div>';
+        } else if (tienePermiso) {
+          foot = '<div class="pro-open" style="--mc:'+m.color+'">Abrir →</div>';
         }
+
         return (
-          '<div class="bs-module-card ' + disabledClass + '" ' + onclick + '>' +
-            badge +
-            '<div class="bs-module-icon" style="background: ' + m.color + ';">' + m.icon + '</div>' +
-            '<h3 class="bs-module-title">' + m.title + '</h3>' +
-            '<p class="bs-module-desc">' + m.desc + '</p>' +
+          '<div class="pro-card ' + offClass + '" style="--mc:'+m.color+'" ' + onclick + '>' +
+            '<span class="strip"></span>' + badge + iconHtml +
+            '<h3>' + m.title + '</h3>' +
+            '<p>' + m.desc + '</p>' + foot +
           '</div>'
         );
       }).join('');
       grid.innerHTML = html;
+      paintKPIs();
     }
 
     renderModules();
 
+    // ===== MINI-KPIs REALES + CHIPS =====
+    var KPI_DATA = null;
+    function fmtMonto(n){ n = Number(n)||0; if(n>=1000) return 'S/ '+Math.round(n/1000)+'k'; return 'S/ '+Math.round(n); }
+    function setTxt(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+
+    function paintKPIs(){
+      if(!KPI_DATA) return;
+      var d = KPI_DATA;
+      // Quejas
+      if(d.quejas){ setTxt('kpi_quejas_1', d.quejas.total||0);
+        setTxt('kpi_quejas_2', (d.quejas.total? Math.round((d.quejas.resueltas||0)*100/d.quejas.total):0)+'%'); }
+      // Accidentes
+      if(d.accidentes){ setTxt('kpi_accidentes_1', d.accidentes.enSeguimiento||0);
+        setTxt('kpi_accidentes_2', d.accidentes.cerrados||0); }
+      // Hostigamiento
+      if(d.hostigamiento){ setTxt('kpi_hostigamiento_1', d.hostigamiento.total||0);
+        setTxt('kpi_hostigamiento_2', '—'); }
+      // Subsidios
+      if(d.subsidios){ setTxt('kpi_subsidios_1', d.subsidios.total||0);
+        setTxt('kpi_subsidios_2', fmtMonto(d.subsidios.recuperadoEssalud)); }
+      // Rendiciones
+      if(d.rendiciones){ setTxt('kpi_rendiciones_1', fmtMonto(d.rendiciones.monto_total));
+        setTxt('kpi_rendiciones_2', d.rendiciones.pendientes||0); }
+      // Sugerencias
+      if(d.sugerencias){ setTxt('kpi_sugerencias_1', d.sugerencias.recibidas||0);
+        setTxt('kpi_sugerencias_2', d.sugerencias.enProceso||0); }
+      // Chips resumen
+      var chips = [];
+      if(d.accidentes) chips.push(['#dc2626', d.accidentes.enSeguimiento||0, 'accidentes activos']);
+      if(d.quejas)     chips.push(['#e08e0b', d.quejas.pendientes||0, 'hallazgos pendientes']);
+      if(d.rendiciones)chips.push(['#16a34a', d.rendiciones.pendientes||0, 'rendiciones pendientes']);
+      if(d.subsidios)  chips.push(['#0891b2', d.subsidios.total||0, 'subsidios en trámite']);
+      var cw = document.getElementById('proChips');
+      if(cw){ cw.innerHTML = chips.map(function(c){
+        return '<span class="pro-chip"><span class="dot" style="background:'+c[0]+'"></span> <b>'+c[1]+'</b> '+c[2]+'</span>';
+      }).join(''); }
+    }
+
+    function fetchKPIs(){
+      var permisos = user.permisos || {};
+      Promise.all([
+        bsApi('bs_dashboard', { permisos: permisos }).catch(function(){ return {ok:false}; }),
+        bsApi('bs_reporteRendiciones', { filtros:{} }).catch(function(){ return {ok:false}; }),
+        bsApi('bs_listarSugerencias', { filtros:{} }).catch(function(){ return {ok:false}; })
+      ]).then(function(r){
+        var dash=r[0]||{}, rend=r[1]||{}, sug=r[2]||{};
+        KPI_DATA = {
+          quejas: dash.quejas, accidentes: dash.accidentes,
+          hostigamiento: dash.hostigamiento, subsidios: dash.subsidios
+        };
+        if(rend && rend.ok){ KPI_DATA.rendiciones = { monto_total: rend.monto_total||0, pendientes: (rend.pendiente&&rend.pendiente.n)||0 }; }
+        if(sug && sug.ok && sug.items){
+          var rec = sug.items.length;
+          var enP = sug.items.filter(function(s){ return String(s.estado||'').toLowerCase()!=='finalizada'; }).length;
+          KPI_DATA.sugerencias = { recibidas: rec, enProceso: enP };
+        }
+        paintKPIs();
+      });
+    }
+    fetchKPIs();
+
     // ===== SINCRONIZAR PERMISOS DESDE LA HOJA USUARIOS (fuente única de verdad) =====
-    // Corrige la sesión venga del login propio o del ancla del Sistema RR.LL.
     (function(){
-      var BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
-      fetch(BS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'bs_permisosUsuario', usuario: user.usuario })
-      })
-      .then(function(r){ return r.json(); })
+      bsApi('bs_permisosUsuario', { usuario: user.usuario })
       .then(function(res){
         if (res && res.ok && res.permisos) {
           user.permisos = res.permisos;
           if (!user.rol && res.rol) user.rol = res.rol;
           if (!user.nombre && res.nombre) user.nombre = res.nombre;
           try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch(e) {}
-          renderModules(); // re-pinta con los permisos reales de la hoja
+          renderModules(); // re-pinta con permisos reales (y re-aplica KPIs)
         }
-        // Si el usuario no existe en la hoja de Bienestar, se mantienen
-        // los permisos con los que llegó (comportamiento anterior).
       })
       .catch(function(e){ console.warn('[permisos] No se pudo sincronizar:', e); });
     })();
 
     // ===== LOGOUT =====
-    function logout() {
-      if (confirm('¿Cerrar sesión?')) {
+    async function logout() {
+      if (await appConfirm('¿Cerrar sesión?')) {
         localStorage.removeItem('bienestarSocialAuth');
         window.location.href = 'index.html';
       }
