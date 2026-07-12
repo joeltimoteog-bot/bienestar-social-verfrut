@@ -73,6 +73,37 @@
 
     @media(max-width:1000px){.pro-grid{grid-template-columns:repeat(2,1fr);}}
     @media(max-width:560px){.pro-grid{grid-template-columns:1fr;} .pro-welcome h2{font-size:1.25rem;}}
+
+    /* ===== Alertas de atrasos ===== */
+    .pro-atrasos{display:none;background:#fff;border:1px solid #fecaca;border-left:6px solid #dc2626;border-radius:14px;
+      padding:16px 20px;margin:0 0 22px;box-shadow:0 4px 14px rgba(220,38,38,.10);}
+    .pro-atrasos.ambar{border-color:#fde68a;border-left-color:#d97706;box-shadow:0 4px 14px rgba(217,119,6,.10);}
+    .pro-atrasos.visible{display:block;animation:atrPulse .6s ease;}
+    @keyframes atrPulse{0%{transform:scale(.985);opacity:0}100%{transform:none;opacity:1}}
+    .pro-atrasos .atr-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+    .pro-atrasos .atr-head h3{margin:0;font-size:1rem;font-weight:800;color:#b91c1c;flex:1;min-width:180px;}
+    .pro-atrasos.ambar .atr-head h3{color:#b45309;}
+    .atr-chip{font-size:.74rem;font-weight:800;padding:4px 10px;border-radius:999px;}
+    .atr-chip.rojo{background:#fee2e2;color:#b91c1c;}
+    .atr-chip.ambar{background:#fef3c7;color:#b45309;}
+    .atr-list{margin:0 0 12px;max-height:210px;overflow-y:auto;}
+    .atr-item{display:flex;align-items:flex-start;gap:9px;padding:7px 4px;border-bottom:1px dashed #f1e0e0;font-size:.83rem;color:#334155;}
+    .atr-item:last-child{border-bottom:none;}
+    .atr-item .st{width:9px;height:9px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+    .atr-item .st.rojo{background:#dc2626;}
+    .atr-item .st.ambar{background:#d97706;}
+    .atr-item b{color:#0f172a;}
+    .atr-item .dias{font-weight:800;white-space:nowrap;}
+    .atr-item .dias.rojo{color:#b91c1c;}
+    .atr-item .dias.ambar{color:#b45309;}
+    .atr-actions{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #f3f4f6;padding-top:12px;}
+    .atr-btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:9px;padding:8px 14px;
+      font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s ease,opacity .15s ease;}
+    .atr-btn:hover{transform:translateY(-1px);opacity:.92;}
+    .atr-btn.wsp{background:#25d366;color:#fff;}
+    .atr-btn.mail{background:#0a3d91;color:#fff;}
+    .atr-btn.copy{background:#e2e8f0;color:#334155;}
+    .atr-nota{font-size:.72rem;color:#94a3b8;margin-top:8px;}
   </style>
 </head>
 <body>
@@ -103,6 +134,22 @@
         <p id="proSaludo">Te saluda Joel. Te damos la bienvenida al <b>Sistema de Bienestar Social</b>. Estoy para apoyarte en lo que necesites.</p>
         <div class="firma">— Joel Ángel Timoteo, Coordinador de Relaciones Laborales</div>
         <div class="date" id="proFecha"></div>
+      </div>
+
+      <!-- Alertas de atrasos + envío de reporte -->
+      <div class="pro-atrasos" id="proAtrasos">
+        <div class="atr-head">
+          <h3 id="atrTitulo">🚨 Alertas de Atrasos</h3>
+          <span class="atr-chip rojo" id="atrChipRojo" style="display:none;"></span>
+          <span class="atr-chip ambar" id="atrChipAmbar" style="display:none;"></span>
+        </div>
+        <div class="atr-list" id="atrLista"></div>
+        <div class="atr-actions">
+          <button class="atr-btn wsp" onclick="enviarReporteAtrasos('whatsapp')">📱 Enviar por WhatsApp</button>
+          <button class="atr-btn mail" onclick="enviarReporteAtrasos('correo')">✉️ Enviar por correo</button>
+          <button class="atr-btn copy" onclick="enviarReporteAtrasos('copiar')">📋 Copiar reporte</button>
+        </div>
+        <div class="atr-nota">El reporte incluye los casos vencidos y por vencer de todos tus módulos, listo para enviar.</div>
       </div>
 
       <h1 class="pro-h1">Selecciona un módulo</h1>
@@ -273,70 +320,4 @@
         setTxt('kpi_hostigamiento_2', '—'); }
       // Subsidios
       if(d.subsidios){ setTxt('kpi_subsidios_1', d.subsidios.total||0);
-        setTxt('kpi_subsidios_2', fmtMonto(d.subsidios.recuperadoEssalud)); }
-      // Rendiciones
-      if(d.rendiciones){ setTxt('kpi_rendiciones_1', fmtMonto(d.rendiciones.monto_total));
-        setTxt('kpi_rendiciones_2', d.rendiciones.pendientes||0); }
-      // Sugerencias
-      if(d.sugerencias){ setTxt('kpi_sugerencias_1', d.sugerencias.recibidas||0);
-        setTxt('kpi_sugerencias_2', d.sugerencias.enProceso||0); }
-      // Chips resumen
-      var chips = [];
-      if(d.accidentes) chips.push(['#dc2626', d.accidentes.enSeguimiento||0, 'accidentes activos']);
-      if(d.quejas)     chips.push(['#e08e0b', d.quejas.pendientes||0, 'hallazgos pendientes']);
-      if(d.rendiciones)chips.push(['#16a34a', d.rendiciones.pendientes||0, 'rendiciones pendientes']);
-      if(d.subsidios)  chips.push(['#0891b2', d.subsidios.total||0, 'subsidios en trámite']);
-      var cw = document.getElementById('proChips');
-      if(cw){ cw.innerHTML = chips.map(function(c){
-        return '<span class="pro-chip"><span class="dot" style="background:'+c[0]+'"></span> <b>'+c[1]+'</b> '+c[2]+'</span>';
-      }).join(''); }
-    }
-
-    function fetchKPIs(){
-      var permisos = user.permisos || {};
-      Promise.all([
-        bsApi('bs_dashboard', { permisos: permisos }).catch(function(){ return {ok:false}; }),
-        bsApi('bs_reporteRendiciones', { filtros:{} }).catch(function(){ return {ok:false}; }),
-        bsApi('bs_listarSugerencias', { filtros:{} }).catch(function(){ return {ok:false}; })
-      ]).then(function(r){
-        var dash=r[0]||{}, rend=r[1]||{}, sug=r[2]||{};
-        KPI_DATA = {
-          quejas: dash.quejas, accidentes: dash.accidentes,
-          hostigamiento: dash.hostigamiento, subsidios: dash.subsidios
-        };
-        if(rend && rend.ok){ KPI_DATA.rendiciones = { monto_total: rend.monto_total||0, pendientes: (rend.pendiente&&rend.pendiente.n)||0 }; }
-        if(sug && sug.ok && sug.items){
-          var rec = sug.items.length;
-          var enP = sug.items.filter(function(s){ return String(s.estado||'').toLowerCase()!=='finalizada'; }).length;
-          KPI_DATA.sugerencias = { recibidas: rec, enProceso: enP };
-        }
-        paintKPIs();
-      });
-    }
-    fetchKPIs();
-
-    // ===== SINCRONIZAR PERMISOS DESDE LA HOJA USUARIOS (fuente única de verdad) =====
-    (function(){
-      bsApi('bs_permisosUsuario', { usuario: user.usuario })
-      .then(function(res){
-        if (res && res.ok && res.permisos) {
-          user.permisos = res.permisos;
-          if (!user.rol && res.rol) user.rol = res.rol;
-          if (!user.nombre && res.nombre) user.nombre = res.nombre;
-          try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch(e) {}
-          renderModules(); // re-pinta con permisos reales (y re-aplica KPIs)
-        }
-      })
-      .catch(function(e){ console.warn('[permisos] No se pudo sincronizar:', e); });
-    })();
-
-    // ===== LOGOUT =====
-    async function logout() {
-      if (await appConfirm('¿Cerrar sesión?')) {
-        localStorage.removeItem('bienestarSocialAuth');
-        window.location.href = 'index.html';
-      }
-    }
-  </script>
-</body>
-</html>
+        setTxt('
