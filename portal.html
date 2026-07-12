@@ -104,6 +104,35 @@
     .atr-btn.mail{background:#0a3d91;color:#fff;}
     .atr-btn.copy{background:#e2e8f0;color:#334155;}
     .atr-nota{font-size:.72rem;color:#94a3b8;margin-top:8px;}
+
+    /* Campanita con contador en topbar */
+    .atr-bell{position:relative;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
+      color:#fff;width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:1rem;line-height:1;
+      display:none;align-items:center;justify-content:center;transition:background .15s ease;}
+    .atr-bell:hover{background:rgba(255,255,255,.22);}
+    .atr-bell.visible{display:inline-flex;}
+    .atr-bell.con-rojo{animation:bellShake 2.6s ease-in-out infinite;}
+    @keyframes bellShake{0%,88%,100%{transform:rotate(0)}90%{transform:rotate(12deg)}93%{transform:rotate(-10deg)}96%{transform:rotate(6deg)}}
+    .atr-bell .n{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;
+      background:#dc2626;color:#fff;font-size:.66rem;font-weight:800;display:flex;align-items:center;justify-content:center;
+      border:2px solid #0a3d91;}
+    .atr-bell .n.ambar{background:#d97706;}
+
+    /* Toast de aviso de atrasos */
+    .atr-toast{position:fixed;bottom:24px;right:24px;z-index:5000;max-width:360px;background:#fff;
+      border:1px solid #fecaca;border-left:6px solid #dc2626;border-radius:14px;padding:14px 16px;
+      box-shadow:0 14px 40px rgba(15,23,42,.22);display:flex;gap:11px;align-items:flex-start;cursor:pointer;
+      transform:translateY(140%);opacity:0;transition:transform .4s cubic-bezier(.2,.9,.3,1.2),opacity .4s ease;}
+    .atr-toast.visible{transform:none;opacity:1;}
+    .atr-toast.ambar{border-color:#fde68a;border-left-color:#d97706;}
+    .atr-toast .ico{font-size:1.4rem;line-height:1;}
+    .atr-toast .tt{font-weight:800;font-size:.86rem;color:#b91c1c;margin:0 0 3px;}
+    .atr-toast.ambar .tt{color:#b45309;}
+    .atr-toast .tx{font-size:.78rem;color:#475569;line-height:1.45;margin:0;}
+    .atr-toast .tx b{color:#0f172a;}
+    .atr-toast .cta{font-size:.74rem;font-weight:700;color:#0a3d91;margin-top:6px;display:block;}
+    .atr-toast .x{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:.9rem;padding:2px;flex-shrink:0;}
+    @media(max-width:560px){.atr-toast{left:16px;right:16px;bottom:16px;max-width:none;}}
   </style>
 </head>
 <body>
@@ -117,6 +146,7 @@
           <span>Bienestar Social · RR.LL.</span>
         </div>
         <div class="bs-topbar-user">
+          <button class="atr-bell" id="atrBell" title="Alertas de atrasos" onclick="irAAtrasos()">🔔<span class="n" id="atrBellN">0</span></button>
           <span class="bs-topbar-user-name" id="userName">Cargando...</span>
           <button class="bs-topbar-logout" onclick="window.location.href='https://joeltimoteog-bot.github.io/sistema-rl-verfrut/frontend/pages/dashboard.html'" style="background:#1e40af;color:#fff;margin-right:8px">← Volver al Sistema RR.LL.</button>
           <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
@@ -320,4 +350,225 @@
         setTxt('kpi_hostigamiento_2', '—'); }
       // Subsidios
       if(d.subsidios){ setTxt('kpi_subsidios_1', d.subsidios.total||0);
-        setTxt('
+        setTxt('kpi_subsidios_2', fmtMonto(d.subsidios.recuperadoEssalud)); }
+      // Rendiciones
+      if(d.rendiciones){ setTxt('kpi_rendiciones_1', fmtMonto(d.rendiciones.monto_total));
+        setTxt('kpi_rendiciones_2', d.rendiciones.pendientes||0); }
+      // Sugerencias
+      if(d.sugerencias){ setTxt('kpi_sugerencias_1', d.sugerencias.recibidas||0);
+        setTxt('kpi_sugerencias_2', d.sugerencias.enProceso||0); }
+      // Chips resumen
+      var chips = [];
+      if(d.accidentes) chips.push(['#dc2626', d.accidentes.enSeguimiento||0, 'accidentes activos']);
+      if(d.quejas)     chips.push(['#e08e0b', d.quejas.pendientes||0, 'hallazgos pendientes']);
+      if(d.rendiciones)chips.push(['#16a34a', d.rendiciones.pendientes||0, 'rendiciones pendientes']);
+      if(d.subsidios)  chips.push(['#0891b2', d.subsidios.total||0, 'subsidios en trámite']);
+      var cw = document.getElementById('proChips');
+      if(cw){ cw.innerHTML = chips.map(function(c){
+        return '<span class="pro-chip"><span class="dot" style="background:'+c[0]+'"></span> <b>'+c[1]+'</b> '+c[2]+'</span>';
+      }).join(''); }
+    }
+
+    function fetchKPIs(){
+      var permisos = user.permisos || {};
+      Promise.all([
+        bsApi('bs_dashboard', { permisos: permisos }).catch(function(){ return {ok:false}; }),
+        bsApi('bs_reporteRendiciones', { filtros:{} }).catch(function(){ return {ok:false}; }),
+        bsApi('bs_listarSugerencias', { filtros:{} }).catch(function(){ return {ok:false}; })
+      ]).then(function(r){
+        var dash=r[0]||{}, rend=r[1]||{}, sug=r[2]||{};
+        KPI_DATA = {
+          quejas: dash.quejas, accidentes: dash.accidentes,
+          hostigamiento: dash.hostigamiento, subsidios: dash.subsidios
+        };
+        if(rend && rend.ok){ KPI_DATA.rendiciones = { monto_total: rend.monto_total||0, pendientes: (rend.pendiente&&rend.pendiente.n)||0 }; }
+        if(sug && sug.ok && sug.items){
+          var rec = sug.items.length;
+          var enP = sug.items.filter(function(s){ return String(s.estado||'').toLowerCase()!=='finalizada'; }).length;
+          KPI_DATA.sugerencias = { recibidas: rec, enProceso: enP };
+        }
+        paintKPIs();
+      });
+    }
+    fetchKPIs();
+
+    // ===== SINCRONIZAR PERMISOS DESDE LA HOJA USUARIOS (fuente única de verdad) =====
+    (function(){
+      bsApi('bs_permisosUsuario', { usuario: user.usuario })
+      .then(function(res){
+        if (res && res.ok && res.permisos) {
+          user.permisos = res.permisos;
+          if (!user.rol && res.rol) user.rol = res.rol;
+          if (!user.nombre && res.nombre) user.nombre = res.nombre;
+          try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch(e) {}
+          renderModules(); // re-pinta con permisos reales (y re-aplica KPIs)
+          cargarAtrasos(); // re-carga alertas de atrasos con permisos reales
+        }
+      })
+      .catch(function(e){ console.warn('[permisos] No se pudo sincronizar:', e); });
+    })();
+
+    // ===== ALERTAS DE ATRASOS (bs_alertas) + ENVÍO DE REPORTE =====
+    var ATRASOS = [];
+    function escHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+    function cargarAtrasos(){
+      bsApi('bs_alertas', { permisos: user.permisos || {} }).then(function(d){
+        if(!d || !d.ok) return;
+        var al = (d.alertas || []).filter(function(a){ return a.estado==='rojo' || a.estado==='ambar'; });
+        ATRASOS = al;
+        renderAtrasos(al, d.resumen || {});
+      }).catch(function(e){ console.warn('[atrasos] No se pudieron cargar:', e); });
+    }
+
+    function renderAtrasos(al, resumen){
+      var box = document.getElementById('proAtrasos');
+      if(!al.length){ box.classList.remove('visible'); document.getElementById('atrBell').classList.remove('visible'); return; }
+
+      var rojos = al.filter(function(a){ return a.estado==='rojo'; }).length;
+      var ambar = al.length - rojos;
+
+      box.classList.toggle('ambar', rojos===0);
+      document.getElementById('atrTitulo').textContent = rojos>0
+        ? '🚨 Alertas de Atrasos — ¡requieren reporte!'
+        : '⏳ Casos por vencer — envía tu reporte a tiempo';
+      var cr = document.getElementById('atrChipRojo');
+      var ca = document.getElementById('atrChipAmbar');
+      cr.style.display = rojos>0 ? '' : 'none';
+      ca.style.display = ambar>0 ? '' : 'none';
+      cr.textContent = rojos + ' vencido' + (rojos===1?'':'s');
+      ca.textContent = ambar + ' por vencer';
+
+      // Vencidos primero, luego por días
+      al.sort(function(a,b){
+        if(a.estado!==b.estado) return a.estado==='rojo' ? -1 : 1;
+        return (a.diasRestantes||0) - (b.diasRestantes||0);
+      });
+
+      document.getElementById('atrLista').innerHTML = al.map(function(a){
+        var dr = Number(a.diasRestantes||0);
+        var diasTxt = dr < 0 ? (Math.abs(dr)+' día'+(Math.abs(dr)===1?'':'s')+' de atraso')
+                             : (dr===0 ? 'vence HOY' : 'vence en '+dr+' día'+(dr===1?'':'s'));
+        return '<div class="atr-item">'+
+          '<span class="st '+a.estado+'"></span>'+
+          '<span style="flex:1;"><b>'+escHtml(a.modulo)+'</b> — '+escHtml(a.descripcion)+
+          (a.empresa ? ' <span style="color:#94a3b8;">('+escHtml(a.empresa)+')</span>' : '')+
+          (a.fechaLimite ? ' · límite: '+escHtml(a.fechaLimite) : '')+'</span>'+
+          '<span class="dias '+a.estado+'">'+diasTxt+'</span>'+
+        '</div>';
+      }).join('');
+
+      box.classList.add('visible');
+
+      // Campanita con contador en topbar
+      var bell = document.getElementById('atrBell');
+      var bellN = document.getElementById('atrBellN');
+      bell.classList.add('visible');
+      bell.classList.toggle('con-rojo', rojos>0);
+      bellN.textContent = al.length > 99 ? '99+' : al.length;
+      bellN.classList.toggle('ambar', rojos===0);
+
+      // Toast de aviso (1 vez por sesión de navegación)
+      mostrarToastAtrasos(rojos, ambar);
+    }
+
+    function irAAtrasos(){
+      var box = document.getElementById('proAtrasos');
+      if(box) box.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+
+    function mostrarToastAtrasos(rojos, ambar){
+      try { if(sessionStorage.getItem('bsToastAtrasos')) return; } catch(e){}
+      var partes = [];
+      if(rojos>0) partes.push('<b>'+rojos+' caso'+(rojos===1?'':'s')+' vencido'+(rojos===1?'':'s')+'</b>');
+      if(ambar>0) partes.push('<b>'+ambar+' por vencer</b>');
+      if(!partes.length) return;
+
+      var t = document.createElement('div');
+      t.className = 'atr-toast' + (rojos===0 ? ' ambar' : '');
+      t.innerHTML =
+        '<span class="ico">'+(rojos>0?'🚨':'⏳')+'</span>'+
+        '<span style="flex:1;">'+
+          '<p class="tt">'+(rojos>0?'¡Atención! Hay atrasos pendientes':'Casos próximos a vencer')+'</p>'+
+          '<p class="tx">Tienes '+partes.join(' y ')+'. No olvides enviar tu reporte de atrasos.</p>'+
+          '<span class="cta">Ver alertas y enviar reporte →</span>'+
+        '</span>'+
+        '<button class="x" title="Cerrar">✕</button>';
+
+      t.addEventListener('click', function(ev){
+        if(ev.target.classList.contains('x')){ cerrar(); return; }
+        cerrar(); irAAtrasos();
+      });
+      function cerrar(){
+        t.classList.remove('visible');
+        setTimeout(function(){ t.remove(); }, 450);
+      }
+      document.body.appendChild(t);
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ t.classList.add('visible'); }); });
+      setTimeout(cerrar, 12000); // se oculta solo a los 12s
+      try { sessionStorage.setItem('bsToastAtrasos','1'); } catch(e){}
+    }
+
+    function textoReporteAtrasos(){
+      var hoy = new Date().toLocaleDateString('es-PE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      var rojos = ATRASOS.filter(function(a){ return a.estado==='rojo'; });
+      var ambar = ATRASOS.filter(function(a){ return a.estado==='ambar'; });
+      var L = [];
+      L.push('🚨 *REPORTE DE ATRASOS · BIENESTAR SOCIAL*');
+      L.push('📅 ' + hoy.charAt(0).toUpperCase() + hoy.slice(1));
+      L.push('👤 Generado por: ' + (user.nombre || user.usuario));
+      L.push('');
+      if(rojos.length){
+        L.push('⛔ *VENCIDOS (' + rojos.length + '):*');
+        rojos.forEach(function(a,i){
+          L.push((i+1)+'. ['+a.modulo+'] '+a.descripcion+
+            (a.fechaLimite?' — venció '+a.fechaLimite:'')+
+            ' ('+Math.abs(a.diasRestantes||0)+' días de atraso)'+
+            (a.empresa?' · '+a.empresa:''));
+        });
+        L.push('');
+      }
+      if(ambar.length){
+        L.push('⏳ *POR VENCER (' + ambar.length + '):*');
+        ambar.forEach(function(a,i){
+          var dr = Number(a.diasRestantes||0);
+          L.push((i+1)+'. ['+a.modulo+'] '+a.descripcion+
+            (a.fechaLimite?' — vence '+a.fechaLimite:'')+
+            ' ('+(dr===0?'HOY':'en '+dr+' días')+')'+
+            (a.empresa?' · '+a.empresa:''));
+        });
+        L.push('');
+      }
+      L.push('— Sistema de Bienestar Social · RR.LL. · Unifrutti Group');
+      return L.join('\n');
+    }
+
+    function enviarReporteAtrasos(medio){
+      if(!ATRASOS.length){ (window.appAlert||alert)('No hay atrasos que reportar. ✅'); return; }
+      var txt = textoReporteAtrasos();
+      if(medio==='whatsapp'){
+        window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+      } else if(medio==='correo'){
+        var asunto = '🚨 Reporte de Atrasos · Bienestar Social · ' + new Date().toLocaleDateString('es-PE');
+        window.location.href = 'mailto:?subject=' + encodeURIComponent(asunto) +
+          '&body=' + encodeURIComponent(txt.replace(/\*/g,''));
+      } else {
+        (navigator.clipboard && navigator.clipboard.writeText
+          ? navigator.clipboard.writeText(txt)
+          : Promise.reject()
+        ).then(function(){ (window.appAlert||alert)('📋 Reporte copiado al portapapeles.'); })
+         .catch(function(){ window.prompt('Copia el reporte:', txt); });
+      }
+    }
+    cargarAtrasos();
+
+    // ===== LOGOUT =====
+    async function logout() {
+      if (await appConfirm('¿Cerrar sesión?')) {
+        localStorage.removeItem('bienestarSocialAuth');
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+</body>
+</html>
