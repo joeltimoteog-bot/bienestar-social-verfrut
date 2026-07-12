@@ -241,7 +241,38 @@ small, .bs-text-sm { font-size: 0.85rem; }
 .bs-cursor-pointer { cursor: pointer; }
 .bs-rounded { border-radius: var(--bs-radius); }
 .bs-w-full { width: 100%; }
+
 /* ---------- Loader "puntos saltarines" (reemplaza al spinner tipo engranaje) ---------- */
 .bs-dots { display: inline-flex; align-items: center; gap: 6px; }
 .bs-dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--bs-primary); animation: bs-bounce 0.9s ease-in-out infinite; }
-.bs-dots span:nth
+.bs-dots span:nth-child(2) { background: var(--bs-secondary); animation-delay: 0.15s; }
+.bs-dots span:nth-child(3) { background: var(--bs-primary-light); animation-delay: 0.3s; }
+.bs-dots.bs-dots-light span { background: rgba(255,255,255,0.95); }
+.bs-dots.bs-dot-light span:nth-child(2) { background: rgba(255,255,255,0.7); }
+.bs-dots.bs-dots-light span:nth-child(3) { background: rgba(255,255,255,0.5); }
+.bs-dots.bs-dots-lg span { width: 13px; height: 13px; }
+@keyframes bs-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: .55; }
+  30% { transform: translateY(-9px); opacity: 1; }
+}
+
+/* ---------- Overlay de bienvenida (post-login) ---------- */
+.bs-welcome-overlay { position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: var(--bs-space-lg); color: #fff; background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-primary-light) 60%, var(--bs-secondary-dark) 100%); opacity: 0; pointer-events: none; visibility: hidden; transition: opacity .35s ease, visibility .35s ease; }
+.bs-welcome-overlay.bs-active { opacity: 1; pointer-events: auto; visibility: visible; }
+.bs-welcome-wave { font-size: 3.2rem; display: inline-block; animation: bs-wave 1.4s ease-in-out infinite; transform-origin: 70% 70%; }
+@keyframes bs-wave { 0%,100% { transform: rotate(0); } 20% { transform: rotate(18deg); } 40% { transform: rotate(-8deg); } 60% { transform: rotate(12deg); } 80% { transform: rotate(-4deg); } }
+.bs-welcome-title { font-size: clamp(1.6rem, 4.5vw, 2.4rem); font-weight: 800; color: #fff; letter-spacing: -.01em; animation: bs-rise .5s ease both; }
+.bs-welcome-title .nm { color: #ffd7a6; }
+.bs-welcome-sub { font-size: clamp(.95rem, 2.5vw, 1.15rem); color: #dbe6fb; max-width: 520px; line-height: 1.5; animation: bs-rise .5s .12s ease both; }
+.bs-welcome-loading { margin-top: 10px; font-size: .82rem; color: #bcd0f2; display: flex; flex-direction: column; align-items: center; gap: 12px; animation: bs-rise .5s .24s ease both; }
+@keyframes bs-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Toggle mostrar/ocultar contrasena ---------- */
+.bs-input-wrap { position: relative; }
+.bs-input-wrap .bs-input { padding-right: 2.8rem; }
+.bs-eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1.05rem; padding: 4px 6px; border-radius: 6px; color: var(--bs-text-subtle); line-height: 1; }
+.bs-eye:hover { background: var(--bs-surface-alt); }
+
+/* LOGO UNIFRUTTI OVERRIDE */
+.bs-topbar-brand-icon{background:#fff!important;border-radius:8px!important;width:auto!important;height:auto!important;padding:4px 8px!important;overflow:visible!important;display:flex;align-items:center}
+.bs-topbar-brand-icon img{height:32px;width:auto;display:block;object-fit:contain}
