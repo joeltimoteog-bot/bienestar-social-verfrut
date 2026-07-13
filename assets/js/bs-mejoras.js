@@ -63,7 +63,28 @@
       '.bsm-warn-msg{font-size:.72rem;color:#b45309;font-weight:600;margin-top:3px;font-family:Inter,system-ui,sans-serif;}' +
       '#bsmDraft{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#ebf8ff;border:1px solid #90cdf4;border-radius:10px;padding:9px 14px;margin:0 0 12px;font-size:.8rem;color:#2a4365;font-family:Inter,system-ui,sans-serif;}' +
       '#bsmDraft button{border:none;border-radius:7px;padding:5px 11px;font-size:.74rem;font-weight:700;cursor:pointer;font-family:inherit;}' +
-      '#bsmDraft .b-r{background:#0a3d91;color:#fff}#bsmDraft .b-d{background:#e2e8f0;color:#334155}';
+      '#bsmDraft .b-r{background:#0a3d91;color:#fff}#bsmDraft .b-d{background:#e2e8f0;color:#334155}' +
+      /* chips de estado + totales */
+      '.bsm-tb .est{display:flex;gap:6px;flex-wrap:wrap;}' +
+      '.bsm-chip{background:#eef2f7;border:1px solid #e2e8f0;border-radius:999px;padding:4px 10px;font-size:.72rem;font-weight:700;color:#334155;cursor:pointer;}' +
+      '.bsm-chip:hover{background:#0a3d91;color:#fff;}' +
+      '.bsm-chip b{color:#0a3d91;}.bsm-chip:hover b{color:#ffd7a6;}' +
+      '.bsm-tot{font-size:.78rem;color:#475569;margin:8px 0 0;font-family:Inter,system-ui,sans-serif;text-align:right;}' +
+      '.bsm-tot b{color:#0a3d91;}' +
+      /* overlay generico (ficha / leyenda) */
+      '#bsmOverlay{position:fixed;inset:0;background:rgba(10,37,64,.6);z-index:99998;display:flex;align-items:center;justify-content:center;padding:18px;}' +
+      '#bsmOverlay .fbox{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.3);font-family:Inter,system-ui,sans-serif;}' +
+      '#bsmOverlay .fh{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #e2e8f0;font-weight:800;color:#0a3d91;position:sticky;top:0;background:#fff;}' +
+      '#bsmOverlay .fx{background:#eef2f7;border:none;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:.9rem;color:#475569;}' +
+      '#bsmOverlay .fb{padding:14px 18px;}' +
+      '#bsmOverlay .fi{display:flex;gap:10px;padding:6px 0;border-bottom:1px dashed #eef2f7;font-size:.85rem;}' +
+      '#bsmOverlay .fk{min-width:180px;font-weight:700;color:#64748b;font-size:.74rem;text-transform:uppercase;padding-top:2px;}' +
+      '#bsmOverlay .fv{flex:1;color:#1a202c;word-break:break-word;}' +
+      '#bsmOverlay .gl{padding:5px 0;font-size:.85rem;color:#334155;line-height:1.5;}' +
+      '#bsmOverlay .gl b{color:#0a3d91;}' +
+      '#bsmLeyBtn{position:fixed;left:18px;bottom:18px;z-index:9999;width:42px;height:42px;border-radius:50%;border:none;background:#0a3d91;color:#fff;font-size:1.15rem;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);}' +
+      '#bsmLeyBtn:hover{background:#E2231A;}' +
+      'tbody tr[data-bsm-i]{cursor:pointer;}';
     document.head.appendChild(st);
   }
 
@@ -190,6 +211,7 @@
     if (table._bsmT || !table.tHead || !table.tBodies.length) return;
     var tbody = table.tBodies[0];
     if (tbody.rows.length < 2) return; // esperar datos
+    bsmPrep(tbody);
     var qKey = Array.prototype.indexOf.call(document.querySelectorAll('table.bs-table'), table);
     table._bsmT = { page: 1, q: (Q_MEM[qKey] || ''), sortCol: -1, sortAsc: true, qKey: qKey };
 
@@ -199,7 +221,7 @@
     var tb = document.createElement('div');
     tb.className = 'bsm-tb';
     tb.innerHTML = '<input type="search" placeholder="🔍 Buscar en la tabla (nombre, DNI, sector...)">' +
-      '<span class="cnt"></span>';
+      '<span class="est"></span><span class="cnt"></span>';
     wrap.parentNode.insertBefore(tb, wrap);
     var inp = tb.querySelector('input');
     if (table._bsmT.q) inp.value = Q_MEM[qKey + '_raw'] || table._bsmT.q;
@@ -219,6 +241,32 @@
     pag.querySelector('.pv').onclick = function () { table._bsmT.page--; apply(table); };
     pag.querySelector('.nx').onclick = function () { table._bsmT.page++; apply(table); };
     table._bsmPag = pag; table._bsmCnt = tb.querySelector('.cnt');
+    table._bsmEst = tb.querySelector('.est');
+
+    // totales del filtro
+    var tot = document.createElement('div');
+    tot.className = 'bsm-tot';
+    pag.parentNode.insertBefore(tot, pag);
+    table._bsmTot = tot;
+
+    // chips de estado: clic = filtrar por ese estado
+    table._bsmEst.addEventListener('click', function (e) {
+      var ch = e.target.closest('.bsm-chip');
+      if (!ch) return;
+      inp.value = (inp.value.trim() === ch.getAttribute('data-q')) ? '' : ch.getAttribute('data-q');
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    // ficha de detalle al hacer clic en la fila
+    tbody.addEventListener('click', function (e) {
+      if (e.target.closest('button,a,input,select,textarea')) return;
+      var tr = e.target.closest('tr');
+      if (!tr) return;
+      var i = parseInt(tr.getAttribute('data-bsm-i'));
+      var data = window.__BS_EXPORT_DATA__;
+      if (!data || isNaN(i) || !data[i]) return;
+      bsmFicha(data[i]);
+    });
 
     // orden por columna
     Array.prototype.forEach.call(table.tHead.rows[0].cells, function (th, i) {
@@ -239,6 +287,7 @@
     // re-aplicar cuando el módulo repinta la tabla
     new MutationObserver(debounce(function () {
       if (table._bsmLock) return;
+      bsmPrep(tbody);
       table._bsmT.page = 1;
       if (table._bsmT.sortCol >= 0) sortRows(table);
       apply(table);
@@ -287,6 +336,38 @@
       idx++;
     });
     if (table._bsmCnt) table._bsmCnt.textContent = 'Mostrando ' + shown + ' de ' + vis.length + (vis.length !== rows.length ? ' (filtrado de ' + rows.length + ')' : '');
+
+    // chips de conteo por estado (de lo visible)
+    if (table._bsmEst) {
+      var counts = {};
+      vis.forEach(function (r) {
+        var b = r.querySelector('.bs-badge');
+        if (b) { var t = b.textContent.trim(); if (t && t !== '-') counts[t] = (counts[t] || 0) + 1; }
+      });
+      var ks = Object.keys(counts);
+      table._bsmEst.innerHTML = ks.length > 1 ? ks.map(function (k) {
+        return '<span class="bsm-chip" data-q="' + esc(k) + '" title="Clic para filtrar">' + esc(k) + ' <b>' + counts[k] + '</b></span>';
+      }).join('') : '';
+    }
+
+    // totales de columnas de dinero/días (de lo filtrado)
+    if (table._bsmTot) {
+      var hs = table.tHead.rows[0].cells, parts = [];
+      for (var hi = 0; hi < hs.length; hi++) {
+        var hName = hs[hi].textContent.replace(/[↕▲▼]/g, '').trim();
+        if (!/monto|pago|recuper|d[ií]as|reembolso/i.test(hName) || /%/.test(hName)) continue;
+        var sum = 0, any = false;
+        vis.forEach(function (r) {
+          var c = r.cells[hi]; if (!c) return;
+          var n = parseFloat(String(c.textContent).replace(/[^0-9.\-]/g, ''));
+          if (!isNaN(n)) { sum += n; any = true; }
+        });
+        if (any) parts.push(esc(hName) + ': <b>' + (/d[ií]as/i.test(hName)
+          ? Math.round(sum).toLocaleString('es-PE')
+          : 'S/ ' + sum.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) + '</b>');
+      }
+      table._bsmTot.innerHTML = parts.length ? 'Σ Total del filtro — ' + parts.join(' &nbsp;·&nbsp; ') : '';
+    }
     var pag = table._bsmPag;
     if (pag) {
       pag.style.display = pages > 1 ? '' : 'none';
@@ -391,6 +472,93 @@
     }, true);
   }
 
+  /* ============ FILAS: fechas legibles + índice para ficha ============ */
+  function bsmPrep(tbody) {
+    var rows = tbody.rows;
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (r.getAttribute('data-bsm-i') === null) r.setAttribute('data-bsm-i', i);
+      for (var j = 0; j < r.cells.length; j++) {
+        var c = r.cells[j];
+        if (c.children.length) continue;
+        var m = c.textContent.trim().match(/^(\d{4})-(\d{2})-(\d{2})([T ].*)?$/);
+        if (m) c.textContent = m[3] + '/' + m[2] + '/' + m[1];
+      }
+    }
+  }
+
+  /* ============ OVERLAY GENÉRICO (ficha / leyenda) ============ */
+  function bsmOverlay(titulo, bodyHtml) {
+    var old = document.getElementById('bsmOverlay');
+    if (old) old.remove();
+    var ov = document.createElement('div');
+    ov.id = 'bsmOverlay';
+    ov.innerHTML = '<div class="fbox"><div class="fh">' + titulo + ' <button class="fx" title="Cerrar">✕</button></div><div class="fb">' + bodyHtml + '</div></div>';
+    ov.addEventListener('click', function (e) {
+      if (e.target === ov || e.target.classList.contains('fx')) ov.remove();
+    });
+    document.body.appendChild(ov);
+  }
+
+  function bsmFicha(o) {
+    var html = Object.keys(o).filter(function (k) {
+      var v = o[k];
+      return v !== '' && v !== null && v !== undefined;
+    }).map(function (k) {
+      var v = String(o[k]);
+      var m = v.match(/^(\d{4})-(\d{2})-(\d{2})([T ].*)?$/);
+      if (m) v = m[3] + '/' + m[2] + '/' + m[1];
+      var lbl = k.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+      return '<div class="fi"><span class="fk">' + esc(lbl) + '</span><span class="fv">' + esc(v) + '</span></div>';
+    }).join('');
+    bsmOverlay('📄 Detalle del registro', html || '<p>Sin datos.</p>');
+  }
+
+  /* ============ LEYENDA DE ESTADOS POR MÓDULO ============ */
+  var GLOSARIOS = {
+    subsidio: [
+      ['🔵 En Proceso', 'El trámite está en gestión, aún sin presentar o en revisión.'],
+      ['🔵 Por Cobrar / Pendiente', 'Ya se pagó al trabajador; falta que EsSalud reembolse a la empresa.'],
+      ['🟢 Pagado', 'La empresa ya pagó el subsidio al trabajador.'],
+      ['🟢 Cobrado / Recuperado', 'EsSalud ya devolvió el dinero a la empresa. Este monto suma al total RECUPERADO del año.'],
+      ['🟠 No Recuperable', 'No aplica reembolso de EsSalud (fuera de plazo, no cumple requisitos, etc.).']
+    ],
+    queja: [
+      ['🔵 En Proceso / Pendiente', 'La queja fue registrada y está en atención o esperando acción correctiva.'],
+      ['🟢 Resuelta / Finalizada', 'Se aplicó la acción correctiva y el caso quedó cerrado.'],
+      ['🔴 Vencida', 'Pasó el plazo de atención según el RIT sin resolverse — requiere reporte.']
+    ],
+    accidente: [
+      ['🔵 En Seguimiento', 'El trabajador está en atención médica; se registran seguimientos periódicos.'],
+      ['🟢 Cerrado / Reincorporado', 'El caso terminó: alta médica y reincorporación del trabajador.'],
+      ['🟠 Con restricción', 'El trabajador se reincorporó con restricciones médicas temporales.']
+    ],
+    hostigamiento: [
+      ['🔴 Confidencial', 'Módulo con acceso restringido (Ley 29733). No compartas capturas ni nombres.'],
+      ['🔵 En investigación', 'Denuncia en proceso — medidas de protección en 3 días hábiles (Ley 27942).'],
+      ['🟢 Concluido', 'Investigación cerrada con decisión emitida.']
+    ],
+    rendici: [
+      ['🔵 Pendiente', 'Rendición registrada, falta sustento o depósito por regularizar.'],
+      ['🟢 Depositado / Cerrado', 'Rendición completa con depósito confirmado.']
+    ]
+  };
+  function initLeyenda() {
+    if (!MOD_KEY || !GLOSARIOS[MOD_KEY]) return;
+    var b = document.createElement('button');
+    b.id = 'bsmLeyBtn';
+    b.textContent = '?';
+    b.title = 'Ver qué significa cada estado';
+    b.onclick = function () {
+      var html = GLOSARIOS[MOD_KEY].map(function (g) {
+        return '<div class="gl"><b>' + g[0] + '</b> — ' + g[1] + '</div>';
+      }).join('') +
+      '<div class="gl" style="margin-top:8px;border-top:1px solid #eef2f7;padding-top:8px;">💡 <b>Consejos:</b> haz clic en una fila para ver la ficha completa del registro · clic en un encabezado para ordenar · usa los chips de estado para filtrar con un clic.</div>';
+      bsmOverlay('❓ Guía de estados de este módulo', html);
+    };
+    document.body.appendChild(b);
+  }
+
   /* ---------- init ---------- */
   function init() {
     if (!user) return; // sin sesión no hace nada
@@ -400,6 +568,7 @@
     initTables();
     initValidacion();
     initDraft();
+    initLeyenda();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

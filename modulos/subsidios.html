@@ -547,7 +547,7 @@
             '<td>' + esc(trabajador) + '</td>' +
             '<td>' + esc(_dni) + '</td>' +
             '<td>' + esc(s.empresa || '-') + '</td>' +
-            '<td>' + esc(s.tipo || '-') + '</td>' +
+            '<td>' + esc(/^\d+$/.test(String(s.tipo)) ? (s.descripcion || s.tipo) : (s.tipo || '-')) + '</td>' +
             '<td style="text-align: right;">' + (s.dias || 0) + '</td>' +
             '<td style="text-align: right;"><strong>' + fmtMoney(_monto) + '</strong></td>' +
             '<td><span class="bs-badge ' + estadoBadge + '">' + esc(s.estado_general || '-') + '</span></td>' +
