@@ -333,7 +333,7 @@
 
     // ===== MINI-KPIs REALES + CHIPS =====
     var KPI_DATA = null;
-    function fmtMonto(n){ n = Number(n)||0; if(n>=1000) return 'S/ '+Math.round(n/1000)+'k'; return 'S/ '+Math.round(n); }
+    function fmtMonto(n){ n = Number(n)||0; return 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function setTxt(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
 
     function paintKPIs(){
