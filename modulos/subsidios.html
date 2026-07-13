@@ -488,8 +488,32 @@
         '<div class="rec-kpi ambar"><div class="v">' + F(tot.nor) + '</div><div class="l">⚠ No Recuperable</div></div>' +
         '<div class="rec-kpi gris"><div class="v">' + tot.n + '</div><div class="l">📋 Casos totales</div></div>';
 
+      // desglose por empresa (solo si no hay filtro de empresa y existen varias)
+      var porEmp = {};
+      items.forEach(function(x){
+        var em = U(x.empresa) || 'SIN EMPRESA';
+        if (!porEmp[em]) porEmp[em] = { rec:0, pen:0, nor:0, n:0 };
+        var c2 = catEstadoSub(x), m2 = montoSub(x);
+        porEmp[em][c2] += m2; porEmp[em].n++;
+      });
+      var emps = Object.keys(porEmp).sort();
+      var htmlEmp = '';
+      if (!fEmp && emps.length > 1) {
+        htmlEmp = emps.map(function(em){
+          var d = porEmp[em];
+          var base = d.rec + d.pen;
+          var pct = base ? Math.round(d.rec * 100 / base) : 0;
+          return '<div class="rec-year" style="background:' + (em==='RAPEL' ? '#fdf0e0' : '#f0f5ff') + ';border-radius:9px;padding:9px 12px;border-bottom:none;margin-bottom:6px;">' +
+            '<span class="yr" style="min-width:82px;">🏢 ' + esc(em) + '</span>' +
+            '<span class="dt"><b>' + F(d.rec) + '</b> recuperado · <span class="pc">' + F(d.pen) + '</span> por cobrar · <span class="nr">' + F(d.nor) + '</span> no recup. · ' + d.n + ' casos</span>' +
+            '<span class="rec-bar"><i style="width:' + pct + '%"></i></span>' +
+            '<span class="rec-pct">' + pct + '% recup.</span>' +
+          '</div>';
+        }).join('') + '<div style="height:6px;"></div>';
+      }
+
       var anios = Object.keys(porAnio).sort().reverse();
-      document.getElementById('recAnios').innerHTML = anios.map(function(a){
+      document.getElementById('recAnios').innerHTML = htmlEmp + anios.map(function(a){
         var d = porAnio[a];
         var base = d.rec + d.pen;
         var pct = base ? Math.round(d.rec * 100 / base) : 0;

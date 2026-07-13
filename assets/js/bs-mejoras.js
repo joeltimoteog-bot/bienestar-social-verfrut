@@ -96,7 +96,14 @@
       '.bsm-res .ry .y{font-weight:800;color:#0a3d91;min-width:46px;font-size:.9rem;}' +
       '.bsm-res .ry .n{font-weight:700;color:#334155;}' +
       '.bsm-res .ry .m{font-weight:800;color:#15803d;}' +
-      '.bsm-res .ry .e{background:#eef2f7;border-radius:999px;padding:2px 9px;font-size:.7rem;font-weight:700;color:#334155;}';
+      '.bsm-res .ry .e{background:#eef2f7;border-radius:999px;padding:2px 9px;font-size:.7rem;font-weight:700;color:#334155;}' +
+      '.bsm-res .re{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:7px 10px;border-radius:9px;background:#f0f5ff;margin-bottom:6px;font-size:.8rem;color:#475569;}' +
+      '.bsm-res .re.rapel{background:#fdf0e0;}' +
+      '.bsm-res .re .en{font-weight:800;color:#0a3d91;min-width:76px;}' +
+      '.bsm-res .re.rapel .en{color:#b45309;}' +
+      '.bsm-res .re .n{font-weight:700;}' +
+      '.bsm-res .re .m{font-weight:800;color:#15803d;}' +
+      '.bsm-res .ry .emp{font-size:.68rem;font-weight:700;color:#64748b;background:#f7fafc;border:1px dashed #e2e8f0;border-radius:999px;padding:2px 8px;}';
     document.head.appendChild(st);
   }
 
@@ -563,32 +570,64 @@
       return isNaN(n) ? 0 : n;
     }
 
-    var porAnio = {}, tieneAnio = false;
+    var tieneEmpresa = muestra.empresa !== undefined;
+    var porAnio = {}, porEmp = {}, tieneAnio = false;
     data.forEach(function (it) {
+      var emp = tieneEmpresa ? (String(it.empresa || '').trim().toUpperCase() || 'SIN EMPRESA') : null;
+      if (emp) {
+        if (!porEmp[emp]) porEmp[emp] = { n: 0, m: 0, est: {} };
+        porEmp[emp].n++;
+        porEmp[emp].m += montoDe(it);
+        if (estKey) {
+          var ee = String(it[estKey] || '').trim().toUpperCase() || 'SIN ESTADO';
+          porEmp[emp].est[ee] = (porEmp[emp].est[ee] || 0) + 1;
+        }
+      }
       var a = anioDe(it);
       if (!a) return;
       tieneAnio = true;
-      if (!porAnio[a]) porAnio[a] = { n: 0, m: 0, est: {} };
+      if (!porAnio[a]) porAnio[a] = { n: 0, m: 0, est: {}, emp: {} };
       porAnio[a].n++;
       porAnio[a].m += montoDe(it);
+      if (emp) porAnio[a].emp[emp] = (porAnio[a].emp[emp] || 0) + 1;
       if (estKey) {
         var e = String(it[estKey] || '').trim().toUpperCase() || 'SIN ESTADO';
         porAnio[a].est[e] = (porAnio[a].est[e] || 0) + 1;
       }
     });
-    if (!tieneAnio) { box.style.display = 'none'; return; }
+    if (!tieneAnio && !Object.keys(porEmp).length) { box.style.display = 'none'; return; }
 
     var F = function (n) { return 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+
+    // bloque por empresa (solo si hay más de una)
+    var emps = Object.keys(porEmp).sort();
+    var htmlEmp = '';
+    if (emps.length > 1) {
+      htmlEmp = '<div class="rt">🏢 Resumen por empresa</div>' + emps.map(function (em) {
+        var d = porEmp[em];
+        var chips = Object.keys(d.est).sort().map(function (e) {
+          return '<span class="e">' + esc(e) + ' ' + d.est[e] + '</span>';
+        }).join(' ');
+        return '<div class="re ' + (em === 'RAPEL' ? 'rapel' : '') + '"><span class="en">' + esc(em) + '</span>' +
+          '<span class="n">' + d.n + ' caso' + (d.n === 1 ? '' : 's') + '</span>' +
+          (montoKey && d.m ? '<span class="m">' + F(d.m) + '</span>' : '') +
+          chips + '</div>';
+      }).join('') + '<div style="height:8px;"></div>';
+    }
+
     var anios = Object.keys(porAnio).sort().reverse();
-    box.innerHTML = '<div class="rt">📊 Resumen por año y estado</div>' + anios.map(function (a) {
+    box.innerHTML = htmlEmp + '<div class="rt">📊 Resumen por año y estado</div>' + anios.map(function (a) {
       var d = porAnio[a];
       var chips = Object.keys(d.est).sort().map(function (e) {
         return '<span class="e">' + esc(e) + ' ' + d.est[e] + '</span>';
       }).join(' ');
+      var empChips = Object.keys(d.emp || {}).sort().map(function (em) {
+        return '<span class="emp">' + esc(em) + ' ' + d.emp[em] + '</span>';
+      }).join(' ');
       return '<div class="ry"><span class="y">' + esc(a) + '</span>' +
         '<span class="n">' + d.n + ' caso' + (d.n === 1 ? '' : 's') + '</span>' +
         (montoKey && d.m ? '<span class="m">' + F(d.m) + '</span>' : '') +
-        chips + '</div>';
+        empChips + ' ' + chips + '</div>';
     }).join('');
     box.style.display = 'block';
   }
