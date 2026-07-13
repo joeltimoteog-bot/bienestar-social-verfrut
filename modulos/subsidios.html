@@ -42,6 +42,32 @@
         <button class="bs-btn" style="background: var(--bs-mod-subsidios); color: white;" onclick="openModal()">+ Nuevo Subsidio</button>
       </div>
 
+      <!-- Resumen de recuperación por año -->
+      <style>
+        .rec-grid{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+        .rec-kpi{flex:1;min-width:150px;background:var(--bs-surface-alt);border-radius:10px;padding:10px 14px;}
+        .rec-kpi .v{font-size:1.15rem;font-weight:800;line-height:1.2;}
+        .rec-kpi .l{font-size:.68rem;font-weight:700;color:var(--bs-text-subtle);text-transform:uppercase;letter-spacing:.03em;}
+        .rec-kpi.verde .v{color:#15803d;}.rec-kpi.azul .v{color:#0a3d91;}.rec-kpi.ambar .v{color:#b45309;}.rec-kpi.gris .v{color:#334155;}
+        .rec-year{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px dashed var(--bs-border);flex-wrap:wrap;}
+        .rec-year:last-child{border-bottom:none;}
+        .rec-year .yr{font-weight:800;color:var(--bs-primary);min-width:52px;font-size:1rem;}
+        .rec-year .dt{font-size:.76rem;color:var(--bs-text-muted);min-width:190px;}
+        .rec-year .dt b{color:#15803d;}
+        .rec-year .dt .pc{color:#0a3d91;font-weight:700;}
+        .rec-year .dt .nr{color:#b45309;font-weight:700;}
+        .rec-bar{flex:1;min-width:160px;height:10px;background:#e2e8f0;border-radius:6px;overflow:hidden;}
+        .rec-bar i{display:block;height:100%;background:linear-gradient(90deg,#15803d,#22c55e);border-radius:6px;}
+        .rec-pct{font-size:.78rem;font-weight:800;color:#15803d;min-width:88px;text-align:right;}
+      </style>
+      <div class="bs-card bs-mb" id="resumenAnual" style="display:none;">
+        <div class="bs-card-header" style="margin-bottom:.75rem;">
+          <h3 class="bs-card-title" style="font-size:1rem;">📊 Recuperación EsSalud por Año <span class="bs-text-xs bs-text-subtle" style="font-weight:400;">(Cobrado + Recuperado = dinero recuperado · según filtros de empresa y tipo)</span></h3>
+        </div>
+        <div class="rec-grid" id="recKpis"></div>
+        <div id="recAnios"></div>
+      </div>
+
       <!-- Filtros -->
       <div class="bs-card bs-mb">
         <div class="bs-grid bs-grid-4 bs-gap">
@@ -421,8 +447,65 @@
       llenar('filterEstado', unicos('estado_general'));
     }
 
+    // ===== RESUMEN DE RECUPERACIÓN POR AÑO =====
+    function montoSub(s) {
+      var v = numMoney(s.monto_total);
+      if (!v) v = numMoney(s.pago_empresa) + numMoney(s.recuperado_essalud);
+      if (!v) v = numMoney(s.reembolso_por_mes);
+      if (!v) v = numMoney(s.calculo_por_dia) * (parseInt(s.dias) || 0);
+      return v;
+    }
+    function catEstadoSub(s) {
+      var e = String(s.estado_general || '').trim().toUpperCase();
+      if (e === 'COBRADO' || e === 'RECUPERADO') return 'rec';
+      if (e === 'NO RECUPERABLE') return 'nor';
+      return 'pen'; // por cobrar / pendiente / en proceso / pagado / otros
+    }
+    function renderResumenSub() {
+      var box = document.getElementById('resumenAnual');
+      if (!box) return;
+      var fEmp = document.getElementById('filterEmpresa').value;
+      var fTipo = document.getElementById('filterTipo').value;
+      var U = function(v){ return String(v == null ? '' : v).trim().toUpperCase(); };
+      var items = _CACHE_S.slice();
+      if (fEmp)  items = items.filter(function(x){ return U(x.empresa) === U(fEmp); });
+      if (fTipo) items = items.filter(function(x){ return U(x.tipo) === U(fTipo); });
+      if (!items.length) { box.style.display = 'none'; return; }
+
+      var porAnio = {}, tot = { rec:0, pen:0, nor:0, n:0 };
+      items.forEach(function(x){
+        var a = String(x.anio || 'Sin año');
+        if (!porAnio[a]) porAnio[a] = { rec:0, pen:0, nor:0, n:0 };
+        var c = catEstadoSub(x), m = montoSub(x);
+        porAnio[a][c] += m; porAnio[a].n++;
+        tot[c] += m; tot.n++;
+      });
+
+      var F = function(n){ return 'S/ ' + (n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+      document.getElementById('recKpis').innerHTML =
+        '<div class="rec-kpi verde"><div class="v">' + F(tot.rec) + '</div><div class="l">✅ Recuperado (Cobrado)</div></div>' +
+        '<div class="rec-kpi azul"><div class="v">' + F(tot.pen) + '</div><div class="l">⏳ Por Cobrar</div></div>' +
+        '<div class="rec-kpi ambar"><div class="v">' + F(tot.nor) + '</div><div class="l">⚠ No Recuperable</div></div>' +
+        '<div class="rec-kpi gris"><div class="v">' + tot.n + '</div><div class="l">📋 Casos totales</div></div>';
+
+      var anios = Object.keys(porAnio).sort().reverse();
+      document.getElementById('recAnios').innerHTML = anios.map(function(a){
+        var d = porAnio[a];
+        var base = d.rec + d.pen;
+        var pct = base ? Math.round(d.rec * 100 / base) : 0;
+        return '<div class="rec-year">' +
+          '<span class="yr">' + esc(a) + '</span>' +
+          '<span class="dt"><b>' + F(d.rec) + '</b> recuperado · <span class="pc">' + F(d.pen) + '</span> por cobrar · <span class="nr">' + F(d.nor) + '</span> no recup. · ' + d.n + ' casos</span>' +
+          '<span class="rec-bar"><i style="width:' + pct + '%"></i></span>' +
+          '<span class="rec-pct">' + pct + '% recup.</span>' +
+        '</div>';
+      }).join('');
+      box.style.display = 'block';
+    }
+
     // Render con filtros EN CLIENTE (instantáneo)
     function renderSubsidios() {
+      renderResumenSub();
       const cont = document.getElementById('tablaContainer');
       const fEmp = document.getElementById('filterEmpresa').value;
       const fTipo = document.getElementById('filterTipo').value;
