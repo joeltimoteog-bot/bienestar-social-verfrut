@@ -377,7 +377,8 @@
         }
         var nuevos = res.items || [];
         // ANTI-PARPADEO: solo re-pintar si los datos realmente cambiaron
-        var sinCambios = pintado && JSON.stringify(nuevos) === JSON.stringify(_CACHE_S);
+        var _canon = function(a){ return JSON.stringify((a||[]).map(function(x){ return JSON.stringify(x); }).sort()); };
+        var sinCambios = pintado && _canon(nuevos) === _canon(_CACHE_S);
         _CACHE_S = nuevos;
         try { localStorage.setItem(_CACHE_KEY_S, JSON.stringify({ items: _CACHE_S, t: Date.now() })); } catch(e) {}
         poblarFiltrosSub();
@@ -436,11 +437,14 @@
       {
         const res = { items: items };
         let html = '<div class="bs-table-wrap"><table class="bs-table">';
-        html += '<thead><tr><th>ID</th><th>Año-Mes</th><th>Trabajador</th><th>Empresa</th><th>Tipo</th><th>Días</th><th>Monto Total</th><th>Estado</th><th></th></tr></thead><tbody>';
+        html += '<thead><tr><th>ID</th><th>Año-Mes</th><th>Trabajador</th><th>DNI</th><th>Empresa</th><th>Tipo</th><th>Días</th><th>Monto Total</th><th>Estado</th><th></th></tr></thead><tbody>';
         window.__BS_EXPORT_DATA__ = res.items || [];
-        res.items.forEach(function(s) {
+        window.__VIS_SUBS = res.items || [];
+        res.items.forEach(function(s, _i) {
           const trabajador = [s.apellido_paterno, s.apellido_materno, s.nombres].filter(Boolean).join(' ') || '-';
           const periodo = (s.anio || '-') + (s.mes ? ' ' + s.mes : '');
+          const _dni = s.numero || s.dni || s.DNI || '-';
+          const _monto = (s.monto_total === undefined || s.monto_total === null || s.monto_total === '') ? (s['MONTO TOTAL'] || s.montoTotal || '') : s.monto_total;
           const eg = String(s.estado_general || '').trim().toUpperCase();
           const estadoBadge = (eg === 'PAGADO' || eg === 'RECUPERADO' || eg === 'COBRADO') ? 'bs-badge-success'
             : eg === 'PENDIENTE' ? 'bs-badge-danger'
@@ -450,12 +454,13 @@
             '<td><strong>#' + s.id + '</strong></td>' +
             '<td>' + esc(periodo) + '</td>' +
             '<td>' + esc(trabajador) + '</td>' +
+            '<td>' + esc(_dni) + '</td>' +
             '<td>' + esc(s.empresa || '-') + '</td>' +
             '<td>' + esc(s.tipo || '-') + '</td>' +
             '<td style="text-align: right;">' + (s.dias || 0) + '</td>' +
-            '<td style="text-align: right;"><strong>' + fmtMoney(s.monto_total) + '</strong></td>' +
+            '<td style="text-align: right;"><strong>' + fmtMoney(_monto) + '</strong></td>' +
             '<td><span class="bs-badge ' + estadoBadge + '">' + esc(s.estado_general || '-') + '</span></td>' +
-            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + s.id + ')">Editar</button></td>' +
+            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editarIdx(' + _i + ')">Editar</button></td>' +
           '</tr>';
         });
         html += '</tbody></table></div>';
@@ -509,6 +514,7 @@
     }
 
     function openModal() {
+      window.__EDIT_SIN_ID = false;
       document.getElementById('formTitle').textContent = 'Nuevo Subsidio';
       document.getElementById('subsidioId').value = '';
       ALL_FIELDS.forEach(function(f) {
@@ -527,17 +533,25 @@
       document.getElementById('formModal').classList.remove('bs-active');
     }
 
+    function editarIdx(i) {
+      const s = (window.__VIS_SUBS || [])[i];
+      if (!s) return appAlert('Subsidio no encontrado');
+      abrirEdicionSub(s);
+    }
     async function editar(id) {
-      let s = _CACHE_S.find(function(x) { return parseInt(x.id) === parseInt(id); });
+      let s = _CACHE_S.find(function(x) { return String(x.id) === String(id); });
       if (!s) {
         const res = await api('bs_listarSubsidios', {});
         if (!res.ok) return appAlert('Error: ' + res.message);
-        s = (res.items || []).find(function(x) { return parseInt(x.id) === parseInt(id); });
+        s = (res.items || []).find(function(x) { return String(x.id) === String(id); });
       }
       if (!s) return appAlert('Subsidio no encontrado');
-
-      document.getElementById('formTitle').textContent = 'Editar Subsidio #' + s.id;
-      document.getElementById('subsidioId').value = s.id;
+      abrirEdicionSub(s);
+    }
+    function abrirEdicionSub(s) {
+      window.__EDIT_SIN_ID = !s.id;
+      document.getElementById('formTitle').textContent = s.id ? ('Editar Subsidio #' + s.id) : 'Editar Subsidio (importado sin ID)';
+      document.getElementById('subsidioId').value = s.id || '';
       ALL_FIELDS.forEach(function(f) {
         const el = document.getElementById(f);
         if (el) {
@@ -557,6 +571,10 @@
     }
 
     async function submitForm() {
+      if (window.__EDIT_SIN_ID) {
+        document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-warning">⚠ Este registro fue importado <strong>sin ID</strong> (columna A vacía en la hoja BS_Subsidios). Numera la columna ID en la hoja para poder editarlo desde aquí.</div>';
+        return;
+      }
       const datos = {};
       ALL_FIELDS.forEach(function(f) {
         datos[f] = document.getElementById(f).value;
