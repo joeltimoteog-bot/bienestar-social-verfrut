@@ -350,9 +350,15 @@
     }
 
     // ===== FORMATO MONEDA =====
+    // Acepta números o textos como "S/ 457.10" o "1,234.50"
+    function numMoney(v) {
+      if (v === '' || v === null || v === undefined) return 0;
+      var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+      return isNaN(n) ? 0 : n;
+    }
     function fmtMoney(n) {
-      if (n === '' || n === null || n === undefined || isNaN(parseFloat(n))) return '-';
-      return 'S/ ' + parseFloat(n).toFixed(2);
+      var v = numMoney(n);
+      return v ? 'S/ ' + v.toFixed(2) : '-';
     }
 
     // ===== LISTAR =====
@@ -444,7 +450,9 @@
           const trabajador = [s.apellido_paterno, s.apellido_materno, s.nombres].filter(Boolean).join(' ') || '-';
           const periodo = (s.anio || '-') + (s.mes ? ' ' + s.mes : '');
           const _dni = s.numero || s.dni || s.DNI || '-';
-          const _monto = (s.monto_total === undefined || s.monto_total === null || s.monto_total === '') ? (s['MONTO TOTAL'] || s.montoTotal || '') : s.monto_total;
+          var _monto = numMoney(s.monto_total);
+          if (!_monto) _monto = numMoney(s.pago_empresa) + numMoney(s.recuperado_essalud);
+          if (!_monto) _monto = numMoney(s.calculo_por_dia) * (parseInt(s.dias) || 0);
           const eg = String(s.estado_general || '').trim().toUpperCase();
           const estadoBadge = (eg === 'PAGADO' || eg === 'RECUPERADO' || eg === 'COBRADO') ? 'bs-badge-success'
             : eg === 'PENDIENTE' ? 'bs-badge-danger'
