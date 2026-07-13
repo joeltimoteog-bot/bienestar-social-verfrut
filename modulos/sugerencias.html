@@ -296,6 +296,7 @@
         return;
       }
       let filas = '';
+      window.__BS_EXPORT_DATA__ = cache;
       cache.forEach(function(s) {
         const btnFin = (s.estado !== 'Finalizada')
           ? '<button class="bs-btn" title="Marcar como finalizada" style="padding:4px 10px;font-size:0.82rem;background:#16a34a;color:#fff;margin-right:4px;" onclick="finalizarRapido('+s.id+')">✓</button>'

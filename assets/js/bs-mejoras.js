@@ -84,7 +84,16 @@
       '#bsmOverlay .gl b{color:#0a3d91;}' +
       '#bsmLeyBtn{position:fixed;left:18px;bottom:18px;z-index:9999;width:42px;height:42px;border-radius:50%;border:none;background:#0a3d91;color:#fff;font-size:1.15rem;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);}' +
       '#bsmLeyBtn:hover{background:#E2231A;}' +
-      'tbody tr[data-bsm-i]{cursor:pointer;}';
+      'tbody tr[data-bsm-i]{cursor:pointer;}' +
+      /* resumen estados por año */
+      '.bsm-res{background:#fff;border:1px solid #e6ebf2;border-radius:12px;padding:12px 16px;margin:0 0 12px;font-family:Inter,system-ui,sans-serif;box-shadow:0 1px 4px rgba(15,23,42,.05);}' +
+      '.bsm-res .rt{font-weight:800;font-size:.82rem;color:#0a3d91;margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em;}' +
+      '.bsm-res .ry{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:6px 0;border-bottom:1px dashed #eef2f7;font-size:.8rem;color:#475569;}' +
+      '.bsm-res .ry:last-child{border-bottom:none;}' +
+      '.bsm-res .ry .y{font-weight:800;color:#0a3d91;min-width:46px;font-size:.9rem;}' +
+      '.bsm-res .ry .n{font-weight:700;color:#334155;}' +
+      '.bsm-res .ry .m{font-weight:800;color:#15803d;}' +
+      '.bsm-res .ry .e{background:#eef2f7;border-radius:999px;padding:2px 9px;font-size:.7rem;font-weight:700;color:#334155;}';
     document.head.appendChild(st);
   }
 
@@ -223,6 +232,13 @@
     tb.innerHTML = '<input type="search" placeholder="🔍 Buscar en la tabla (nombre, DNI, sector...)">' +
       '<span class="est"></span><span class="cnt"></span>';
     wrap.parentNode.insertBefore(tb, wrap);
+    if (MOD_KEY && MOD_KEY !== 'subsidio') {
+      var resx = document.createElement('div');
+      resx.className = 'bsm-res';
+      resx.style.display = 'none';
+      tb.parentNode.insertBefore(resx, tb);
+      table._bsmRes = resx;
+    }
     var inp = tb.querySelector('input');
     if (table._bsmT.q) inp.value = Q_MEM[qKey + '_raw'] || table._bsmT.q;
     inp.addEventListener('input', debounce(function () {
@@ -368,6 +384,8 @@
       }
       table._bsmTot.innerHTML = parts.length ? 'Σ Total del filtro — ' + parts.join(' &nbsp;·&nbsp; ') : '';
     }
+
+    if (table._bsmRes) bsmResumen(table);
     var pag = table._bsmPag;
     if (pag) {
       pag.style.display = pages > 1 ? '' : 'none';
@@ -512,6 +530,64 @@
       return '<div class="fi"><span class="fk">' + esc(lbl) + '</span><span class="fv">' + esc(v) + '</span></div>';
     }).join('');
     bsmOverlay('📄 Detalle del registro', html || '<p>Sin datos.</p>');
+  }
+
+  /* ============ RESUMEN "ESTADOS POR AÑO" (genérico) ============ */
+  function bsmResumen(table) {
+    var box = table._bsmRes;
+    var data = window.__BS_EXPORT_DATA__;
+    if (!box) return;
+    if (!data || !data.length) { box.style.display = 'none'; return; }
+
+    var muestra = data[0];
+    var estKey = ['estado_general', 'estado_caso', 'estado', 'status', 'situacion'].filter(function (k) { return muestra[k] !== undefined; })[0];
+    var fechaKeys = ['anio', 'fecha_recepcion', 'dia_accidente', 'fecha_denuncia', 'fecha', 'inicio', 'created_at'];
+
+    function anioDe(it) {
+      if (it.anio) return String(it.anio);
+      for (var i = 1; i < fechaKeys.length; i++) {
+        var v = it[fechaKeys[i]];
+        if (!v) continue;
+        var m = String(v).match(/(\d{4})/);
+        if (m) return m[1];
+      }
+      return null;
+    }
+    var montoKey = ['monto_total', 'monto', 'importe'].filter(function (k) { return muestra[k] !== undefined; })[0];
+    function montoDe(it) {
+      if (!montoKey) return 0;
+      var n = parseFloat(String(it[montoKey]).replace(/[^0-9.\-]/g, ''));
+      return isNaN(n) ? 0 : n;
+    }
+
+    var porAnio = {}, tieneAnio = false;
+    data.forEach(function (it) {
+      var a = anioDe(it);
+      if (!a) return;
+      tieneAnio = true;
+      if (!porAnio[a]) porAnio[a] = { n: 0, m: 0, est: {} };
+      porAnio[a].n++;
+      porAnio[a].m += montoDe(it);
+      if (estKey) {
+        var e = String(it[estKey] || '').trim().toUpperCase() || 'SIN ESTADO';
+        porAnio[a].est[e] = (porAnio[a].est[e] || 0) + 1;
+      }
+    });
+    if (!tieneAnio) { box.style.display = 'none'; return; }
+
+    var F = function (n) { return 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+    var anios = Object.keys(porAnio).sort().reverse();
+    box.innerHTML = '<div class="rt">📊 Resumen por año y estado</div>' + anios.map(function (a) {
+      var d = porAnio[a];
+      var chips = Object.keys(d.est).sort().map(function (e) {
+        return '<span class="e">' + esc(e) + ' ' + d.est[e] + '</span>';
+      }).join(' ');
+      return '<div class="ry"><span class="y">' + esc(a) + '</span>' +
+        '<span class="n">' + d.n + ' caso' + (d.n === 1 ? '' : 's') + '</span>' +
+        (montoKey && d.m ? '<span class="m">' + F(d.m) + '</span>' : '') +
+        chips + '</div>';
+    }).join('');
+    box.style.display = 'block';
   }
 
   /* ============ LEYENDA DE ESTADOS POR MÓDULO ============ */
