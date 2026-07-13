@@ -78,6 +78,8 @@
               <option value="Pendiente">Pendiente</option>
               <option value="Pagado">Pagado</option>
               <option value="Recuperado">Recuperado</option>
+              <option value="Cobrado">Cobrado</option>
+              <option value="No Recuperable">No Recuperable</option>
             </select>
           </div>
         </div>
@@ -261,6 +263,8 @@
               <option value="Pendiente">Pendiente</option>
               <option value="Pagado">Pagado</option>
               <option value="Recuperado">Recuperado</option>
+              <option value="Cobrado">Cobrado</option>
+              <option value="No Recuperable">No Recuperable</option>
             </select>
           </div>
         </div>
@@ -361,7 +365,7 @@
       let pintado = false;
       try {
         const c = JSON.parse(localStorage.getItem(_CACHE_KEY_S) || 'null');
-        if (c && Array.isArray(c.items) && c.items.length) { _CACHE_S = c.items; renderSubsidios(); pintado = true; }
+        if (c && Array.isArray(c.items) && c.items.length) { _CACHE_S = c.items; poblarFiltrosSub(); renderSubsidios(); pintado = true; }
       } catch(e) {}
       if (!pintado) cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
 
@@ -371,12 +375,43 @@
           if (!pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
           return;
         }
-        _CACHE_S = res.items || [];
+        var nuevos = res.items || [];
+        // ANTI-PARPADEO: solo re-pintar si los datos realmente cambiaron
+        var sinCambios = pintado && JSON.stringify(nuevos) === JSON.stringify(_CACHE_S);
+        _CACHE_S = nuevos;
         try { localStorage.setItem(_CACHE_KEY_S, JSON.stringify({ items: _CACHE_S, t: Date.now() })); } catch(e) {}
-        renderSubsidios();
+        poblarFiltrosSub();
+        if (!sinCambios) renderSubsidios();
       } catch(err) {
         if (!pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
       }
+    }
+
+    // Completa los filtros con los valores REALES de la base (sin perder la selección)
+    function poblarFiltrosSub() {
+      function llenar(selId, valores) {
+        const sel = document.getElementById(selId);
+        if (!sel) return;
+        const actual = sel.value;
+        const existentes = Array.prototype.map.call(sel.options, function(o){ return o.value.toUpperCase(); });
+        valores.forEach(function(v) {
+          if (v && existentes.indexOf(String(v).toUpperCase()) < 0) {
+            const o = document.createElement('option');
+            o.value = v; o.textContent = v;
+            sel.appendChild(o);
+            existentes.push(String(v).toUpperCase());
+          }
+        });
+        sel.value = actual;
+      }
+      function unicos(campo) {
+        const s = {};
+        _CACHE_S.forEach(function(it){ const v = String(it[campo] == null ? '' : it[campo]).trim(); if (v) s[v] = 1; });
+        return Object.keys(s).sort();
+      }
+      llenar('filterTipo', unicos('tipo'));
+      llenar('filterAnio', unicos('anio'));
+      llenar('filterEstado', unicos('estado_general'));
     }
 
     // Render con filtros EN CLIENTE (instantáneo)
@@ -387,10 +422,11 @@
       const fAnio = document.getElementById('filterAnio').value;
       const fEst = document.getElementById('filterEstado').value;
       let items = _CACHE_S.slice();
-      if (fEmp)  items = items.filter(function(s){ return s.empresa === fEmp; });
-      if (fTipo) items = items.filter(function(s){ return s.tipo === fTipo; });
+      const U = function(v){ return String(v == null ? '' : v).trim().toUpperCase(); };
+      if (fEmp)  items = items.filter(function(s){ return U(s.empresa) === U(fEmp); });
+      if (fTipo) items = items.filter(function(s){ return U(s.tipo) === U(fTipo); });
       if (fAnio) items = items.filter(function(s){ return String(s.anio) === String(fAnio); });
-      if (fEst)  items = items.filter(function(s){ return s.estado_general === fEst; });
+      if (fEst)  items = items.filter(function(s){ return U(s.estado_general) === U(fEst); });
 
       if (items.length === 0) {
         cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay subsidios registrados con esos filtros.</p></div>';
@@ -405,9 +441,11 @@
         res.items.forEach(function(s) {
           const trabajador = [s.apellido_paterno, s.apellido_materno, s.nombres].filter(Boolean).join(' ') || '-';
           const periodo = (s.anio || '-') + (s.mes ? ' ' + s.mes : '');
-          const estadoBadge = s.estado_general === 'Pagado' || s.estado_general === 'Recuperado' ? 'bs-badge-success'
-            : s.estado_general === 'Pendiente' ? 'bs-badge-danger'
-            : 'bs-badge-warning';
+          const eg = String(s.estado_general || '').trim().toUpperCase();
+          const estadoBadge = (eg === 'PAGADO' || eg === 'RECUPERADO' || eg === 'COBRADO') ? 'bs-badge-success'
+            : eg === 'PENDIENTE' ? 'bs-badge-danger'
+            : eg === 'NO RECUPERABLE' ? 'bs-badge-warning'
+            : 'bs-badge-info';
           html += '<tr>' +
             '<td><strong>#' + s.id + '</strong></td>' +
             '<td>' + esc(periodo) + '</td>' +
@@ -716,7 +754,7 @@
     XLSX.writeFile(wb, nombre + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
   }
   var btn = document.createElement('button');
-  btn.textContent = '\u2B07\uFE0F Exportar Excel';
+  btn.textContent = '⬇️ Exportar Excel';
   btn.onclick = exportar;
   btn.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;background:#0033A0;color:#fff;border:none;padding:11px 16px;border-radius:10px;cursor:pointer;font:600 14px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
   function poner(){ document.body.appendChild(btn); }

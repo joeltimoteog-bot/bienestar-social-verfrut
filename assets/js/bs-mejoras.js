@@ -184,12 +184,14 @@
 
   /* ============ 3) TABLAS: búsqueda + orden + paginación ============ */
   var PAGE_SIZE = 15;
+  var Q_MEM = {}; // recuerda la búsqueda aunque el módulo re-pinte la tabla
 
   function enhanceTable(table) {
     if (table._bsmT || !table.tHead || !table.tBodies.length) return;
     var tbody = table.tBodies[0];
     if (tbody.rows.length < 2) return; // esperar datos
-    table._bsmT = { page: 1, q: '', sortCol: -1, sortAsc: true };
+    var qKey = Array.prototype.indexOf.call(document.querySelectorAll('table.bs-table'), table);
+    table._bsmT = { page: 1, q: (Q_MEM[qKey] || ''), sortCol: -1, sortAsc: true, qKey: qKey };
 
     var wrap = table.closest('.bs-table-wrap') || table;
 
@@ -200,8 +202,11 @@
       '<span class="cnt"></span>';
     wrap.parentNode.insertBefore(tb, wrap);
     var inp = tb.querySelector('input');
+    if (table._bsmT.q) inp.value = Q_MEM[qKey + '_raw'] || table._bsmT.q;
     inp.addEventListener('input', debounce(function () {
       table._bsmT.q = inp.value.trim().toLowerCase();
+      Q_MEM[qKey] = table._bsmT.q;
+      Q_MEM[qKey + '_raw'] = inp.value;
       table._bsmT.page = 1;
       apply(table);
     }, 200));
