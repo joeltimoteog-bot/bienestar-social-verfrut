@@ -681,9 +681,12 @@
       try {
         const res = await api('bs_listarAccidentes', { filtros: filtros });
         if (!res.ok) { if (!_pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>'; return; }
+        var _cn = function(a){ return JSON.stringify((a||[]).map(function(x){ return JSON.stringify(x); }).sort()); };
         BSFiltroFecha.refrescar(res.items);
         res.items = res.items.filter(BSFiltroFecha.pasa);
+        var _sameA = _pintado && _cn(res.items) === _cn(casosCache);
         casosCache = res.items;
+        if (_sameA) return;
         if (res.items.length === 0) {
           cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay casos registrados con esos filtros.</p></div>';
           return;

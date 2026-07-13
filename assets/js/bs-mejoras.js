@@ -84,6 +84,9 @@
       '#bsmOverlay .gl b{color:#0a3d91;}' +
       '#bsmLeyBtn{position:fixed;left:18px;bottom:18px;z-index:9999;width:42px;height:42px;border-radius:50%;border:none;background:#0a3d91;color:#fff;font-size:1.15rem;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);}' +
       '#bsmLeyBtn:hover{background:#E2231A;}' +
+      '#bsmWspBtn{position:fixed;left:18px;bottom:70px;z-index:9999;width:46px;height:46px;border-radius:50%;background:#25d366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.28);transition:transform .15s ease;}' +
+      '#bsmWspBtn:hover{transform:scale(1.08);}' +
+      '#bsmWspBtn svg{width:26px;height:26px;fill:#fff;}' +
       'tbody tr[data-bsm-i]{cursor:pointer;}' +
       /* resumen estados por año */
       '.bsm-res{background:#fff;border:1px solid #e6ebf2;border-radius:12px;padding:12px 16px;margin:0 0 12px;font-family:Inter,system-ui,sans-serif;box-shadow:0 1px 4px rgba(15,23,42,.05);}' +
@@ -307,7 +310,7 @@
       table._bsmT.page = 1;
       if (table._bsmT.sortCol >= 0) sortRows(table);
       apply(table);
-    }, 250)).observe(tbody, { childList: true });
+    }, 120)).observe(tbody, { childList: true });
   }
 
   function cellVal(row, i) {
@@ -398,7 +401,7 @@
   function initTables() {
     var scan = debounce(function () {
       document.querySelectorAll('table.bs-table').forEach(enhanceTable);
-    }, 400);
+    }, 80);
     scan();
     new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
   }
@@ -635,6 +638,25 @@
     document.body.appendChild(b);
   }
 
+  /* ============ SOPORTE POR WHATSAPP (reportar fallas con captura) ============ */
+  var BSM_WSP_SOPORTE = '51994190769'; // Joel A. Timoteo — soporte del sistema
+  function initSoporte() {
+    if (!BSM_WSP_SOPORTE || document.getElementById('bsmWspBtn')) return;
+    var msg = '🛟 *SOPORTE · SISTEMA DE BIENESTAR SOCIAL*\n' +
+      '👤 Usuario: ' + ((user && (user.nombre || user.usuario)) || '—') + '\n' +
+      '📄 Página: ' + document.title + '\n' +
+      '🕐 ' + new Date().toLocaleString('es-PE') + '\n\n' +
+      'Hola Joel, encontré un problema en el sistema. Te adjunto la captura de pantalla:';
+    var b = document.createElement('a');
+    b.id = 'bsmWspBtn';
+    b.href = 'https://wa.me/' + BSM_WSP_SOPORTE + '?text=' + encodeURIComponent(msg);
+    b.target = '_blank';
+    b.rel = 'noopener';
+    b.title = '¿Algo falló? Repórtalo por WhatsApp y adjunta tu captura';
+    b.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+    document.body.appendChild(b);
+  }
+
   /* ---------- init ---------- */
   function init() {
     if (!user) return; // sin sesión no hace nada
@@ -645,6 +667,7 @@
     initValidacion();
     initDraft();
     initLeyenda();
+    initSoporte();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

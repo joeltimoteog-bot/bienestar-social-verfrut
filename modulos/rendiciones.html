@@ -323,10 +323,13 @@
           }
           return;
         }
-        _CACHE = res.items || [];
+        var _cn = function(a){ return JSON.stringify((a||[]).map(function(x){ return JSON.stringify(x); }).sort()); };
+        var _nr = res.items || [];
+        var _same = pintado && _cn(_nr) === _cn(_CACHE);
+        _CACHE = _nr;
         try { localStorage.setItem(_CACHE_KEY_R, JSON.stringify({ items: _CACHE, t: Date.now() })); } catch(e) {}
         _poblarResponsables(_CACHE);
-        render();
+        if (!_same) render();
       } catch(err) {
         if (!pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
       }

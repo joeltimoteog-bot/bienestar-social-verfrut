@@ -427,9 +427,12 @@
           if (!pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + res.message + '</div>';
           return;
         }
-        _CACHE_Q = res.items || [];
+        var _cn = function(a){ return JSON.stringify((a||[]).map(function(x){ return JSON.stringify(x); }).sort()); };
+        var _nq = res.items || [];
+        var _same = pintado && _cn(_nq) === _cn(_CACHE_Q);
+        _CACHE_Q = _nq;
         try { localStorage.setItem(_CACHE_KEY_Q, JSON.stringify({ items: _CACHE_Q, t: Date.now() })); } catch(e) {}
-        renderQuejas();
+        if (!_same) renderQuejas();
       } catch(err) {
         if (!pintado) cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error de conexión: ' + err.message + '</div>';
       }
