@@ -269,11 +269,11 @@
     // KPIs por módulo: [etiqueta1, etiqueta2]. Los valores se llenan con datos reales.
     var KPI_LABELS = {
       sugerencias:['Recibidas','En proceso'],
-      quejas:['Casos','Resueltas'],
-      accidentes:['Activos','Cerrados'],
-      hostigamiento:['Casos','Reservado'],
-      subsidios:['Trámites','Recuperado'],
-      rendiciones:['Total','Pendientes']
+      quejas:['Casos totales','% Resueltas'],
+      accidentes:['En seguimiento','Cerrados'],
+      hostigamiento:['Denuncias','Confidencial'],
+      subsidios:['Trámites totales','S/ Recuperado'],
+      rendiciones:['Monto total','Pendientes']
     };
 
     // ===== MÓDULOS ===== (idéntico a tu configuración)
@@ -349,7 +349,7 @@
       if(d.hostigamiento){ setTxt('kpi_hostigamiento_1', d.hostigamiento.total||0);
         setTxt('kpi_hostigamiento_2', '—'); }
       // Subsidios
-      if(d.subsidios){ setTxt('kpi_subsidios_1', d.subsidios.total||0);
+      if(d.subsidios){ setTxt('kpi_subsidios_1', (d.subsidios.total||0).toLocaleString('es-PE'));
         setTxt('kpi_subsidios_2', fmtMonto(d.subsidios.recuperadoEssalud)); }
       // Rendiciones
       if(d.rendiciones){ setTxt('kpi_rendiciones_1', fmtMonto(d.rendiciones.monto_total));
@@ -362,7 +362,7 @@
       if(d.accidentes) chips.push(['#dc2626', d.accidentes.enSeguimiento||0, 'accidentes activos']);
       if(d.quejas)     chips.push(['#e08e0b', d.quejas.pendientes||0, 'hallazgos pendientes']);
       if(d.rendiciones)chips.push(['#16a34a', d.rendiciones.pendientes||0, 'rendiciones pendientes']);
-      if(d.subsidios)  chips.push(['#0891b2', d.subsidios.total||0, 'subsidios en trámite']);
+      if(d.subsidios)  chips.push(['#0891b2', (d.subsidios.enTramite!=null?d.subsidios.enTramite:(d.subsidios.total||0)), 'subsidios por cobrar']);
       var cw = document.getElementById('proChips');
       if(cw){ cw.innerHTML = chips.map(function(c){
         return '<span class="pro-chip"><span class="dot" style="background:'+c[0]+'"></span> <b>'+c[1]+'</b> '+c[2]+'</span>';
@@ -374,14 +374,27 @@
       Promise.all([
         bsApi('bs_dashboard', { permisos: permisos }).catch(function(){ return {ok:false}; }),
         bsApi('bs_reporteRendiciones', { filtros:{} }).catch(function(){ return {ok:false}; }),
-        bsApi('bs_listarSugerencias', { filtros:{} }).catch(function(){ return {ok:false}; })
+        bsApi('bs_listarSugerencias', { filtros:{} }).catch(function(){ return {ok:false}; }),
+        bsApi('bs_listarSubsidios', {}).catch(function(){ return {ok:false}; })
       ]).then(function(r){
-        var dash=r[0]||{}, rend=r[1]||{}, sug=r[2]||{};
+        var dash=r[0]||{}, rend=r[1]||{}, sug=r[2]||{}, subs=r[3]||{};
         KPI_DATA = {
           quejas: dash.quejas, accidentes: dash.accidentes,
           hostigamiento: dash.hostigamiento, subsidios: dash.subsidios
         };
         if(rend && rend.ok){ KPI_DATA.rendiciones = { monto_total: rend.monto_total||0, pendientes: (rend.pendiente&&rend.pendiente.n)||0 }; }
+        // Subsidios: calcular recuperado real desde la base (montos pueden venir como "S/ 457.10")
+        if(subs && subs.ok && subs.items){
+          var _num=function(v){ var n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
+          var _monto=function(x){ var v=_num(x.monto_total); if(!v) v=_num(x.pago_empresa)+_num(x.recuperado_essalud); if(!v) v=_num(x.calculo_por_dia)*(parseInt(x.dias)||0); return v; };
+          var _rec=0,_tram=0;
+          subs.items.forEach(function(x){
+            var e=String(x.estado_general||'').trim().toUpperCase();
+            if(e==='COBRADO'||e==='RECUPERADO') _rec+=_monto(x);
+            else if(e!=='NO RECUPERABLE') _tram++;
+          });
+          KPI_DATA.subsidios = { total: subs.items.length, recuperadoEssalud: _rec, enTramite: _tram };
+        }
         if(sug && sug.ok && sug.items){
           var rec = sug.items.length;
           var enP = sug.items.filter(function(s){ return String(s.estado||'').toLowerCase()!=='finalizada'; }).length;
