@@ -30,7 +30,7 @@ body {
   --bs-accent: #E2231A;
 
   /* Neutros */
-  --bs-bg: #f7fafc;
+  --bs-bg: #f3f6fc;
   --bs-surface: #ffffff;
   --bs-surface-alt: #edf2f7;
   --bs-text: #1a202c;
@@ -125,7 +125,7 @@ small, .bs-text-sm { font-size: 0.85rem; }
 .bs-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--bs-text); margin-bottom: var(--bs-space-xs); text-transform: uppercase; letter-spacing: 0.025em; }
 .bs-required { color: var(--bs-danger); }
 .bs-input, .bs-select, .bs-textarea { width: 100%; padding: 0.6rem 0.85rem; font-size: 0.95rem; font-family: inherit; color: var(--bs-text); background: var(--bs-surface); border: 1.5px solid var(--bs-border); border-radius: var(--bs-radius); transition: var(--bs-transition); outline: none; }
-.bs-input:focus, .bs-select:focus, .bs-textarea:focus { border-color: var(--bs-secondary); box-shadow: 0 0 0 3px rgba(45, 122, 75, 0.15); }
+.bs-input:focus, .bs-select:focus, .bs-textarea:focus { border-color: var(--bs-primary-light); box-shadow: 0 0 0 3px rgba(42, 91, 215, 0.14); }
 .bs-textarea { resize: vertical; min-height: 90px; font-family: inherit; }
 .bs-select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%234a5568' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.85rem center; padding-right: 2.2rem; }
 .bs-input:disabled, .bs-select:disabled, .bs-textarea:disabled { background: var(--bs-surface-alt); cursor: not-allowed; opacity: 0.7; }
@@ -135,7 +135,7 @@ small, .bs-text-sm { font-size: 0.85rem; }
 /* ---------- Botones ---------- */
 .bs-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 600; font-family: inherit; border: none; border-radius: var(--bs-radius); cursor: pointer; transition: var(--bs-transition); text-decoration: none; white-space: nowrap; user-select: none; }
 .bs-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.bs-btn-primary { background: var(--bs-primary); color: #fff; }
+.bs-btn-primary { background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-primary-light) 140%); color: #fff; box-shadow: 0 4px 12px rgba(0,51,160,.28); }
 .bs-btn-primary:hover:not(:disabled) { background: var(--bs-primary-dark); transform: translateY(-1px); box-shadow: var(--bs-shadow); }
 .bs-btn-secondary { background: var(--bs-secondary); color: #fff; }
 .bs-btn-secondary:hover:not(:disabled) { background: var(--bs-secondary-dark); transform: translateY(-1px); box-shadow: var(--bs-shadow); }
@@ -165,12 +165,13 @@ small, .bs-text-sm { font-size: 0.85rem; }
 .bs-badge-primary { background: rgba(10, 37, 64, 0.1); color: var(--bs-primary); }
 
 /* ---------- Tablas ---------- */
-.bs-table-wrap { overflow-x: auto; border-radius: var(--bs-radius); border: 1px solid var(--bs-border); background: var(--bs-surface); }
+.bs-table-wrap { overflow-x: auto; border-radius: var(--bs-radius-lg); border: 1px solid var(--bs-border); background: var(--bs-surface); box-shadow: var(--bs-shadow); }
 .bs-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-.bs-table th { background: var(--bs-surface-alt); color: var(--bs-text); font-weight: 600; text-align: left; padding: 0.75rem 1rem; border-bottom: 2px solid var(--bs-border); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.bs-table th { background: linear-gradient(180deg, #f6f9ff, #eef3fc); color: var(--bs-primary-dark); font-weight: 700; text-align: left; padding: 0.75rem 1rem; border-bottom: 2px solid #dbe5f5; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .bs-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--bs-border); color: var(--bs-text); vertical-align: top; }
 .bs-table tr:last-child td { border-bottom: none; }
-.bs-table tr:hover { background: var(--bs-surface-alt); }
+.bs-table tbody tr { transition: background .12s; }
+.bs-table tbody tr:hover { background: #EBF1FC; }
 
 /* ---------- Modal ---------- */
 .bs-modal-overlay { position: fixed; inset: 0; background: rgba(10, 37, 64, 0.65); display: flex; align-items: center; justify-content: center; padding: var(--bs-space); z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
@@ -194,7 +195,9 @@ small, .bs-text-sm { font-size: 0.85rem; }
 
 /* ---------- App Shell (Portal/Módulos) ---------- */
 .bs-appshell { min-height: 100vh; display: flex; flex-direction: column; }
-.bs-topbar { background: var(--bs-primary); color: #fff; padding: 0.85rem var(--bs-space-md); box-shadow: var(--bs-shadow); position: sticky; top: 0; z-index: 100; }
+.bs-topbar { background: linear-gradient(100deg, #001B55 0%, var(--bs-primary) 55%, var(--bs-primary-light) 130%); color: #fff; padding: 0.85rem var(--bs-space-md); box-shadow: 0 4px 18px rgba(0,27,85,.25); position: sticky; top: 0; z-index: 100; }
+.bs-topbar::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, var(--bs-secondary) 0%, var(--bs-secondary) 18%, rgba(226,35,26,0) 60%); }
+.bs-topbar-brand span strong { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); padding: .18rem .7rem; border-radius: 999px; font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-left: .2rem; }
 .bs-topbar-inner { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--bs-space); }
 .bs-topbar-brand { display: flex; align-items: center; gap: 0.75rem; font-weight: 600; font-size: 0.95rem; }
 .bs-topbar-brand-icon { width: 32px; height: 32px; background: var(--bs-secondary); border-radius: var(--bs-radius-sm); display: flex; align-items: center; justify-content: center; font-size: 1rem; }
@@ -203,12 +206,14 @@ small, .bs-text-sm { font-size: 0.85rem; }
 .bs-topbar-logout { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 0.4rem 0.85rem; border-radius: var(--bs-radius-sm); cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: var(--bs-transition); }
 .bs-topbar-logout:hover { background: rgba(255,255,255,0.22); }
 .bs-main { flex: 1; padding: var(--bs-space-lg) var(--bs-space-md); max-width: 1280px; margin: 0 auto; width: 100%; }
-.bs-footer { background: var(--bs-primary-dark); color: rgba(255,255,255,0.75); text-align: center; padding: var(--bs-space) var(--bs-space-md); font-size: 0.78rem; }
+.bs-footer { background: linear-gradient(100deg, #001B55, var(--bs-primary)); color: rgba(255,255,255,0.78); text-align: center; padding: var(--bs-space) var(--bs-space-md); font-size: 0.78rem; position: relative; }
+.bs-footer::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, var(--bs-secondary), rgba(226,35,26,0) 60%); }
 .bs-footer strong { color: #fff; font-weight: 600; }
 
 /* ---------- Login específico ---------- */
-.bs-login-bg { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--bs-space); background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-primary-light) 60%, var(--bs-secondary-dark) 100%); }
-.bs-login-card { background: var(--bs-surface); border-radius: var(--bs-radius-xl); box-shadow: var(--bs-shadow-xl); padding: var(--bs-space-lg); width: 100%; max-width: 410px; }
+.bs-login-bg { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--bs-space); background: radial-gradient(1000px 500px at 85% -10%, rgba(226,35,26,.28), transparent 55%), linear-gradient(135deg, #001B55 0%, var(--bs-primary) 55%, var(--bs-primary-light) 125%); }
+.bs-login-card { background: var(--bs-surface); border-radius: var(--bs-radius-xl); box-shadow: 0 24px 60px rgba(0,15,50,.45); padding: var(--bs-space-lg); width: 100%; max-width: 410px; position: relative; overflow: hidden; }
+.bs-login-card::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, var(--bs-primary), var(--bs-secondary)); }
 .bs-login-logo { width: 64px; height: 64px; background: var(--bs-primary); border-radius: var(--bs-radius-lg); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.75rem; font-weight: 700; margin: 0 auto var(--bs-space); }
 .bs-login-title { text-align: center; font-size: 1.35rem; color: var(--bs-primary); margin-bottom: 0.25rem; }
 .bs-login-subtitle { text-align: center; font-size: 0.85rem; color: var(--bs-text-subtle); margin-bottom: var(--bs-space-lg); }
@@ -276,3 +281,17 @@ small, .bs-text-sm { font-size: 0.85rem; }
 /* LOGO UNIFRUTTI OVERRIDE */
 .bs-topbar-brand-icon{background:#fff!important;border-radius:8px!important;width:auto!important;height:auto!important;padding:4px 8px!important;overflow:visible!important;display:flex;align-items:center}
 .bs-topbar-brand-icon img{height:32px;width:auto;display:block;object-fit:contain}
+
+
+/* ---------- TEMA v2 · Franja de identidad de módulo ---------- */
+.bs-hero { position: relative; background: var(--bs-surface); border: 1px solid var(--bs-border); border-radius: 16px; box-shadow: var(--bs-shadow); padding: 1.1rem 1.25rem 1.1rem 1.45rem; overflow: hidden; }
+.bs-hero::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--mod, var(--bs-primary)); }
+.bs-hero::after { content: ''; position: absolute; right: -70px; top: -70px; width: 210px; height: 210px; border-radius: 50%; background: radial-gradient(circle, rgba(0,51,160,.06) 0%, transparent 70%); pointer-events: none; }
+.bs-hero h1 { letter-spacing: -.02em; font-weight: 800; }
+.bs-hero p { color: var(--bs-text-subtle); }
+.bs-hero .bs-btn { box-shadow: 0 4px 12px rgba(0,27,85,.18); font-weight: 700; }
+.bs-hero .bs-btn:hover { transform: translateY(-1px); }
+
+/* Tarjetas de módulo legadas alineadas al tema */
+.bs-module-card::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--mod, var(--bs-primary)); }
+.bs-module-card:hover { border-color: var(--mod, var(--bs-secondary)); }

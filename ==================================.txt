@@ -1,0 +1,3464 @@
+// =========================================================
+// BIENESTAR SOCIAL - RELACIONES LABORALES
+// Backend Apps Script - v1.1 (con módulo Quejas)
+// Autor: Joel Angel Timoteo Gonza
+// Unifrutti Group - RAPEL S.A.C. / VERFRUT S.A.C.
+// =========================================================
+
+const BS_CONFIG = {
+  HOJA_USUARIOS: 'Usuarios',
+  HOJA_QUEJAS: 'BS_Quejas',
+  HOJA_ACC_CASOS: 'BS_Accidentes_Casos',
+  HOJA_ACC_SEGUIM: 'BS_Accidentes_Seguimientos',
+  HOJA_HOSTIG: 'BS_Hostigamiento',
+  HOJA_SUBSIDIOS: 'BS_Subsidios',
+  HOJA_DOCUMENTOS: 'BS_Documentos',
+  TIMEZONE: 'America/Lima'
+};
+
+// ===== SETUP DE HOJAS =====
+function bs_setupHojas() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hojas = [
+    { nombre: 'Usuarios', headers: ['usuario','password_hash','nombre','rol','email','telefono','mod_quejas','mod_accidentes','mod_hostigamiento','mod_subsidios','activo','created_at','updated_at'] },
+    { nombre: 'BS_Quejas', headers: ['id','fecha_recepcion','clasificacion','canal','categoria','sector','detalle','accion_correctiva','accion_mejora','coordinacion','fecha_levantamiento_ac','frecuencia_seguimiento_ac','fecha_seguimiento_am','observaciones','resultado','documentos','empresa','created_by','created_at','updated_at'] },
+    { nombre: 'BS_Accidentes_Casos', headers: ['id','dni','nombre','edad','telefono','fundo','sexo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','diagnostico','tipo_accidente','seguro','detalle','estatus_accidente','centro_atencion','especialidades','staff_medico','estado','situacion','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','responsable','descanso_medico','formulario_con_goce','responsable_autorizar','numero_atenciones','estado_caso','empresa','created_by','created_at','updated_at'] },
+    { nombre: 'BS_Accidentes_Seguimientos', headers: ['id','id_caso','numero_seguimiento','fecha_seguimiento','detalle','created_by','created_at'] },
+    { nombre: 'BS_Hostigamiento', headers: ['id','fecha_denuncia','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','fundo','decision','status','empresa','created_by','created_at','updated_at'] },
+    { nombre: 'BS_Subsidios', headers: ['id','anio','mes','tipo','numero','apellido_paterno','apellido_materno','nombres','descripcion','estado','dias','calculo_por_dia','pago_empresa','reembolso_por_mes','recuperado_essalud','monto_total','periodo','expediente','inicio','termino','observaciones','diferencias','tipo_pago_planilla','estado_general','empresa','created_by','created_at','updated_at'] },
+    { nombre: 'BS_Documentos', headers: ['id','modulo','id_caso','nombre_archivo','url_blob','tipo_archivo','tamano_kb','created_by','created_at'] }
+  ];
+
+  let creadas = 0, existentes = 0;
+  hojas.forEach(function(h) {
+    let sheet = ss.getSheetByName(h.nombre);
+    if (!sheet) {
+      sheet = ss.insertSheet(h.nombre);
+      sheet.appendRow(h.headers);
+      const headerRange = sheet.getRange(1, 1, 1, h.headers.length);
+      headerRange.setFontWeight('bold');
+      headerRange.setBackground('#0a2540');
+      headerRange.setFontColor('#ffffff');
+      headerRange.setHorizontalAlignment('center');
+      sheet.setFrozenRows(1);
+      sheet.autoResizeColumns(1, h.headers.length);
+      creadas++;
+    } else {
+      existentes++;
+    }
+  });
+  SpreadsheetApp.getUi().alert('Setup completado.\n\nHojas creadas: ' + creadas + '\nYa existentes: ' + existentes);
+}
+
+// ===== CREAR USUARIO ADMIN =====
+function bs_crearUsuarioAdmin() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(BS_CONFIG.HOJA_USUARIOS);
+  if (!sheet) { SpreadsheetApp.getUi().alert('Primero ejecuta bs_setupHojas()'); return; }
+  const data = sheet.getDataRange().getValues();
+  const existe = data.slice(1).some(function(row) { return row[0] === 'jtimoteo'; });
+  if (existe) { SpreadsheetApp.getUi().alert('El usuario jtimoteo ya existe.'); return; }
+  const now = new Date();
+  sheet.appendRow(['jtimoteo', bs_hashPassword('jtimoteo2026'), 'Joel Angel Timoteo Gonza', 'admin', 'jtimoteo@unifrutti.com', '', true, true, true, true, true, now, now]);
+  SpreadsheetApp.getUi().alert('Usuario admin creado.');
+}
+
+// ===== HELPER: HASH SHA-256 =====
+function bs_hashPassword(password) {
+  const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, password, Utilities.Charset.UTF_8);
+  return bytes.map(function(b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
+}
+
+// ===== MÓDULO QUEJAS =====
+
+function bs_crearQueja(usuario, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_QUEJAS);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Quejas no existe' };
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+                      .map(function(h){ return String(h).trim(); });
+    const lastRow = sheet.getLastRow();
+    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    const now = new Date();
+
+    const v = {
+      id: id,
+      fecha_recepcion: datos.fecha_recepcion ? new Date(datos.fecha_recepcion) : now,
+      clasificacion: datos.clasificacion || '',
+      canal: datos.canal || '',
+      categoria: datos.categoria || '',
+      sector: datos.sector || '',
+      detalle: datos.detalle || '',
+      accion_correctiva: datos.accion_correctiva || '',
+      accion_mejora: datos.accion_mejora || '',
+      coordinacion: datos.coordinacion || '',
+      fecha_levantamiento_ac: datos.fecha_levantamiento_ac ? new Date(datos.fecha_levantamiento_ac) : '',
+      frecuencia_seguimiento_ac: datos.frecuencia_seguimiento_ac || '',
+      fecha_seguimiento_am: datos.fecha_seguimiento_am ? new Date(datos.fecha_seguimiento_am) : '',
+      observaciones: datos.observaciones || '',
+      resultado: datos.resultado || 'En proceso',
+      documentos: datos.documentos || '',
+      empresa: datos.empresa || '',
+      created_by: usuario,
+      created_at: now,
+      updated_at: now,
+      cantidad_buzones: parseInt(datos.cantidad_buzones) || 0,
+      cantidad_quejas: parseInt(datos.cantidad_quejas) || 0,
+     buzones_detalle: datos.buzones_detalle || '',
+      tipo_lugar: datos.tipo_lugar || '',
+      seguimiento: datos.seguimiento || 'No',
+      seguimiento_frecuencia: datos.seguimiento_frecuencia || '',
+      seguimiento_inicio: datos.seguimiento_inicio || '',
+      seguimiento_fin: datos.seguimiento_fin || '',
+      seguimiento_dias: parseInt(datos.seguimiento_dias) || 0,
+      seguimiento_alerta: parseInt(datos.seguimiento_alerta) || 0
+    };
+
+    const fila = headers.map(function(h){ return (v[h] !== undefined) ? v[h] : ''; });
+    sheet.appendRow(fila);
+    return { ok: true, id: id, message: 'Queja registrada con éxito' };
+  } catch (err) {
+    return { ok: false, message: 'Error: ' + err.message };
+  }
+}
+
+function bs_listarQuejas(filtros) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_QUEJAS);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Quejas no existe' };
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { ok: true, items: [], total: 0 };
+    const headers = data[0];
+    const rows = data.slice(1);
+    let items = rows.map(function(row) {
+      const obj = {};
+      headers.forEach(function(h, i) {
+        let v = row[i];
+        if (v instanceof Date) v = v.toISOString();
+        obj[h] = v;
+      });
+      return obj;
+    });
+    if (filtros) {
+      if (filtros.empresa) items = items.filter(function(i) { return i.empresa === filtros.empresa; });
+      if (filtros.clasificacion) items = items.filter(function(i) { return i.clasificacion === filtros.clasificacion; });
+      if (filtros.resultado) items = items.filter(function(i) { return i.resultado === filtros.resultado; });
+    }
+    items.sort(function(a, b) { return (b.id || 0) - (a.id || 0); });
+    return { ok: true, items: items, total: items.length };
+  } catch (err) {
+    return { ok: false, message: 'Error: ' + err.message };
+  }
+}
+
+function bs_actualizarQueja(usuario, id, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_QUEJAS);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Quejas no existe' };
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    for (let i = 1; i < data.length; i++) {
+      if (parseInt(data[i][0]) === parseInt(id)) {
+        const rowNum = i + 1;
+        const updatable = ['fecha_recepcion','clasificacion','canal','categoria','sector','detalle','accion_correctiva','accion_mejora','coordinacion','fecha_levantamiento_ac','frecuencia_seguimiento_ac','fecha_seguimiento_am','observaciones','resultado','documentos','empresa','cantidad_buzones','cantidad_quejas','buzones_detalle','tipo_lugar','seguimiento','seguimiento_frecuencia','seguimiento_inicio','seguimiento_fin','seguimiento_dias','seguimiento_alerta'];
+        updatable.forEach(function(field) {
+          if (datos[field] !== undefined) {
+            const colIdx = headers.indexOf(field);
+            if (colIdx >= 0) {
+              let val = datos[field];
+              if (field.indexOf('fecha_') === 0 && val) val = new Date(val);
+              sheet.getRange(rowNum, colIdx + 1).setValue(val);
+            }
+          }
+        });
+        const colUpdated = headers.indexOf('updated_at');
+        if (colUpdated >= 0) sheet.getRange(rowNum, colUpdated + 1).setValue(new Date());
+        return { ok: true, message: 'Queja actualizada' };
+      }
+    }
+    return { ok: false, message: 'Queja no encontrada' };
+  } catch (err) {
+    return { ok: false, message: 'Error: ' + err.message };
+  }
+}
+
+// ===== WEBAPP ENTRY POINT =====
+function doPost(e) {
+  try {
+    const params = JSON.parse(e.postData.contents);
+    const action = params.action;
+    let result;
+    switch(action) {
+      case 'bs_login':           result = bs_login(params.usuario, params.password); break;
+      case 'bs_crearQueja':      result = bs_crearQueja(params.usuario, params.datos); break;
+      case 'bs_listarQuejas':    result = bs_listarQuejas(params.filtros); break;
+      case 'bs_actualizarQueja': result = bs_actualizarQueja(params.usuario, params.id, params.datos); break;
+      case 'bs_listarSeguimientosQueja': result = bs_listarSeguimientosQueja(params.id_queja); break;
+      case 'bs_crearSeguimientoQueja':   result = bs_crearSeguimientoQueja(params.usuario, params.id_queja, params.datos); break;
+      case 'bs_crearSubsidio':      result = bs_crearSubsidio(params.usuario, params.datos); break;
+      case 'bs_listarSubsidios':    result = bs_listarSubsidios(params.filtros); break;
+      case 'bs_actualizarSubsidio': result = bs_actualizarSubsidio(params.usuario, params.id, params.datos); break;
+      case 'bs_crearHostigamiento':      result = bs_crearHostigamiento(params.usuario, params.datos); break;
+      case 'bs_listarHostigamiento':     result = bs_listarHostigamiento(params.filtros); break;
+      case 'bs_actualizarHostigamiento': result = bs_actualizarHostigamiento(params.usuario, params.id, params.datos); break;
+      case 'bs_crearAccidente':      result = bs_crearAccidente(params.usuario, params.datos); break;
+      case 'bs_listarAccidentes':    result = bs_listarAccidentes(params.filtros); break;
+      case 'bs_actualizarAccidente': result = bs_actualizarAccidente(params.usuario, params.id, params.datos); break;
+      case 'bs_listarSeguimientos':  result = bs_listarSeguimientos(params.id_caso); break;
+      case 'bs_crearSeguimiento':    result = bs_crearSeguimiento(params.usuario, params.id_caso, params.datos); break;
+      case 'bs_alertas': result = calcularAlertasBienestar(params.permisos || {}); break;
+      case 'bs_listarBuzones': result = bs_listarBuzones(params); break;
+      case 'bs_crearSugerencia':      result = bs_crearSugerencia(params.usuario, params.datos); break;
+      case 'bs_listarSugerencias':    result = bs_listarSugerencias(params.filtros); break;
+      case 'bs_actualizarSugerencia': result = bs_actualizarSugerencia(params.usuario, params.id, params.datos); break;
+      case 'bs_eliminarSugerencia':   result = bs_eliminarSugerencia(params.usuario, params.id); break;
+      case 'bs_estadisticasEmpresariales': result = bs_estadisticasEmpresariales(params); break;
+      case 'bs_listarTodoHistorialAccidentes':result = bs_listarTodoHistorialAccidentes(params); break;
+      case 'bs_listarTodosSeguimientos': result = bs_listarTodosSeguimientos(params); break;
+      case 'bs_crearRendicion':      result = bs_crearRendicion(params.usuario, params.datos); break;
+      case 'bs_listarRendiciones':   result = bs_listarRendiciones(params.filtros); break;
+      case 'bs_actualizarRendicion': result = bs_actualizarRendicion(params.usuario, params.id, params.datos); break; 
+      case 'bs_eliminarRendicion':   result = bs_eliminarRendicion(params.usuario, params.id); break;
+      case 'bs_reporteRendiciones':  result = bs_reporteRendiciones(params.filtros); break;
+      case 'bs_permisosUsuario': result = bs_permisosUsuario(params.usuario); break;
+      case 'bs_importarSubsidios': result = bs_importarSubsidios(params); break;
+
+      // 👇 NUEVO — Dashboard consolidado de Bienestar
+      case 'bs_dashboard':       result = getEstadisticasBienestar(params.permisos || {}); break;
+      case 'bs_clasificacion':   result = clasificarTrabajadores(); break;
+      case 'bs_clasificarDni':   result = bs_clasificarDni(params.dni); break;
+      case 'bs_casos_contrato': result = getCasosPorContrato(params.permisos || {}); break;
+
+      default: result = { ok: false, message: 'Accion no reconocida: ' + action };
+    }
+    try { if (result && result.ok && /^bs_(crear|actualizar|eliminar)/.test(action)) _notificarFirebase(action); } catch(e) {}
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, message: 'Error: ' + err.message })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({ ok: true, message: 'BS API v1.1 funcionando' })).setMimeType(ContentService.MimeType.JSON);
+}
+// ===== MÓDULO SUBSIDIOS =====
+function bs_crearSubsidio(usuario, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_SUBSIDIOS);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Subsidios no existe' };
+    const lastRow = sheet.getLastRow();
+    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    const now = new Date();
+    sheet.appendRow([
+      id,
+      parseInt(datos.anio) || now.getFullYear(),
+      datos.mes || '',
+      datos.tipo || '',
+      datos.numero || '',
+      datos.apellido_paterno || '',
+      datos.apellido_materno || '',
+      datos.nombres || '',
+      datos.descripcion || '',
+      datos.estado || '',
+      parseFloat(datos.dias) || 0,
+      parseFloat(datos.calculo_por_dia) || 0,
+      parseFloat(datos.pago_empresa) || 0,
+      parseFloat(datos.reembolso_por_mes) || 0,
+      parseFloat(datos.recuperado_essalud) || 0,
+      parseFloat(datos.monto_total) || 0,
+      datos.periodo || '',
+      datos.expediente || '',
+      datos.inicio ? new Date(datos.inicio) : '',
+      datos.termino ? new Date(datos.termino) : '',
+      datos.observaciones || '',
+      parseFloat(datos.diferencias) || 0,
+      datos.tipo_pago_planilla || '',
+      datos.estado_general || 'En proceso',
+      datos.empresa || '',
+      usuario, now, now
+    ]);
+    return { ok: true, id: id, message: 'Subsidio registrado' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+
+function bs_listarSubsidios(filtros) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_SUBSIDIOS);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Subsidios no existe' };
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { ok: true, items: [], total: 0 };
+    const headers = data[0];
+    let items = data.slice(1).map(function(row) {
+      const obj = {};
+      headers.forEach(function(h, i) {
+        let v = row[i];
+        if (v instanceof Date) v = v.toISOString();
+        obj[h] = v;
+      });
+      return obj;
+    });
+    if (filtros) {
+      if (filtros.empresa) items = items.filter(function(i) { return i.empresa === filtros.empresa; });
+      if (filtros.tipo) items = items.filter(function(i) { return i.tipo === filtros.tipo; });
+      if (filtros.anio) items = items.filter(function(i) { return String(i.anio) === String(filtros.anio); });
+      if (filtros.estado_general) items = items.filter(function(i) { return i.estado_general === filtros.estado_general; });
+    }
+    items.sort(function(a, b) { return (b.id || 0) - (a.id || 0); });
+    return { ok: true, items: items, total: items.length };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+
+function bs_actualizarSubsidio(usuario, id, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_SUBSIDIOS);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Subsidios no existe' };
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const updatables = ['anio','mes','tipo','numero','apellido_paterno','apellido_materno','nombres','descripcion','estado','dias','calculo_por_dia','pago_empresa','reembolso_por_mes','recuperado_essalud','monto_total','periodo','expediente','inicio','termino','observaciones','diferencias','tipo_pago_planilla','estado_general','empresa'];
+    const dateFields = ['inicio','termino'];
+    const numFields = ['dias','calculo_por_dia','pago_empresa','reembolso_por_mes','recuperado_essalud','monto_total','diferencias','anio'];
+    for (let i = 1; i < data.length; i++) {
+      if (parseInt(data[i][0]) === parseInt(id)) {
+        const rowNum = i + 1;
+        updatables.forEach(function(field) {
+          if (datos[field] !== undefined) {
+            const colIdx = headers.indexOf(field);
+            if (colIdx >= 0) {
+              let val = datos[field];
+              if (dateFields.indexOf(field) >= 0 && val) val = new Date(val);
+              else if (numFields.indexOf(field) >= 0) val = parseFloat(val) || 0;
+              sheet.getRange(rowNum, colIdx + 1).setValue(val);
+            }
+          }
+        });
+        const colUpd = headers.indexOf('updated_at');
+        if (colUpd >= 0) sheet.getRange(rowNum, colUpd + 1).setValue(new Date());
+        return { ok: true, message: 'Subsidio actualizado' };
+      }
+    }
+    return { ok: false, message: 'Subsidio no encontrado' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+// ===== MÓDULO HOSTIGAMIENTO SEXUAL (Ley 29733) =====
+function bs_crearHostigamiento(usuario, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_HOSTIG);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Hostigamiento no existe' };
+    const lastRow = sheet.getLastRow();
+    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    const now = new Date();
+    sheet.appendRow([
+      id,
+      datos.fecha_denuncia ? new Date(datos.fecha_denuncia) : now,
+      datos.denunciante_dni || '',
+      datos.denunciante_nombre || '',
+      datos.denunciante_puesto || '',
+      datos.medida_proteccion || '',
+      datos.denunciado_dni || '',
+      datos.denunciado_nombre || '',
+      datos.denunciado_puesto || '',
+      datos.fundo || '',
+      datos.decision || '',
+      datos.status || 'En investigación',
+      datos.empresa || '',
+      usuario, now, now
+    ]);
+    return { ok: true, id: id, message: 'Denuncia registrada' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+
+function bs_listarHostigamiento(filtros) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_HOSTIG);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Hostigamiento no existe' };
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { ok: true, items: [], total: 0 };
+    const headers = data[0];
+    let items = data.slice(1).map(function(row) {
+      const obj = {};
+      headers.forEach(function(h, i) {
+        let v = row[i];
+        if (v instanceof Date) v = v.toISOString();
+        obj[h] = v;
+      });
+      return obj;
+    });
+    if (filtros) {
+      if (filtros.empresa) items = items.filter(function(i) { return i.empresa === filtros.empresa; });
+      if (filtros.status) items = items.filter(function(i) { return i.status === filtros.status; });
+      if (filtros.fundo) items = items.filter(function(i) { return i.fundo === filtros.fundo; });
+    }
+    items.sort(function(a, b) { return (b.id || 0) - (a.id || 0); });
+    return { ok: true, items: items, total: items.length };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+
+function bs_actualizarHostigamiento(usuario, id, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_HOSTIG);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Hostigamiento no existe' };
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const updatables = ['fecha_denuncia','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','fundo','decision','status','empresa'];
+    const dateFields = ['fecha_denuncia'];
+    for (let i = 1; i < data.length; i++) {
+      if (parseInt(data[i][0]) === parseInt(id)) {
+        const rowNum = i + 1;
+        updatables.forEach(function(field) {
+          if (datos[field] !== undefined) {
+            const colIdx = headers.indexOf(field);
+            if (colIdx >= 0) {
+              let val = datos[field];
+              if (dateFields.indexOf(field) >= 0 && val) val = new Date(val);
+              sheet.getRange(rowNum, colIdx + 1).setValue(val);
+            }
+          }
+        });
+        const colUpd = headers.indexOf('updated_at');
+        if (colUpd >= 0) sheet.getRange(rowNum, colUpd + 1).setValue(new Date());
+        return { ok: true, message: 'Denuncia actualizada' };
+      }
+    }
+    return { ok: false, message: 'Denuncia no encontrada' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+// ===== MÓDULO HOSTIGAMIENTO SEXUAL (Ley 29733) =====
+function bs_crearHostigamiento(usuario, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_HOSTIG);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Hostigamiento no existe' };
+    const lastRow = sheet.getLastRow();
+    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    const now = new Date();
+    sheet.appendRow([
+      id,
+      datos.fecha_denuncia ? new Date(datos.fecha_denuncia) : now,
+      datos.denunciante_dni || '',
+      datos.denunciante_nombre || '',
+      datos.denunciante_puesto || '',
+      datos.medida_proteccion || '',
+      datos.denunciado_dni || '',
+      datos.denunciado_nombre || '',
+      datos.denunciado_puesto || '',
+      datos.fundo || '',
+      datos.decision || '',
+      datos.status || 'En investigación',
+      datos.empresa || '',
+      usuario, now, now
+    ]);
+    return { ok: true, id: id, message: 'Denuncia registrada' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+
+function bs_listarHostigamiento(filtros) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_HOSTIG);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Hostigamiento no existe' };
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { ok: true, items: [], total: 0 };
+    const headers = data[0];
+    let items = data.slice(1).map(function(row) {
+      const obj = {};
+      headers.forEach(function(h, i) {
+        let v = row[i];
+        if (v instanceof Date) v = v.toISOString();
+        obj[h] = v;
+      });
+      return obj;
+    });
+    if (filtros) {
+      if (filtros.empresa) items = items.filter(function(i) { return i.empresa === filtros.empresa; });
+      if (filtros.status) items = items.filter(function(i) { return i.status === filtros.status; });
+      if (filtros.fundo) items = items.filter(function(i) { return i.fundo === filtros.fundo; });
+    }
+    items.sort(function(a, b) { return (b.id || 0) - (a.id || 0); });
+    return { ok: true, items: items, total: items.length };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+
+function bs_actualizarHostigamiento(usuario, id, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_HOSTIG);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Hostigamiento no existe' };
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const updatables = ['fecha_denuncia','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','fundo','decision','status','empresa'];
+    const dateFields = ['fecha_denuncia'];
+    for (let i = 1; i < data.length; i++) {
+      if (parseInt(data[i][0]) === parseInt(id)) {
+        const rowNum = i + 1;
+        updatables.forEach(function(field) {
+          if (datos[field] !== undefined) {
+            const colIdx = headers.indexOf(field);
+            if (colIdx >= 0) {
+              let val = datos[field];
+              if (dateFields.indexOf(field) >= 0 && val) val = new Date(val);
+              sheet.getRange(rowNum, colIdx + 1).setValue(val);
+            }
+          }
+        });
+        const colUpd = headers.indexOf('updated_at');
+        if (colUpd >= 0) sheet.getRange(rowNum, colUpd + 1).setValue(new Date());
+        return { ok: true, message: 'Denuncia actualizada' };
+      }
+    }
+    return { ok: false, message: 'Denuncia no encontrada' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+// ===== MÓDULO ACCIDENTES LABORALES =====
+function bs_crearAccidente(usuario, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_ACC_CASOS);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Accidentes_Casos no existe' };
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+                      .map(function(h){ return String(h).trim(); });
+    const lastRow = sheet.getLastRow();
+    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    const now = new Date();
+
+    const v = {
+      id: id,
+      dni: datos.dni || '',
+      nombre: datos.nombre || '',
+      edad: parseInt(datos.edad) || '',
+      telefono: datos.telefono || '',
+      fundo: datos.fundo || '',
+      sexo: datos.sexo || '',
+      fecha_ingreso: datos.fecha_ingreso ? new Date(datos.fecha_ingreso) : '',
+      dia_accidente: datos.dia_accidente ? new Date(datos.dia_accidente) : '',
+      dia_reportado: datos.dia_reportado ? new Date(datos.dia_reportado) : '',
+      parte_cuerpo: datos.parte_cuerpo || '',
+      diagnostico: datos.diagnostico || '',
+      tipo_accidente: datos.tipo_accidente || '',
+      seguro: datos.seguro || '',
+      detalle: datos.detalle || '',
+      estatus_accidente: datos.estatus_accidente || '',
+      centro_atencion: datos.centro_atencion || '',
+      especialidades: datos.especialidades || '',
+      staff_medico: datos.staff_medico || '',
+      estado: datos.estado || '',
+      situacion: datos.situacion || '',
+      fecha_reincorporo: datos.fecha_reincorporo ? new Date(datos.fecha_reincorporo) : '',
+      fecha_fin_restriccion: datos.fecha_fin_restriccion ? new Date(datos.fecha_fin_restriccion) : '',
+      dias_restriccion: parseInt(datos.dias_restriccion) || 0,
+      detalle_restriccion: datos.detalle_restriccion || '',
+      responsable: datos.responsable || '',
+      descanso_medico: datos.descanso_medico || '',
+      formulario_con_goce: datos.formulario_con_goce || '',
+      responsable_autorizar: datos.responsable_autorizar || '',
+      numero_atenciones: parseInt(datos.numero_atenciones) || 0,
+      estado_caso: datos.estado_caso || 'Activo',
+      empresa: datos.empresa || '',
+      created_by: usuario,
+      created_at: now,
+      updated_at: now,
+      // A2: campos nuevos
+      descanso_medico_inicio: datos.descanso_medico_inicio ? new Date(datos.descanso_medico_inicio) : '',
+      descanso_medico_fin: datos.descanso_medico_fin ? new Date(datos.descanso_medico_fin) : '',
+      descanso_medico_dias: parseInt(datos.descanso_medico_dias) || 0,
+      goce_inicio: datos.goce_inicio ? new Date(datos.goce_inicio) : '',
+      goce_fin: datos.goce_fin ? new Date(datos.goce_fin) : '',
+      goce_dias: parseInt(datos.goce_dias) || 0,
+      accidente_hora_inicio: datos.accidente_hora_inicio || '',
+      accidente_hora_fin: datos.accidente_hora_fin || '',
+      accidente_horas: parseFloat(datos.accidente_horas) || 0
+    };
+
+    const fila = headers.map(function(h){ return (v[h] !== undefined) ? v[h] : ''; });
+    sheet.appendRow(fila);
+    _avisarAccidenteRegistrado(datos);
+    return { ok: true, id: id, message: 'Caso registrado' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+
+function bs_listarAccidentes(filtros) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_ACC_CASOS);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Accidentes_Casos no existe' };
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { ok: true, items: [], total: 0 };
+    const headers = data[0];
+    let items = data.slice(1).map(function(row) {
+      const obj = {};
+      headers.forEach(function(h, i) {
+        let v = row[i];
+        if (v instanceof Date) v = v.toISOString();
+        obj[h] = v;
+      });
+      return obj;
+    });
+    if (filtros) {
+      if (filtros.empresa) items = items.filter(function(i) { return i.empresa === filtros.empresa; });
+      if (filtros.estado_caso) items = items.filter(function(i) { return i.estado_caso === filtros.estado_caso; });
+      if (filtros.fundo) items = items.filter(function(i) { return String(i.fundo).toLowerCase().indexOf(String(filtros.fundo).toLowerCase()) >= 0; });
+      if (filtros.dni) items = items.filter(function(i) { return String(i.dni) === String(filtros.dni); });
+    }
+    items.sort(function(a, b) { return (b.id || 0) - (a.id || 0); });
+    return { ok: true, items: items, total: items.length };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+
+function bs_actualizarAccidente(usuario, id, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_ACC_CASOS);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Accidentes_Casos no existe' };
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const updatables = ['dni','nombre','edad','telefono','fundo','sexo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','diagnostico','tipo_accidente','seguro','detalle','estatus_accidente','centro_atencion','especialidades','staff_medico','estado','situacion','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','responsable','descanso_medico','formulario_con_goce','responsable_autorizar','numero_atenciones','estado_caso','empresa','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','goce_inicio','goce_fin','goce_dias','accidente_hora_inicio','accidente_hora_fin','accidente_horas'];
+    const dateFields = ['fecha_ingreso','dia_accidente','dia_reportado','fecha_reincorporo','fecha_fin_restriccion','descanso_medico_inicio','descanso_medico_fin','goce_inicio','goce_fin'];
+    const numFields = ['edad','dias_restriccion','numero_atenciones','descanso_medico_dias','goce_dias'];
+    const floatFields = ['accidente_horas'];
+    for (let i = 1; i < data.length; i++) {
+      if (parseInt(data[i][0]) === parseInt(id)) {
+        const rowNum = i + 1;
+        updatables.forEach(function(field) {
+          if (datos[field] !== undefined) {
+            const colIdx = headers.indexOf(field);
+            if (colIdx >= 0) {
+              let val = datos[field];
+              if (dateFields.indexOf(field) >= 0 && val) val = new Date(val);
+              else if (floatFields.indexOf(field) >= 0) val = parseFloat(val) || 0;
+              else if (numFields.indexOf(field) >= 0) val = parseInt(val) || 0;
+              sheet.getRange(rowNum, colIdx + 1).setValue(val);
+            }
+          }
+        });
+        const colUpd = headers.indexOf('updated_at');
+        if (colUpd >= 0) sheet.getRange(rowNum, colUpd + 1).setValue(new Date());
+        return { ok: true, message: 'Caso actualizado' };
+      }
+    }
+    return { ok: false, message: 'Caso no encontrado' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+
+function bs_listarSeguimientos(id_caso) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_ACC_SEGUIM);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Accidentes_Seguimientos no existe' };
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { ok: true, items: [], total: 0 };
+    const headers = data[0];
+    let items = data.slice(1).map(function(row) {
+      const obj = {};
+      headers.forEach(function(h, i) {
+        let v = row[i];
+        if (v instanceof Date) v = v.toISOString();
+        obj[h] = v;
+      });
+      return obj;
+    });
+    items = items.filter(function(i) { return parseInt(i.id_caso) === parseInt(id_caso); });
+    items.sort(function(a, b) { return (parseInt(a.numero_seguimiento) || 0) - (parseInt(b.numero_seguimiento) || 0); });
+    return { ok: true, items: items, total: items.length };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+
+function bs_crearSeguimiento(usuario, id_caso, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(BS_CONFIG.HOJA_ACC_SEGUIM);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Accidentes_Seguimientos no existe' };
+    const lastRow = sheet.getLastRow();
+    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+
+    // Calcular numero_seguimiento (consecutivo dentro del caso)
+    const existentes = bs_listarSeguimientos(id_caso);
+    const numero = (existentes.items ? existentes.items.length : 0) + 1;
+
+    sheet.appendRow([
+      id,
+      parseInt(id_caso),
+      numero,
+      datos.fecha_seguimiento ? new Date(datos.fecha_seguimiento) : new Date(),
+      datos.detalle || '',
+      usuario,
+      new Date()
+    ]);
+
+    // Auto-incrementar numero_atenciones del caso padre
+    const sheetCasos = ss.getSheetByName(BS_CONFIG.HOJA_ACC_CASOS);
+    const dataCasos = sheetCasos.getDataRange().getValues();
+    const hdrCasos = dataCasos[0];
+    for (let i = 1; i < dataCasos.length; i++) {
+      if (parseInt(dataCasos[i][0]) === parseInt(id_caso)) {
+        const colAten = hdrCasos.indexOf('numero_atenciones');
+        if (colAten >= 0) sheetCasos.getRange(i + 1, colAten + 1).setValue(numero);
+        const colUpd = hdrCasos.indexOf('updated_at');
+        if (colUpd >= 0) sheetCasos.getRange(i + 1, colUpd + 1).setValue(new Date());
+        break;
+      }
+    }
+    return { ok: true, id: id, numero: numero, message: 'Seguimiento #' + numero + ' registrado' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+function _diagHeadersBienestar() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hojas = ['BS_Quejas','BS_Accidentes_Casos','BS_Accidentes_Seguimientos','BS_Hostigamiento','BS_Subsidios'];
+  hojas.forEach(function(n){
+    const sh = ss.getSheetByName(n);
+    if (!sh) { Logger.log('❌ NO EXISTE: ' + n); return; }
+    const lastCol = sh.getLastColumn();
+    const lastRow = sh.getLastRow();
+    const headers = lastCol > 0 ? sh.getRange(1,1,1,lastCol).getValues()[0] : [];
+    Logger.log('📄 ' + n + ' | filas datos: ' + Math.max(0,lastRow-1) + ' | cols: ' + lastCol);
+    Logger.log('   headers: ' + JSON.stringify(headers));
+  });
+}
+function getEstadisticasBienestar(permisos) {
+  try {
+    permisos = permisos || {};
+    var verHost = permisos.hostigamiento === true || permisos.mod_hostigamiento === true;
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    function leer(nombre){
+      var sh = ss.getSheetByName(nombre);
+      if(!sh) return {h:[], rows:[]};
+      var lr = sh.getLastRow(), lc = sh.getLastColumn();
+      if(lc===0) return {h:[], rows:[]};
+      var data = sh.getRange(1,1,Math.max(1,lr),lc).getValues();
+      var h = data.shift();
+      return {h:h, rows: lr<2 ? [] : data};
+    }
+    function ix(h,n){ return h.indexOf(n); }
+    function txt(v){ return String(v==null?'':v).trim(); }
+    function num(v){ var x=Number(txt(v).replace(/,/g,'')); return isNaN(x)?0:x; }
+    function ym(v){
+      if(v instanceof Date) return v.getFullYear()+'-'+('0'+(v.getMonth()+1)).slice(-2);
+      var s=txt(v); var m=s.match(/(\d{4})\D(\d{1,2})/);
+      return m ? m[1]+'-'+('0'+m[2]).slice(-2) : '';
+    }
+    function emp(v){ var s=txt(v).toUpperCase(); return s.indexOf('RAPEL')>=0?'RAPEL':(s.indexOf('VERFRUT')>=0?'VERFRUT':'OTRO'); }
+    function toDate(v){ if(v instanceof Date) return v; var s=txt(v); if(!s) return null; var d=new Date(s); return isNaN(d.getTime())?null:d; }
+    function fcorta(d){ return d ? (d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)) : ''; }
+
+    var tend = {};
+    function bump(periodo, mod){ if(!periodo) return; if(!tend[periodo]) tend[periodo]={quejas:0,accidentes:0,hostigamiento:0,subsidios:0}; tend[periodo][mod]++; }
+
+    var recientes = [];
+    function addReciente(modulo, icon, fecha, titulo, estado, empresa){
+      var d = toDate(fecha);
+      recientes.push({ modulo:modulo, icon:icon, fecha:fcorta(d), titulo:titulo, estado:estado, empresa:empresa, _ts: d?d.getTime():0 });
+    }
+
+    // ---- QUEJAS ----
+    var q = leer('BS_Quejas');
+    var qRes=ix(q.h,'resultado'), qFec=ix(q.h,'fecha_recepcion'), qEmp=ix(q.h,'empresa'), qCat=ix(q.h,'categoria');
+    var quejas={total:0,resueltas:0,pendientes:0,porEmpresa:{RAPEL:0,VERFRUT:0}};
+    q.rows.forEach(function(r){
+      quejas.total++;
+      if(/resuelt|cerrad/i.test(txt(r[qRes]))) quejas.resueltas++;
+      if(qEmp>=0 && quejas.porEmpresa[emp(r[qEmp])]!==undefined) quejas.porEmpresa[emp(r[qEmp])]++;
+      bump(ym(r[qFec]),'quejas');
+      addReciente('Quejas','📋', r[qFec], 'Queja'+(qCat>=0&&txt(r[qCat])?' · '+txt(r[qCat]):''), txt(r[qRes])||'Pendiente', qEmp>=0?emp(r[qEmp]):'');
+    });
+    quejas.pendientes = quejas.total - quejas.resueltas;
+
+    // ---- ACCIDENTES ----
+    var a = leer('BS_Accidentes_Casos');
+    var aEst=ix(a.h,'estado_caso'), aFec=ix(a.h,'dia_reportado'), aFec2=ix(a.h,'dia_accidente'), aEmp=ix(a.h,'empresa'), aParte=ix(a.h,'parte_cuerpo'), aTipo=ix(a.h,'tipo_accidente');
+    var accidentes={total:0,cerrados:0,enSeguimiento:0,porEmpresa:{RAPEL:0,VERFRUT:0}};
+    a.rows.forEach(function(r){
+      accidentes.total++;
+      if(/cerrad/i.test(txt(r[aEst]))) accidentes.cerrados++;
+      if(aEmp>=0 && accidentes.porEmpresa[emp(r[aEmp])]!==undefined) accidentes.porEmpresa[emp(r[aEmp])]++;
+      var fa = (aFec>=0 && txt(r[aFec])!=='') ? r[aFec] : (aFec2>=0?r[aFec2]:'');
+      bump(ym(fa),'accidentes');
+      var det = (aParte>=0&&txt(r[aParte])) ? txt(r[aParte]) : (aTipo>=0?txt(r[aTipo]):'');
+      addReciente('Accidentes','🩺', fa, 'Accidente'+(det?' · '+det:''), txt(r[aEst])||'En seguimiento', aEmp>=0?emp(r[aEmp]):'');
+    });
+    accidentes.enSeguimiento = accidentes.total - accidentes.cerrados;
+
+    // ---- HOSTIGAMIENTO (gateado, confidencial) ----
+    var hostigamiento={acceso:verHost, total:0};
+    if(verHost){
+      var hh = leer('BS_Hostigamiento');
+      var hFec=ix(hh.h,'fecha_denuncia'), hSt=ix(hh.h,'status');
+      hh.rows.forEach(function(r){
+        hostigamiento.total++;
+        bump(ym(r[hFec]),'hostigamiento');
+        addReciente('Hostigamiento','🔒', r[hFec], 'Denuncia registrada', hSt>=0?(txt(r[hSt])||'En proceso'):'En proceso', '');
+      });
+    }
+
+    // ---- SUBSIDIOS ----
+    var s = leer('BS_Subsidios');
+    var sEst=ix(s.h,'estado_general'), sAnio=ix(s.h,'anio'), sMes=ix(s.h,'mes'),
+        sIni=ix(s.h,'inicio'), sRec=ix(s.h,'recuperado_essalud'), sTot=ix(s.h,'monto_total'), sEmp=ix(s.h,'empresa'), sTipo=ix(s.h,'tipo');
+    var subsidios={total:0,recuperadoEssalud:0,montoTotal:0,porEmpresa:{RAPEL:0,VERFRUT:0},porEstado:{}};
+    s.rows.forEach(function(r){
+      subsidios.total++;
+      subsidios.recuperadoEssalud += num(r[sRec]);
+      subsidios.montoTotal += num(r[sTot]);
+      if(sEmp>=0 && subsidios.porEmpresa[emp(r[sEmp])]!==undefined) subsidios.porEmpresa[emp(r[sEmp])]++;
+      var e2 = txt(r[sEst]) || 'Sin estado';
+      subsidios.porEstado[e2] = (subsidios.porEstado[e2]||0)+1;
+      var per = (sAnio>=0 && txt(r[sAnio])) ? ym(txt(r[sAnio])+'-'+txt(r[sMes])) : ym(r[sIni]);
+      bump(per,'subsidios');
+      var fsub = (sIni>=0 && txt(r[sIni])!=='') ? r[sIni] : ((sAnio>=0&&txt(r[sAnio])) ? (txt(r[sAnio])+'-'+('0'+txt(r[sMes])).slice(-2)+'-01') : '');
+      addReciente('Subsidios','💰', fsub, 'Subsidio'+(sTipo>=0&&txt(r[sTipo])?' · '+txt(r[sTipo]):''), e2, sEmp>=0?emp(r[sEmp]):'');
+    });
+
+    // ---- TENDENCIA ----
+    var tendencia = Object.keys(tend).sort().slice(-12).map(function(p){
+      return {periodo:p, quejas:tend[p].quejas, accidentes:tend[p].accidentes, hostigamiento:tend[p].hostigamiento, subsidios:tend[p].subsidios};
+    });
+
+    // ---- RECIENTES (top 10 por fecha desc) ----
+    recientes.sort(function(x,y){ return y._ts - x._ts; });
+    recientes = recientes.slice(0,10).map(function(it){ return {modulo:it.modulo, icon:it.icon, fecha:it.fecha, titulo:it.titulo, estado:it.estado, empresa:it.empresa}; });
+
+    return { ok:true, quejas:quejas, accidentes:accidentes, hostigamiento:hostigamiento, subsidios:subsidios, tendencia:tendencia, recientes:recientes, generado:new Date().toISOString() };
+  } catch(err){
+    return { ok:false, message:String(err) };
+  }
+}
+// ============================================================
+// CONFIG DE ALERTAS — EDITA AQUI
+// ============================================================
+var ALERTAS_CONFIG = {
+  // Correo que recibe los avisos. SOLO Joel: una regla en su Outlook
+  // reenvia automaticamente al resto (interno @unifrutti, sin filtro de spam).
+  ADMIN_EMAILS: ['joel.timoteo@unifrutti.com'],
+  // Reenvio via regla Outlook: olga.vilela, jorge.chavez, daniela.reyna, tania.vera, rubi.figueroa
+
+  // Plazo de QUEJAS segun tu politica interna / RIT
+  PLAZO_QUEJAS_DIAS: 15,
+  PLAZO_QUEJAS_TIPO: 'habiles',     // 'habiles' o 'calendario'
+
+  // Dias antes de vencer para marcar AMBAR (por vencer)
+  UMBRAL_AMBAR_DIAS: 2,
+
+  // Feriados nacionales Peru 2026 (editable)
+  FERIADOS: [
+    '2026-01-01','2026-04-02','2026-04-03','2026-05-01','2026-06-07',
+    '2026-06-29','2026-07-23','2026-07-28','2026-07-29','2026-08-06',
+    '2026-08-30','2026-10-08','2026-11-01','2026-12-08','2026-12-09','2026-12-25'
+  ]
+};
+ 
+// ============================================================
+// MOTOR DE VENCIMIENTOS
+// ============================================================
+function _aFecha(v){
+  if(v instanceof Date) return new Date(v.getFullYear(), v.getMonth(), v.getDate());
+  var s=String(v==null?'':v).trim(); if(!s) return null;
+  var d=new Date(s); return isNaN(d.getTime())?null:new Date(d.getFullYear(),d.getMonth(),d.getDate());
+}
+function _ymd(d){ return d ? (d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)) : ''; }
+function _esFeriado(d){ return ALERTAS_CONFIG.FERIADOS.indexOf(_ymd(d))>=0; }
+function _esHabil(d){ var w=d.getDay(); return w!==0 && w!==6 && !_esFeriado(d); }
+function _sumarHabiles(fecha, n){ var d=new Date(fecha.getTime()), c=0; while(c<n){ d.setDate(d.getDate()+1); if(_esHabil(d)) c++; } return d; }
+function _sumarCalendario(fecha, n){ var d=new Date(fecha.getTime()); d.setDate(d.getDate()+n); return d; }
+function _hoy(){ var n=new Date(); return new Date(n.getFullYear(),n.getMonth(),n.getDate()); }
+function _diasEntre(a,b){ return Math.round((b.getTime()-a.getTime())/86400000); }
+function _estadoVenc(fechaLimite){
+  var dr=_diasEntre(_hoy(), fechaLimite);
+  return { estado: dr<0 ? 'rojo' : (dr<=ALERTAS_CONFIG.UMBRAL_AMBAR_DIAS ? 'ambar' : 'verde'), diasRestantes:dr };
+}
+ 
+function calcularAlertasBienestar(permisos){
+  try {
+    permisos = permisos || {};
+    var ver = {
+      quejas:        permisos.quejas===true        || permisos.mod_quejas===true,
+      accidentes:    permisos.accidentes===true    || permisos.mod_accidentes===true,
+      hostigamiento: permisos.hostigamiento===true || permisos.mod_hostigamiento===true
+    };
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    function leer(n){ var sh=ss.getSheetByName(n); if(!sh) return {h:[],rows:[]}; var lr=sh.getLastRow(),lc=sh.getLastColumn(); if(lc===0) return {h:[],rows:[]}; var data=sh.getRange(1,1,Math.max(1,lr),lc).getValues(); var h=data.shift(); return {h:h,rows:lr<2?[]:data}; }
+    function ix(h,n){ return h.indexOf(n); }
+    function txt(v){ return String(v==null?'':v).trim(); }
+    function emp(v){ var s=txt(v).toUpperCase(); return s.indexOf('RAPEL')>=0?'RAPEL':(s.indexOf('VERFRUT')>=0?'VERFRUT':''); }
+ 
+    var alertas=[];
+    function push(modulo,id,regla,descripcion,fb,fl,empresa){
+      var e=_estadoVenc(fl);
+      alertas.push({ modulo:modulo, id:id, regla:regla, descripcion:descripcion, fechaBase:_ymd(fb), fechaLimite:_ymd(fl), diasRestantes:e.diasRestantes, estado:e.estado, empresa:empresa });
+    }
+ 
+    // ---- QUEJAS ----
+    if(ver.quejas){
+      var q=leer('BS_Quejas');
+      var qId=ix(q.h,'id'), qFec=ix(q.h,'fecha_recepcion'), qRes=ix(q.h,'resultado'), qEmp=ix(q.h,'empresa'), qCat=ix(q.h,'categoria');
+      q.rows.forEach(function(r){
+        if(/resuelt|cerrad/i.test(txt(r[qRes]))) return;
+        var fb=_aFecha(r[qFec]); if(!fb) return;
+        var fl = ALERTAS_CONFIG.PLAZO_QUEJAS_TIPO==='calendario' ? _sumarCalendario(fb,ALERTAS_CONFIG.PLAZO_QUEJAS_DIAS) : _sumarHabiles(fb,ALERTAS_CONFIG.PLAZO_QUEJAS_DIAS);
+        push('Quejas', txt(r[qId]), 'Atencion/resolucion', 'Queja'+(qCat>=0&&txt(r[qCat])?' · '+txt(r[qCat]):''), fb, fl, qEmp>=0?emp(r[qEmp]):'');
+      });
+    }
+ 
+    // ---- HOSTIGAMIENTO (confidencial, sin nombres) ----
+    if(ver.hostigamiento){
+      var h=leer('BS_Hostigamiento');
+      var hId=ix(h.h,'id'), hFec=ix(h.h,'fecha_denuncia'), hMed=ix(h.h,'medida_proteccion'), hSt=ix(h.h,'status');
+      h.rows.forEach(function(r){
+        var fb=_aFecha(r[hFec]); if(!fb) return;
+        var cerrado=/cerrad|resuelt|archivad/i.test(txt(r[hSt]));
+        if(hMed<0 || !txt(r[hMed])) push('Hostigamiento', txt(r[hId]), 'Medidas de proteccion (3 dh)', 'Caso de hostigamiento #'+txt(r[hId]), fb, _sumarHabiles(fb,3), '');
+        if(!cerrado)               push('Hostigamiento', txt(r[hId]), 'Informe de investigacion (15 dcal)', 'Caso de hostigamiento #'+txt(r[hId]), fb, _sumarCalendario(fb,15), '');
+      });
+    }
+ 
+    // ---- ACCIDENTES (solo mortal/grave -> 24h MTPE) ----
+    if(ver.accidentes){
+      var a=leer('BS_Accidentes_Casos');
+      var aId=ix(a.h,'id'), aAcc=ix(a.h,'dia_accidente'), aTipo=ix(a.h,'tipo_accidente'), aEstA=ix(a.h,'estatus_accidente'), aEstC=ix(a.h,'estado_caso'), aEmp=ix(a.h,'empresa'), aParte=ix(a.h,'parte_cuerpo');
+      a.rows.forEach(function(r){
+        if(!/mortal|grave|incidente peligroso/i.test(txt(r[aTipo])+' '+txt(r[aEstA]))) return;
+        if(/cerrad/i.test(txt(r[aEstC]))) return;
+        var fb=_aFecha(r[aAcc]); if(!fb) return;
+        push('Accidentes', txt(r[aId]), 'Notificacion MTPE (24h)', 'Accidente'+(aParte>=0&&txt(r[aParte])?' · '+txt(r[aParte]):'')+' (mortal/grave)', fb, _sumarCalendario(fb,1), aEmp>=0?emp(r[aEmp]):'');
+      });
+    }
+ 
+    var orden={rojo:0,ambar:1,verde:2};
+    alertas.sort(function(x,y){ return (orden[x.estado]-orden[y.estado]) || (x.diasRestantes-y.diasRestantes); });
+    var resumen={rojo:0,ambar:0,verde:0};
+    alertas.forEach(function(al){ resumen[al.estado]++; });
+ 
+    return { ok:true, alertas:alertas, resumen:resumen, generado:new Date().toISOString() };
+  } catch(err){ return { ok:false, message:String(err) }; }
+}
+ 
+// ============================================================
+// CORREOS (GAS MailApp, gratis)
+// ============================================================
+function _fila(k,v){ return '<tr><td style="padding:4px 12px 4px 0;color:#64748b">'+k+'</td><td style="padding:4px 0;font-weight:600">'+v+'</td></tr>'; }
+ 
+// (A) Aviso inmediato cuando se registra un accidente
+function _avisarAccidenteRegistrado(datos){
+  try{
+    datos = datos || {};
+    var to = (ALERTAS_CONFIG.ADMIN_EMAILS||[]).join(',');
+    if(!to || to.indexOf('PON_AQUI')>=0) return;
+    function g(k){ return (datos[k]!=null && String(datos[k]).trim()) ? String(datos[k]) : '—'; }
+    var html =
+      '<div style="font-family:Segoe UI,Arial,sans-serif;color:#0b1e45">'+
+      '<h2 style="color:#0033A0;margin:0 0 8px">Nuevo accidente de trabajo registrado</h2>'+
+      '<p style="color:#64748b;margin:0 0 14px">Se registro un caso en el modulo de Accidentes Laborales.</p>'+
+      '<table style="border-collapse:collapse;font-size:14px">'+
+        _fila('Trabajador', g('nombre'))+ _fila('DNI', g('dni'))+ _fila('Fundo', g('fundo'))+
+        _fila('Empresa', g('empresa'))+ _fila('Fecha del accidente', g('dia_accidente'))+
+        _fila('Parte del cuerpo', g('parte_cuerpo'))+ _fila('Tipo', g('tipo_accidente'))+
+        _fila('Diagnostico', g('diagnostico'))+
+      '</table>'+
+      '<p style="margin:16px 0 0;font-size:13px;color:#b91c1c"><b>Recordatorio:</b> si es mortal o grave, la notificacion al MTPE (Sistema SAT) vence en 24 horas.</p>'+
+      '<p style="margin:14px 0 0"><a href="https://joeltimoteog-bot.github.io/bienestar-social-verfrut/panel.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Abrir panel</a></p>'+
+      '</div>';
+    var texto = 'Nuevo accidente de trabajo registrado en Bienestar Social.\n'+
+                'Trabajador: '+g('nombre')+' | DNI: '+g('dni')+' | Fundo: '+g('fundo')+'\n'+
+                'Fecha: '+g('dia_accidente')+' | Parte: '+g('parte_cuerpo')+' | Tipo: '+g('tipo_accidente')+'\n'+
+                'Si es mortal o grave, la notificacion al MTPE vence en 24 horas.\n'+
+                'Panel: https://joeltimoteog-bot.github.io/bienestar-social-verfrut/panel.html';
+    MailApp.sendEmail({ to:to, subject:'Nuevo accidente registrado - Bienestar Social', body:texto, htmlBody:html });
+  }catch(e){ /* si falla el correo, no se rompe el registro */ }
+}
+ 
+// (B) Resumen diario de vencimientos (lo dispara el trigger diario)
+function enviarResumenDiarioAlertas(){
+  try{
+    var to = (ALERTAS_CONFIG.ADMIN_EMAILS||[]).join(',');
+    if(!to || to.indexOf('PON_AQUI')>=0) return;
+    var r = calcularAlertasBienestar({quejas:true,accidentes:true,hostigamiento:true});
+    if(!r.ok) return;
+    var rojos = r.alertas.filter(function(a){return a.estado==='rojo';});
+    var ambar = r.alertas.filter(function(a){return a.estado==='ambar';});
+    if(rojos.length===0 && ambar.length===0) return; // nada que avisar hoy
+ 
+    var TD = 'padding:6px 10px;border-bottom:1px solid #e2e8f0';
+    function filas(arr){ return arr.map(function(a){
+      var d = a.diasRestantes<0 ? ('Vencido hace '+Math.abs(a.diasRestantes)+'d') : ('Faltan '+a.diasRestantes+'d');
+      return '<tr>'+
+        '<td style="'+TD+'">'+a.modulo+'</td>'+
+        '<td style="'+TD+'">'+a.descripcion+'</td>'+
+        '<td style="'+TD+'">'+a.regla+'</td>'+
+        '<td style="'+TD+'">'+a.fechaLimite+'</td>'+
+        '<td style="'+TD+';font-weight:700">'+d+'</td>'+
+      '</tr>';
+    }).join(''); }
+    function tabla(titulo,color,arr){ if(!arr.length) return '';
+      return '<h3 style="color:'+color+';margin:18px 0 6px">'+titulo+' ('+arr.length+')</h3>'+
+        '<table style="border-collapse:collapse;font-size:13px;width:100%"><thead><tr>'+
+        ['Modulo','Detalle','Regla','Vence','Estado'].map(function(hh){return '<th style="text-align:left;padding:6px 10px;color:#64748b;font-size:11px;text-transform:uppercase">'+hh+'</th>';}).join('')+
+        '</tr></thead><tbody>'+filas(arr)+'</tbody></table>'; }
+    var html =
+      '<div style="font-family:Segoe UI,Arial,sans-serif;color:#0b1e45">'+
+      '<h2 style="color:#0033A0;margin:0 0 6px">Resumen de vencimientos - Bienestar Social</h2>'+
+      '<p style="color:#64748b;margin:0">Casos que requieren atencion.</p>'+
+      tabla('🔴 Vencidos','#b91c1c',rojos)+ tabla('🟡 Por vencer','#92400e',ambar)+
+      '<p style="margin:16px 0 0"><a href="https://joeltimoteog-bot.github.io/bienestar-social-verfrut/panel.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Abrir panel</a></p>'+
+      '</div>';
+    var texto = 'Resumen de vencimientos - Bienestar Social\n'+
+                'Vencidos: '+rojos.length+' | Por vencer: '+ambar.length+'\n'+
+                'Abra el panel para ver el detalle: https://joeltimoteog-bot.github.io/bienestar-social-verfrut/panel.html';
+    MailApp.sendEmail({ to:to, subject:'Vencimientos Bienestar: '+rojos.length+' vencidos, '+ambar.length+' por vencer', body:texto, htmlBody:html });
+  }catch(e){ Logger.log('Error resumen: '+e); }
+}
+ 
+// ============================================================
+// FUNCIONES DE PRUEBA (puedes dejarlas o borrarlas)
+// ============================================================
+function _testAlertas(){
+  var r = calcularAlertasBienestar({quejas:true, accidentes:true, hostigamiento:true});
+  Logger.log(JSON.stringify(r, null, 2));
+}
+function _testResumen(){
+  var r = calcularAlertasBienestar({quejas:true, accidentes:true, hostigamiento:true});
+  var rojo = r.alertas.filter(function(a){return a.estado==='rojo';}).length;
+  var amb  = r.alertas.filter(function(a){return a.estado==='ambar';}).length;
+  Logger.log('Destinatarios: ' + ALERTAS_CONFIG.ADMIN_EMAILS.join(','));
+  Logger.log('rojo=' + rojo + ' | ambar=' + amb);
+  enviarResumenDiarioAlertas();
+  Logger.log('FIN. Cuota restante: ' + MailApp.getRemainingDailyQuota());
+}
+// Crea/recrea el trigger diario del resumen (ejecutar UNA vez)
+function crearTriggerResumenDiario(){
+  // 1) Borra triggers previos de esta misma funcion (evita duplicados y fantasmas)
+  ScriptApp.getProjectTriggers().forEach(function(t){
+    if (t.getHandlerFunction() === 'enviarResumenDiarioAlertas') ScriptApp.deleteTrigger(t);
+  });
+  // 2) Crea uno nuevo, diario, ~7 a.m. hora Lima
+  ScriptApp.newTrigger('enviarResumenDiarioAlertas')
+    .timeBased()
+    .everyDays(1)
+    .atHour(7)
+    .inTimezone('America/Lima')
+    .create();
+  Logger.log('OK: trigger diario creado para enviarResumenDiarioAlertas (~07:00 America/Lima).');
+}
+
+// (Opcional) Lista los triggers activos para verificar
+function _listarTriggers(){
+  var ts = ScriptApp.getProjectTriggers();
+  Logger.log('Total triggers: ' + ts.length);
+  ts.forEach(function(t){ Logger.log('• ' + t.getHandlerFunction() + ' | ' + t.getEventType()); });
+}
+// ============================================================
+// CLASIFICACION DE CONTRATOS (lee padron del Sistema RL)
+// ============================================================
+var PADRON_CONFIG = {
+  SPREADSHEET_ID: '1q79u2S3ZI_Qc-YnDzgnQwyv4jL7pxTuARiXICPPXgZw', // <-- confirma que aqui estan Trabajadores_RAPEL/VERFRUT
+  HOJAS: ['Trabajadores_RAPEL', 'Trabajadores_VERFRUT'],
+  COL_DNI: 0, COL_INICIO: 5, COL_TERMINO: 17, COL_EMPRESA: 13, COL_NOMBRE: 14, // A,F,R,N,O (0-based)
+  PERIODO_PRUEBA_DIAS: 90,      // periodo de prueba (3 meses)
+  INDETERMINADO_MESES: 54,      // 4 años 6 meses
+  PROXIMO_INDET_DIAS: 30,       // aviso "proximo a indeterminado"
+  POR_VENCER_DIAS: 30           // aviso "contrato por vencer"
+};
+
+function clasificarTrabajadores(){
+  try{
+    var C = PADRON_CONFIG;
+    var ss = SpreadsheetApp.openById(C.SPREADSHEET_ID);
+    var hoy = _hoy();
+    function mesesEntre(ini, fin){
+      var m = (fin.getFullYear()-ini.getFullYear())*12 + (fin.getMonth()-ini.getMonth());
+      if (fin.getDate() < ini.getDate()) m--;
+      return m;
+    }
+    var porTipo = {prueba:0, plazoFijo:0, indeterminado:0, sinFecha:0};
+    var porEmpresa = { RAPEL:{prueba:0,plazoFijo:0,indeterminado:0}, VERFRUT:{prueba:0,plazoFijo:0,indeterminado:0} };
+    var proximosIndet = [], porVencer = [], total = 0;
+
+    C.HOJAS.forEach(function(nombreHoja){
+      var sh = ss.getSheetByName(nombreHoja);
+      if(!sh) return;
+      var lr = sh.getLastRow(); if(lr<2) return;
+      var data = sh.getRange(2,1,lr-1,sh.getLastColumn()).getValues(); // desde fila 2 (sin encabezado)
+      var emp = nombreHoja.indexOf('RAPEL')>=0 ? 'RAPEL' : 'VERFRUT';
+      data.forEach(function(r){
+        var dni = String(r[C.COL_DNI]||'').trim(); if(!dni) return;
+        total++;
+        var ini = _aFecha(r[C.COL_INICIO]);
+        if(!ini){ porTipo.sinFecha++; return; }
+        var dias = Math.round((hoy.getTime()-ini.getTime())/86400000);
+        var meses = mesesEntre(ini, hoy);
+        var tipo = (dias <= C.PERIODO_PRUEBA_DIAS) ? 'prueba'
+                 : (meses >= C.INDETERMINADO_MESES) ? 'indeterminado' : 'plazoFijo';
+        porTipo[tipo]++;
+        if(porEmpresa[emp]) porEmpresa[emp][tipo]++;
+        var nombre = String(r[C.COL_NOMBRE]||'').trim();
+
+        // proximo a indeterminado (le faltan <= X dias para los 54 meses)
+        if(tipo==='plazoFijo'){
+          var fIndet = new Date(ini.getFullYear(), ini.getMonth()+C.INDETERMINADO_MESES, ini.getDate());
+          var dPara = Math.round((fIndet.getTime()-hoy.getTime())/86400000);
+          if(dPara>=0 && dPara<=C.PROXIMO_INDET_DIAS) proximosIndet.push({dni:dni,nombre:nombre,empresa:emp,fecha:_ymd(fIndet),dias:dPara});
+        }
+        // contrato por vencer (fecha termino dentro de X dias)
+        var fin = _aFecha(r[C.COL_TERMINO]);
+        if(fin){
+          var dVence = Math.round((fin.getTime()-hoy.getTime())/86400000);
+          if(dVence>=0 && dVence<=C.POR_VENCER_DIAS) porVencer.push({dni:dni,nombre:nombre,empresa:emp,fecha:_ymd(fin),dias:dVence});
+        }
+      });
+    });
+    proximosIndet.sort(function(a,b){return a.dias-b.dias;});
+    porVencer.sort(function(a,b){return a.dias-b.dias;});
+    return { ok:true, total:total, porTipo:porTipo, porEmpresa:porEmpresa, proximosIndet:proximosIndet, porVencer:porVencer, generado:new Date().toISOString() };
+  }catch(err){ return { ok:false, message:String(err) }; }
+}
+
+function _testClasificacion(){ Logger.log(JSON.stringify(clasificarTrabajadores(), null, 2)); }
+// Clasifica UN trabajador por su DNI (para usar en los formularios de los modulos)
+function bs_clasificarDni(dni){
+  try{
+    dni = String(dni||'').trim();
+    if(!dni) return { ok:true, encontrado:false };
+    var C = PADRON_CONFIG;
+    var ss = SpreadsheetApp.openById(C.SPREADSHEET_ID);
+    var hoy = _hoy();
+    function mesesEntre(ini,fin){ var m=(fin.getFullYear()-ini.getFullYear())*12+(fin.getMonth()-ini.getMonth()); if(fin.getDate()<ini.getDate()) m--; return m; }
+    for(var k=0;k<C.HOJAS.length;k++){
+      var sh=ss.getSheetByName(C.HOJAS[k]); if(!sh) continue;
+      var lr=sh.getLastRow(); if(lr<2) continue;
+      var data=sh.getRange(2,1,lr-1,sh.getLastColumn()).getValues();
+      for(var i=0;i<data.length;i++){
+        if(String(data[i][C.COL_DNI]||'').trim()===dni){
+          var emp=C.HOJAS[k].indexOf('RAPEL')>=0?'RAPEL':'VERFRUT';
+          var nombre=String(data[i][C.COL_NOMBRE]||'').trim();
+          var ini=_aFecha(data[i][C.COL_INICIO]);
+          if(!ini) return { ok:true, encontrado:true, dni:dni, nombre:nombre, empresa:emp, tipo:'sinFecha', etiqueta:'Sin fecha de inicio' };
+          var dias=Math.round((hoy.getTime()-ini.getTime())/86400000);
+          var meses=mesesEntre(ini,hoy);
+          var tipo = dias<=C.PERIODO_PRUEBA_DIAS?'prueba':(meses>=C.INDETERMINADO_MESES?'indeterminado':'plazoFijo');
+          var etiqueta = tipo==='prueba'?'Período de prueba':(tipo==='indeterminado'?'Indeterminado':'Contrato a plazo fijo');
+          var fin=_aFecha(data[i][C.COL_TERMINO]);
+          return { ok:true, encontrado:true, dni:dni, nombre:nombre, empresa:emp, tipo:tipo, etiqueta:etiqueta, fechaInicio:_ymd(ini), fechaTermino:fin?_ymd(fin):'', antiguedadMeses:meses };
+        }
+      }
+    }
+    return { ok:true, encontrado:false };
+  }catch(err){ return { ok:false, message:String(err) }; }
+}
+ // Evalua a los trabajadores DE LOS CASOS por tipo de contrato y antiguedad
+function getCasosPorContrato(permisos){
+  try{
+    permisos = permisos || {};
+    var ver = {
+      accidentes:    permisos.accidentes===true    || permisos.mod_accidentes===true,
+      hostigamiento: permisos.hostigamiento===true || permisos.mod_hostigamiento===true,
+      subsidios:     permisos.subsidios===true      || permisos.mod_subsidios===true
+    };
+    var C = PADRON_CONFIG;
+    var hoy = _hoy();
+    function mesesEntre(ini,fin){ var m=(fin.getFullYear()-ini.getFullYear())*12+(fin.getMonth()-ini.getMonth()); if(fin.getDate()<ini.getDate()) m--; return m; }
+
+    // 1) Mapa del padron: dni -> {tipo, meses}
+    var padron = {};
+    var ssPad = SpreadsheetApp.openById(C.SPREADSHEET_ID);
+    C.HOJAS.forEach(function(nh){
+      var sh=ssPad.getSheetByName(nh); if(!sh) return;
+      var lr=sh.getLastRow(); if(lr<2) return;
+      var data=sh.getRange(2,1,lr-1,sh.getLastColumn()).getValues();
+      data.forEach(function(r){
+        var dni=String(r[C.COL_DNI]||'').trim(); if(!dni) return;
+        var ini=_aFecha(r[C.COL_INICIO]);
+        if(!ini){ padron[dni]={tipo:'sinDato',meses:null}; return; }
+        var dias=Math.round((hoy.getTime()-ini.getTime())/86400000);
+        var meses=mesesEntre(ini,hoy);
+        padron[dni]={ tipo: dias<=C.PERIODO_PRUEBA_DIAS?'prueba':(meses>=C.INDETERMINADO_MESES?'indeterminado':'plazoFijo'), meses:meses };
+      });
+    });
+
+    // 2) Recorrer casos y clasificar a los sujetos
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    function leer(n){ var sh=ss.getSheetByName(n); if(!sh) return {h:[],rows:[]}; var lr=sh.getLastRow(),lc=sh.getLastColumn(); if(lc===0) return {h:[],rows:[]}; var data=sh.getRange(1,1,Math.max(1,lr),lc).getValues(); var h=data.shift(); return {h:h,rows:lr<2?[]:data}; }
+    function ix(h,n){return h.indexOf(n);}
+
+    var porTipo={prueba:0,plazoFijo:0,indeterminado:0,sinDato:0};
+    var porAntig={m3:0,m3a12:0,a1a3:0,a3a54:0,mas54:0,sinDato:0};
+    var porModulo={};
+    function bucket(m){ if(m==null) return 'sinDato'; if(m<3) return 'm3'; if(m<12) return 'm3a12'; if(m<36) return 'a1a3'; if(m<54) return 'a3a54'; return 'mas54'; }
+    function evaluar(modulo, dni){
+      dni=String(dni||'').trim(); if(!dni) return;
+      var p = padron[dni] || {tipo:'sinDato', meses:null};
+      porTipo[p.tipo]=(porTipo[p.tipo]||0)+1;
+      porAntig[bucket(p.meses)]++;
+      if(!porModulo[modulo]) porModulo[modulo]={prueba:0,plazoFijo:0,indeterminado:0,sinDato:0};
+      porModulo[modulo][p.tipo]++;
+    }
+
+    if(ver.accidentes){ var a=leer('BS_Accidentes_Casos'); var aDni=ix(a.h,'dni'); a.rows.forEach(function(r){ evaluar('Accidentes', r[aDni]); }); }
+    if(ver.hostigamiento){ var h=leer('BS_Hostigamiento'); var hDte=ix(h.h,'denunciante_dni'), hDdo=ix(h.h,'denunciado_dni');
+      h.rows.forEach(function(r){ evaluar('Hostigamiento', r[hDte]); evaluar('Hostigamiento', r[hDdo]); }); }
+    if(ver.subsidios){ var s=leer('BS_Subsidios'); var sNum=ix(s.h,'numero'); s.rows.forEach(function(r){ evaluar('Subsidios', r[sNum]); }); }
+
+    var total = porTipo.prueba+porTipo.plazoFijo+porTipo.indeterminado+porTipo.sinDato;
+    return { ok:true, total:total, porTipo:porTipo, porAntiguedad:porAntig, porModulo:porModulo, generado:new Date().toISOString() };
+  }catch(err){ return { ok:false, message:String(err) }; }
+}
+
+function _testCasosContrato(){ Logger.log(JSON.stringify(getCasosPorContrato({accidentes:true,hostigamiento:true,subsidios:true}), null, 2)); }
+/**
+ * ============================================================
+ *  BS_Buzones — Catalogo de buzones de Quejas y Sugerencias
+ * ============================================================
+ *  Pegar al FINAL del codigo GAS de Bienestar Social.
+ *  Ejecutar UNA sola vez:  Run -> bs_sembrarBuzones
+ *
+ *  ADITIVO Y SEGURO: solo crea/llena la hoja "BS_Buzones".
+ *  No modifica ninguna otra hoja ni funcion.
+ *  Si se vuelve a ejecutar, regenera la hoja (idempotente).
+ *  Fuente: VISITAS A CAMPO - BUZONES (Santa Rosa I+II unificadas).
+ * ============================================================
+ */
+function bs_sembrarBuzones() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var NOMBRE = 'BS_Buzones';
+  var sh = ss.getSheetByName(NOMBRE);
+  if (!sh) sh = ss.insertSheet(NOMBRE);
+  sh.clear();
+ 
+  var HEADERS = ['id','empresa','sector','numero','ubicacion','activo','created_at'];
+ 
+  // [empresa, sector, numero(por sector), ubicacion]
+  var DATA = [
+    ['RAPEL','PACKING',1,'COMEDOR PRINCIPAL'],
+    ['RAPEL','PACKING',2,'JARDIN'],
+    ['RAPEL','PACKING',3,'BOMBAS DE AGUA'],
+    ['RAPEL','PAPAYO- CAMPO A, B Y C',1,'COMEDOR DEL ZANJON - CAMPO C'],
+    ['RAPEL','PAPAYO- CAMPO A, B Y C',2,'GARITA CAMPO C'],
+    ['RAPEL','PAPAYO- CAMPO A, B Y C',3,'GARITA CAMPO B'],
+    ['RAPEL','PAPAYO- CAMPO A, B Y C',4,'OFICINA DE CAMPO A'],
+    ['RAPEL','PAPAYO- CAMPO A, B Y C',5,'COMEDOR 01'],
+    ['RAPEL','PAPAYO- CAMPO A, B Y C',6,'COMEDOR LOS JARDINES'],
+    ['RAPEL','LIMONES',1,'COMEDOR 30'],
+    ['RAPEL','LIMONES',2,'COMEDOR 7'],
+    ['RAPEL','LIMONES',3,'COMEDOR 22'],
+    ['RAPEL','SAN VICENTE',1,'COMEDOR 14'],
+    ['RAPEL','SAN VICENTE',2,'COMEDOR EMPLEADOS'],
+    ['RAPEL','SAN VICENTE',3,'COMEDOR DE LA CARRETERA ANCHA'],
+    ['RAPEL','SAN VICENTE',4,'COMEDOR DEL PARADERO ENTRE 9 Y 10'],
+    ['RAPEL','ALGARROBOS',1,'COMEDOR DEL PARADERO 11'],
+    ['RAPEL','ALGARROBOS',2,'CARRETERA PRINCIPAL (comedor 12)'],
+    ['RAPEL','ALGARROBOS',3,'CARRETERA 1 (comedor 3)'],
+    ['RAPEL','ALGARROBOS',4,'ESTACIONAMIENTO'],
+    ['RAPEL','APROA',1,'CARRETERA PRINCIPAL'],
+    ['RAPEL','APROA',2,'COSTADO OFICINAS DE GESTION HUMANA.'],
+    ['RAPEL','LOS OLIVARES',1,'PARADERO 10 (comedor 26)'],
+    ['RAPEL','LOS OLIVARES',2,'PARADERO 5 (costado de carpinteria)'],
+    ['RAPEL','LOS OLIVARES',3,'PARADERO 5 (carretera principal)'],
+    ['RAPEL','LOS OLIVARES',4,'RESERVORIO # 8 - FRENTE EN EL COMEDOR'],
+    ['VERFRUT','SANTA ROSA',1,'OFICINA PRINCIPAL (CARRETERA # 4)'],
+    ['VERFRUT','SANTA ROSA',2,'COMEDOR CARRETERA 4 A'],
+    ['VERFRUT','SANTA ROSA',3,'COMEDOR CARRETERA 4 B'],
+    ['VERFRUT','SANTA ROSA',4,'COMEDOR # 10 CARRETERA 7'],
+    ['VERFRUT','SANTA ROSA',5,'COMEDOR #  15 CARRETERA 9'],
+    ['VERFRUT','SANTA ROSA',6,'COMEDOR #  7 CARRETERA 10'],
+    ['VERFRUT','PUNTA ARENA',1,'GARITA ORGANICOS'],
+    ['VERFRUT','PUNTA ARENA',2,'COMEDOR # 32'],
+    ['VERFRUT','PUNTA ARENA',3,'COMEDOR # 27'],
+    ['VERFRUT','PUNTA ARENA',4,'COMEDOR # 16'],
+    ['VERFRUT','PUNTA ARENA',5,'CAE'],
+    ['VERFRUT','PUNTA ARENA',6,'COMEDOR # R12'],
+    ['VERFRUT','PUNTA ARENA',7,'COMEDOR # 49'],
+    ['VERFRUT','PUNTA ARENA',8,'COMEDOR ORGANICOS'],
+    ['VERFRUT','OLIVARES BAJO',1,'GARITA PRINCIPAL'],
+    ['VERFRUT','OLIVARES BAJO',2,'COMEDOR DEL PISO PARADERO #2'],
+    ['VERFRUT','OLIVARES BAJO',3,'R9'],
+    ['VERFRUT','OLIVARES BAJO',4,'ALMACEN GENERAL'],
+    ['VERFRUT','OLIVARES BAJO',5,'COMEDOR PISO PARADERO 5'],
+    ['VERFRUT','OLIVARES BAJO',6,'COMEDOR PISO PARADERO 12'],
+  ];
+ 
+  var now = new Date();
+  var filas = [HEADERS];
+  for (var i = 0; i < DATA.length; i++) {
+    var d = DATA[i];
+    var id = 'BUZ-' + ('000' + (i + 1)).slice(-3);
+    filas.push([id, d[0], d[1], d[2], d[3], true, now]);
+  }
+  sh.getRange(1, 1, filas.length, HEADERS.length).setValues(filas);
+  sh.setFrozenRows(1);
+ 
+  // contar sectores (sin usar Set, por compatibilidad)
+  var vistos = {}, nSectores = 0;
+  for (var j = 0; j < DATA.length; j++) {
+    var k = DATA[j][0] + '|' + DATA[j][1];
+    if (!vistos[k]) { vistos[k] = true; nSectores++; }
+  }
+  var msg = 'BS_Buzones OK -> ' + DATA.length + ' buzones en ' + nSectores + ' sectores.';
+  Logger.log(msg);
+  return msg;
+}
+/**
+ * ============================================================
+ *  bs_listarBuzones  (Q2a)
+ * ============================================================
+ *  Pegar al FINAL del codigo GAS de Bienestar Social.
+ *  ADITIVO: nueva funcion + un (1) case en el router.
+ *  Lee la hoja BS_Buzones (creada por bs_sembrarBuzones) y
+ *  devuelve los buzones agrupados por sector.
+ *
+ *  Mapea por NOMBRE de encabezado (no por indice), asi no
+ *  importa el orden de columnas.
+ *
+ *  Respuesta (OBJETO):
+ *  { ok:true, total:46, sectores:[
+ *      { empresa:'VERFRUT', sector:'PUNTA ARENA', cantidad:8,
+ *        ubicaciones:[ {numero:1, ubicacion:'GARITA ORGANICOS'}, ... ] }, ...
+ *  ]}
+ *
+ *  Param opcional:  params.empresa = 'RAPEL' | 'VERFRUT'  (vacio = todas)
+ * ============================================================
+ */
+function bs_listarBuzones(params) {
+  try {
+    params = params || {};
+    var fEmpresa = (params.empresa || '').toString().trim().toUpperCase();
+ 
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sh = ss.getSheetByName('BS_Buzones');
+    if (!sh) {
+      return { ok: false, message: 'No existe la hoja BS_Buzones. Ejecuta bs_sembrarBuzones primero.' };
+    }
+ 
+    var valores = sh.getDataRange().getValues();
+    if (valores.length < 2) return { ok: true, total: 0, sectores: [] };
+ 
+    // indice de columnas por encabezado
+    var headers = valores[0];
+    var col = {};
+    for (var c = 0; c < headers.length; c++) {
+      col[String(headers[c]).trim().toLowerCase()] = c;
+    }
+    var iEmp = col['empresa'], iSec = col['sector'],
+        iNum = col['numero'], iUbi = col['ubicacion'], iAct = col['activo'];
+ 
+    var orden = [];   // preserva orden de aparicion de los sectores
+    var mapa = {};
+    var total = 0;
+ 
+    for (var r = 1; r < valores.length; r++) {
+      var fila = valores[r];
+      var emp = String(fila[iEmp] || '').trim();
+      var sec = String(fila[iSec] || '').trim();
+      if (!emp && !sec) continue;
+      if (iAct !== undefined && fila[iAct] === false) continue; // buzon desactivado
+      if (fEmpresa && emp.toUpperCase() !== fEmpresa) continue;
+ 
+      var clave = emp + '|' + sec;
+      if (!mapa[clave]) {
+        mapa[clave] = { empresa: emp, sector: sec, cantidad: 0, ubicaciones: [] };
+        orden.push(clave);
+      }
+      mapa[clave].ubicaciones.push({
+        numero: (iNum !== undefined ? fila[iNum] : mapa[clave].cantidad + 1),
+        ubicacion: String(fila[iUbi] || '').trim()
+      });
+      mapa[clave].cantidad++;
+      total++;
+    }
+ 
+    var sectores = [];
+    for (var k = 0; k < orden.length; k++) sectores.push(mapa[orden[k]]);
+ 
+    return { ok: true, total: total, sectores: sectores };
+  } catch (err) {
+    return { ok: false, message: 'bs_listarBuzones: ' + err.message };
+  }
+}
+ 
+/**
+ * Mini-test: ejecutar desde el editor (Run -> _testBuzones).
+ * NO requiere desplegar. Debe loguear total:46 y 10 sectores.
+ */
+function _testBuzones() {
+  var r = bs_listarBuzones({});
+  Logger.log('total=' + r.total + ' sectores=' + (r.sectores ? r.sectores.length : 0));
+  if (r.sectores) {
+    for (var i = 0; i < r.sectores.length; i++) {
+      Logger.log(r.sectores[i].empresa + ' | ' + r.sectores[i].sector + ' -> ' + r.sectores[i].cantidad);
+    }
+  }
+}
+function bs_migrarQuejasBuzones() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('BS_Quejas');
+  if (!sh) return 'No existe BS_Quejas';
+  var lastCol = sh.getLastColumn();
+  var headers = sh.getRange(1,1,1,lastCol).getValues()[0].map(function(x){return String(x).trim();});
+  var nuevas = ['cantidad_buzones','cantidad_quejas','buzones_detalle'];
+  var agregadas = [];
+  nuevas.forEach(function(h){
+    if (headers.indexOf(h) === -1) {
+      lastCol++;
+      sh.getRange(1, lastCol).setValue(h)
+        .setFontWeight('bold').setBackground('#0a2540').setFontColor('#ffffff').setHorizontalAlignment('center');
+      headers.push(h); agregadas.push(h);
+    }
+  });
+  var msg = agregadas.length ? ('Columnas agregadas: ' + agregadas.join(', ')) : 'Sin cambios (ya existian).';
+  Logger.log(msg); return msg;
+}
+function bs_migrarAccidentesCampos() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('BS_Accidentes_Casos');
+  if (!sh) return 'No existe BS_Accidentes_Casos';
+  var lastCol = sh.getLastColumn();
+  var headers = sh.getRange(1,1,1,lastCol).getValues()[0].map(function(x){return String(x).trim();});
+  var nuevas = [
+    'descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias',
+    'goce_inicio','goce_fin','goce_dias',
+    'accidente_hora_inicio','accidente_hora_fin','accidente_horas'
+  ];
+  var agregadas = [];
+  nuevas.forEach(function(h){
+    if (headers.indexOf(h) === -1) {
+      lastCol++;
+      sh.getRange(1, lastCol).setValue(h)
+        .setFontWeight('bold').setBackground('#0a2540').setFontColor('#ffffff').setHorizontalAlignment('center');
+      headers.push(h); agregadas.push(h);
+    }
+  });
+  var msg = agregadas.length ? ('Columnas agregadas: ' + agregadas.join(', ')) : 'Sin cambios (ya existian).';
+  Logger.log(msg); return msg;
+}
+// ============================================================
+//  MODULO SUGERENCIAS DE MEJORA (M1a)
+// ============================================================
+//  Pegar al FINAL del codigo GAS de Bienestar Social.
+//  Reutiliza ALERTAS_CONFIG y _fila() que ya existen.
+//
+//  Pasos:
+//   1) Pegar todo este bloque al final.
+//   2) Ejecutar UNA vez: Run -> bs_setupSugerencias  (crea la hoja).
+//   3) Agregar los 3 case del router (ver instrucciones del chat).
+//   4) Implementar version nueva.
+// ============================================================
+ 
+// Crea la hoja BS_Sugerencias si no existe (idempotente).
+function bs_setupSugerencias() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var nombre = 'BS_Sugerencias';
+  var headers = ['id','fecha','usuario','nombre_usuario','titulo','modulo','descripcion','prioridad','estado','respuesta_admin','fecha_finalizado','created_by','created_at','updated_at'];
+  var sh = ss.getSheetByName(nombre);
+  if (!sh) {
+    sh = ss.insertSheet(nombre);
+    sh.appendRow(headers);
+    var hr = sh.getRange(1, 1, 1, headers.length);
+    hr.setFontWeight('bold').setBackground('#0a2540').setFontColor('#ffffff').setHorizontalAlignment('center');
+    sh.setFrozenRows(1);
+    sh.autoResizeColumns(1, headers.length);
+    Logger.log('BS_Sugerencias creada.');
+    return 'BS_Sugerencias creada.';
+  }
+  Logger.log('BS_Sugerencias ya existe.');
+  return 'BS_Sugerencias ya existe.';
+}
+ 
+// Crear sugerencia (header-based). estado inicial = Recibida. Avisa al admin por correo.
+function bs_crearSugerencia(usuario, datos) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('BS_Sugerencias');
+    if (!sheet) return { ok: false, message: 'Hoja BS_Sugerencias no existe. Ejecuta bs_setupSugerencias.' };
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h){ return String(h).trim(); });
+    var lastRow = sheet.getLastRow();
+    var id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    var now = new Date();
+    datos = datos || {};
+    var v = {
+      id: id,
+      fecha: now,
+      usuario: usuario || '',
+      nombre_usuario: datos.nombre_usuario || '',
+      titulo: datos.titulo || '',
+      modulo: datos.modulo || '',
+      descripcion: datos.descripcion || '',
+      prioridad: datos.prioridad || 'Media',
+      estado: 'Recibida',
+      respuesta_admin: '',
+      fecha_finalizado: '',
+      created_by: usuario || '',
+      created_at: now,
+      updated_at: now
+    };
+    var fila = headers.map(function(h){ return (v[h] !== undefined) ? v[h] : ''; });
+    sheet.appendRow(fila);
+    _avisarSugerenciaRegistrada(v);
+    return { ok: true, id: id, message: 'Sugerencia enviada' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+ 
+// Listar (filtros opcionales: estado, usuario, modulo). Ordena por id desc.
+function bs_listarSugerencias(filtros) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('BS_Sugerencias');
+    if (!sheet) return { ok: true, items: [], total: 0 };
+    var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { ok: true, items: [], total: 0 };
+    var headers = data[0];
+    var items = data.slice(1).map(function(row) {
+      var o = {};
+      headers.forEach(function(h, i) { var val = row[i]; if (val instanceof Date) val = val.toISOString(); o[h] = val; });
+      return o;
+    });
+    filtros = filtros || {};
+    if (filtros.estado)  items = items.filter(function(i){ return i.estado === filtros.estado; });
+    if (filtros.usuario) items = items.filter(function(i){ return i.usuario === filtros.usuario; });
+    if (filtros.modulo)  items = items.filter(function(i){ return i.modulo === filtros.modulo; });
+    items.sort(function(a, b) { return (b.id || 0) - (a.id || 0); });
+    return { ok: true, items: items, total: items.length };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+ 
+// Actualizar (solo admin desde el front). Sella fecha_finalizado al pasar a Finalizada.
+function bs_actualizarSugerencia(usuario, id, datos) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('BS_Sugerencias');
+    if (!sheet) return { ok: false, message: 'Hoja BS_Sugerencias no existe' };
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var updatables = ['titulo','modulo','descripcion','prioridad','estado','respuesta_admin'];
+    datos = datos || {};
+    for (var i = 1; i < data.length; i++) {
+      if (parseInt(data[i][0]) === parseInt(id)) {
+        var rowNum = i + 1;
+        updatables.forEach(function(field) {
+          if (datos[field] !== undefined) {
+            var col = headers.indexOf(field);
+            if (col >= 0) sheet.getRange(rowNum, col + 1).setValue(datos[field]);
+          }
+        });
+        if (datos.estado === 'Finalizada') {
+          var colF = headers.indexOf('fecha_finalizado');
+          if (colF >= 0) sheet.getRange(rowNum, colF + 1).setValue(new Date());
+        }
+        var colU = headers.indexOf('updated_at');
+        if (colU >= 0) sheet.getRange(rowNum, colU + 1).setValue(new Date());
+        return { ok: true, message: 'Sugerencia actualizada' };
+      }
+    }
+    return { ok: false, message: 'Sugerencia no encontrada' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+ 
+// Aviso por correo al admin cuando se registra una sugerencia (reutiliza _fila y ALERTAS_CONFIG).
+function _avisarSugerenciaRegistrada(datos) {
+  try {
+    datos = datos || {};
+    var to = (ALERTAS_CONFIG.ADMIN_EMAILS || []).join(',');
+    if (!to) return;
+    function g(k){ return (datos[k] != null && String(datos[k]).trim()) ? String(datos[k]) : '—'; }
+    var html =
+      '<div style="font-family:Segoe UI,Arial,sans-serif;color:#0b1e45">' +
+      '<h2 style="color:#0033A0;margin:0 0 8px">Nueva sugerencia de mejora del sistema</h2>' +
+      '<table style="border-collapse:collapse;font-size:14px">' +
+        _fila('Titulo', g('titulo')) + _fila('Usuario', g('nombre_usuario') + ' (' + g('usuario') + ')') +
+        _fila('Modulo/Area', g('modulo')) + _fila('Prioridad', g('prioridad')) +
+      '</table>' +
+      '<p style="margin:12px 0 0;color:#334155"><b>Descripcion:</b><br>' + g('descripcion') + '</p>' +
+      '<p style="margin:14px 0 0"><a href="https://joeltimoteog-bot.github.io/bienestar-social-verfrut/modulos/sugerencias.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Ver sugerencias</a></p>' +
+      '</div>';
+    var texto = 'Nueva sugerencia de mejora - Bienestar Social\n' +
+                'Titulo: ' + g('titulo') + '\n' +
+                'Usuario: ' + g('nombre_usuario') + ' (' + g('usuario') + ')\n' +
+                'Modulo: ' + g('modulo') + ' | Prioridad: ' + g('prioridad') + '\n' +
+                'Descripcion: ' + g('descripcion');
+    MailApp.sendEmail({ to: to, subject: 'Nueva sugerencia de mejora - Bienestar Social', body: texto, htmlBody: html });
+  } catch (e) { /* si falla el correo, no rompe el registro */ }
+}
+ 
+// Test opcional desde el editor
+function _testSugerencias() {
+  Logger.log(JSON.stringify(bs_listarSugerencias({}), null, 2));
+}
+function _testAlertaSugerencia() {
+  // 1) Verificar configuracion
+  try { Logger.log('ADMIN_EMAILS: ' + JSON.stringify(ALERTAS_CONFIG.ADMIN_EMAILS)); }
+  catch (e) { Logger.log('ERROR: ALERTAS_CONFIG no existe -> ' + e.message); return; }
+  // 2) Verificar helper _fila
+  try { Logger.log('_fila OK: ' + _fila('Prueba', 'valor')); }
+  catch (e) { Logger.log('ERROR: _fila no existe -> ' + e.message); }
+  // 3) Enviar correo de prueba por el flujo real
+  _avisarSugerenciaRegistrada({
+    titulo: 'PRUEBA de alerta',
+    nombre_usuario: 'Test', usuario: 'test',
+    modulo: 'Sistema general', prioridad: 'Alta',
+    descripcion: 'Correo de prueba para verificar la alerta de sugerencias.'
+  });
+  Logger.log('Listo. Revisa tu correo (y spam).');
+}
+// ============================================================
+//  ELIMINAR SUGERENCIA (agregar al final del archivo sugerencias / codigo.gs)
+// ============================================================
+function bs_eliminarSugerencia(usuario, id) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('BS_Sugerencias');
+    if (!sheet) return { ok: false, message: 'Hoja BS_Sugerencias no existe' };
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (parseInt(data[i][0]) === parseInt(id)) {
+        sheet.deleteRow(i + 1);
+        return { ok: true, message: 'Sugerencia eliminada' };
+      }
+    }
+    return { ok: false, message: 'Sugerencia no encontrada' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+ // ============================================================
+//  MIGRACION: columnas de Seguimiento en BS_Quejas
+//  Pegar al final del codigo y ejecutar UNA vez: Run -> bs_migrarQuejasSeguimiento
+//  Idempotente: solo agrega las columnas que falten.
+// ============================================================
+function bs_migrarQuejasSeguimiento() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('BS_Quejas');
+  if (!sh) return 'No existe BS_Quejas';
+  var lastCol = sh.getLastColumn();
+  var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(x){ return String(x).trim(); });
+  var nuevas = ['tipo_lugar','seguimiento','seguimiento_frecuencia','seguimiento_inicio','seguimiento_fin','seguimiento_dias','seguimiento_alerta'];
+  var agregadas = [];
+  nuevas.forEach(function(h){
+    if (headers.indexOf(h) === -1) {
+      lastCol++;
+      sh.getRange(1, lastCol).setValue(h)
+        .setFontWeight('bold').setBackground('#0a2540').setFontColor('#ffffff').setHorizontalAlignment('center');
+      headers.push(h); agregadas.push(h);
+    }
+  });
+  var msg = agregadas.length ? ('Columnas agregadas: ' + agregadas.join(', ')) : 'Sin cambios (ya existian).';
+  Logger.log(msg);
+  return msg;
+}
+ // ============================================================
+//  ALERTAS DE SEGUIMIENTO DE QUEJAS (correo diario a admins)
+//  Pegar al final del codigo. Reutiliza ALERTAS_CONFIG.
+//  Pasos:
+//   1) Pegar este bloque.
+//   2) Ejecutar UNA vez: Run -> bs_crearTriggerSeguimiento  (crea el disparador diario 07:00).
+//   3) (Opcional) Ejecutar bs_alertasSeguimientoQuejas para probar el correo ahora.
+//  Nota: los triggers corren sobre el codigo guardado; no requieren "Implementar version nueva".
+// ============================================================
+ 
+// Parser robusto de fecha 'YYYY-MM-DD' (o Date) a fecha LOCAL sin desfase de zona horaria.
+function _segParseFecha(v) {
+  if (!v) return null;
+  var str;
+  if (Object.prototype.toString.call(v) === '[object Date]') {
+    str = Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  } else {
+    str = String(v).substring(0, 10);
+  }
+  var p = str.split('-');
+  if (p.length !== 3) return null;
+  var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+  d.setHours(0, 0, 0, 0);
+  return isNaN(d.getTime()) ? null : d;
+}
+ 
+// Revisa BS_Quejas y envia un correo a ADMIN_EMAILS con los seguimientos vencidos / por vencer.
+function bs_alertasSeguimientoQuejas() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sh = ss.getSheetByName('BS_Quejas');
+    if (!sh) return;
+    var data = sh.getDataRange().getValues();
+    if (data.length <= 1) return;
+    var H = data[0].map(function(h){ return String(h).trim(); });
+    var ci = {};
+    H.forEach(function(h, i){ ci[h] = i; });
+    if (ci['seguimiento'] === undefined || ci['seguimiento_fin'] === undefined) return;
+ 
+    var hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    var vencidos = [], porVencer = [];
+ 
+    for (var r = 1; r < data.length; r++) {
+      var row = data[r];
+      if (String(row[ci['seguimiento']]).trim() !== 'Sí') continue;
+      if (ci['resultado'] !== undefined && String(row[ci['resultado']]).trim() === 'Cerrado') continue;
+      var fin = _segParseFecha(row[ci['seguimiento_fin']]);
+      if (!fin) continue;
+      var dias = Math.round((fin - hoy) / 86400000);
+      var alerta = (ci['seguimiento_alerta'] !== undefined ? parseInt(row[ci['seguimiento_alerta']], 10) : 1) || 1;
+      var it = {
+        id: row[ci['id']],
+        empresa: ci['empresa'] !== undefined ? row[ci['empresa']] : '',
+        sector: ci['sector'] !== undefined ? row[ci['sector']] : '',
+        frec: ci['seguimiento_frecuencia'] !== undefined ? row[ci['seguimiento_frecuencia']] : '',
+        fin: Utilities.formatDate(fin, Session.getScriptTimeZone(), 'dd/MM/yyyy'),
+        dias: dias
+      };
+      if (dias < 0) vencidos.push(it);
+      else if (dias <= alerta) porVencer.push(it);
+    }
+ 
+    if (!vencidos.length && !porVencer.length) return;
+ 
+    var to = (ALERTAS_CONFIG.ADMIN_EMAILS || []).join(',');
+    if (!to) return;
+ 
+    function filas(arr, color) {
+      return arr.map(function(it){
+        var d = it.dias < 0 ? ('Vencido hace ' + Math.abs(it.dias) + ' dia(s)')
+              : (it.dias === 0 ? 'Vence hoy' : ('Vence en ' + it.dias + ' dia(s)'));
+        return '<tr>' +
+          '<td style="padding:4px 8px;border:1px solid #e5e7eb;">#' + it.id + '</td>' +
+          '<td style="padding:4px 8px;border:1px solid #e5e7eb;">' + (it.empresa || '') + ' / ' + (it.sector || '') + '</td>' +
+          '<td style="padding:4px 8px;border:1px solid #e5e7eb;">' + (it.frec || '') + '</td>' +
+          '<td style="padding:4px 8px;border:1px solid #e5e7eb;">' + it.fin + '</td>' +
+          '<td style="padding:4px 8px;border:1px solid #e5e7eb;color:' + color + ';font-weight:600;">' + d + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+    var th = '<tr><th style="padding:4px 8px;border:1px solid #e5e7eb;">ID</th>' +
+             '<th style="padding:4px 8px;border:1px solid #e5e7eb;">Empresa / Sector</th>' +
+             '<th style="padding:4px 8px;border:1px solid #e5e7eb;">Frecuencia</th>' +
+             '<th style="padding:4px 8px;border:1px solid #e5e7eb;">Vence</th>' +
+             '<th style="padding:4px 8px;border:1px solid #e5e7eb;">Estado</th></tr>';
+ 
+    var html = '<div style="font-family:Segoe UI,Arial,sans-serif;color:#0b1e45">' +
+      '<h2 style="color:#0033A0;margin:0 0 10px">Seguimiento de quejas - alertas</h2>';
+    if (vencidos.length) {
+      html += '<h3 style="color:#dc2626;margin:12px 0 4px">Vencidos (' + vencidos.length + ')</h3>' +
+        '<table style="border-collapse:collapse;font-size:13px">' + th + filas(vencidos, '#dc2626') + '</table>';
+    }
+    if (porVencer.length) {
+      html += '<h3 style="color:#d97706;margin:12px 0 4px">Por vencer (' + porVencer.length + ')</h3>' +
+        '<table style="border-collapse:collapse;font-size:13px">' + th + filas(porVencer, '#d97706') + '</table>';
+    }
+    html += '<p style="margin:14px 0 0"><a href="https://joeltimoteog-bot.github.io/bienestar-social-verfrut/modulos/quejas.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Ver quejas</a></p></div>';
+ 
+    MailApp.sendEmail({
+      to: to,
+      subject: 'Seguimiento de quejas: ' + vencidos.length + ' vencidos, ' + porVencer.length + ' por vencer',
+      htmlBody: html
+    });
+  } catch (e) {
+    Logger.log('bs_alertasSeguimientoQuejas error: ' + e.message);
+  }
+}
+ 
+// Crea (o recrea) el disparador diario a las 07:00. Evita triggers fantasma: borra el previo y crea uno fresco.
+function bs_crearTriggerSeguimiento() {
+  var t = ScriptApp.getProjectTriggers();
+  t.forEach(function(tr){
+    if (tr.getHandlerFunction() === 'bs_alertasSeguimientoQuejas') ScriptApp.deleteTrigger(tr);
+  });
+  ScriptApp.newTrigger('bs_alertasSeguimientoQuejas').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(7).inTimezone('America/Lima').create();
+  Logger.log('Trigger diario creado (07:00) para bs_alertasSeguimientoQuejas');
+  return 'Trigger diario creado (07:00).';
+}
+function bs_diagEstadisticas() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var todas = ss.getSheets().map(function(s){ return s.getName(); });
+  var hojas = ['BS_Quejas','BS_Accidentes_Casos','BS_Hostigamiento','BS_Subsidios','BS_Sugerencias'];
+  var clave = ['estado','resultado','decision','situacion','empresa','tipo','prioridad','modulo','responsable','created_by','usuario'];
+  var out = ['HOJAS: ' + todas.join(', '), ''];
+  hojas.forEach(function(n){
+    var sh = ss.getSheetByName(n);
+    if (!sh) { out.push('### ' + n + ': NO EXISTE\n'); return; }
+    var lr = sh.getLastRow(), lc = sh.getLastColumn();
+    if (lr < 1 || lc < 1) { out.push('### ' + n + ': vacia\n'); return; }
+    var data = sh.getRange(1, 1, Math.min(lr, 5000), lc).getValues();
+    var H = data[0].map(function(x){ return String(x).trim(); });
+    out.push('### ' + n + '  (' + Math.max(0, lr - 1) + ' filas)');
+    out.push('COLUMNAS: ' + H.join(' | '));
+    H.forEach(function(h, ci){
+      var hl = h.toLowerCase();
+      if (clave.some(function(k){ return hl.indexOf(k) >= 0; })) {
+        var set = {};
+        for (var r = 1; r < data.length; r++) { var v = String(data[r][ci]).trim(); if (v) set[v] = (set[v] || 0) + 1; }
+        var vals = Object.keys(set).slice(0, 15).map(function(k){ return k + ' (' + set[k] + ')'; });
+        if (vals.length) out.push('  - ' + h + ': ' + vals.join(', '));
+      }
+    });
+    out.push('');
+  });
+  var msg = out.join('\n');
+  Logger.log(msg);
+  return msg;
+}
+// ============================================================
+//  ESTADISTICAS EMPRESARIALES (Gerencia) - BACKEND  [Fase 1]
+//  Pasos de despliegue:
+//   1) Pegar TODO este bloque al final del codigo.
+//   2) Ejecutar UNA vez:  Run -> bs_setupParametros   (crea/siembra BS_Parametros).
+//   3) ABRIR la hoja BS_Parametros y ajustar 'estados_cierre' donde diga REVISAR
+//      (Accidentes y Subsidios) y verificar los plazos.
+//   4) En doPost, dentro del switch(params.action), agregar:
+//        case 'bs_estadisticasEmpresariales': result = bs_estadisticasEmpresariales(params); break;
+//   5) Ctrl+S  ->  Implementar version nueva  (es una accion nueva del /exec).
+//   6) (Opcional) Probar:  Logger.log(JSON.stringify(bs_estadisticasEmpresariales({})));
+// ============================================================
+ 
+var BS_EST_HOJA_PARAMS = 'BS_Parametros';
+ 
+// ---- Hoja de parametros (editable por gerencia) ----
+function bs_setupParametros() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(BS_EST_HOJA_PARAMS);
+  var headers = ['modulo','hoja','col_estado','estados_cierre','col_fecha_inicio','col_fecha_cierre','col_responsable','plazo_dias','usa_seguimiento'];
+  if (!sh) {
+    sh = ss.insertSheet(BS_EST_HOJA_PARAMS);
+    sh.getRange(1, 1, 1, headers.length).setValues([headers])
+      .setFontWeight('bold').setBackground('#0033A0').setFontColor('#ffffff').setHorizontalAlignment('center');
+  }
+  if (sh.getLastRow() > 1) return 'BS_Parametros ya tiene datos; no se sobrescribe.';
+  var filas = [
+    ['Quejas',       'BS_Quejas',            'resultado',     'Cerrado',                          'fecha_recepcion', '',                'created_by', 7,  'SI'],
+    ['Accidentes',   'BS_Accidentes_Casos',  'estado_caso',   'REVISAR (ej: Cerrado, Finalizado)','dia_accidente',   '',                'created_by', 15, 'NO'],
+    ['Hostigamiento','BS_Hostigamiento',     'decision',      'PROCESO DE RESOLUCIÓN, IMPROCEDENTE','fecha_denuncia',  '',                'created_by', 30, 'NO'],
+    ['Subsidios',    'BS_Subsidios',         'estado_general','REVISAR (ej: Cerrado, Pagado)',    'inicio',          '',                'created_by', 15, 'NO'],
+    ['Sugerencias',  'BS_Sugerencias',       'estado',        'Finalizada',                       'fecha',           'fecha_finalizado','created_by', 3,  'NO']
+  ];
+  sh.getRange(2, 1, filas.length, headers.length).setValues(filas);
+  sh.autoResizeColumns(1, headers.length);
+  return 'BS_Parametros creada y sembrada. REVISA los estados_cierre de Accidentes y Subsidios.';
+}
+ 
+// ---- Parser de fecha tolerante (Date o 'YYYY-MM-DD'), a fecha LOCAL sin desfase ----
+function _estParseFecha(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (Object.prototype.toString.call(v) === '[object Date]') {
+    if (isNaN(v.getTime())) return null;
+    var d = new Date(v.getFullYear(), v.getMonth(), v.getDate()); d.setHours(0,0,0,0); return d;
+  }
+  var s = String(v).trim(); if (!s) return null;
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) { var d2 = new Date(parseInt(m[1],10), parseInt(m[2],10)-1, parseInt(m[3],10)); d2.setHours(0,0,0,0); return d2; }
+  var d3 = new Date(s); if (isNaN(d3.getTime())) return null;
+  var d4 = new Date(d3.getFullYear(), d3.getMonth(), d3.getDate()); d4.setHours(0,0,0,0); return d4;
+}
+ 
+function _estLeerParams() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(BS_EST_HOJA_PARAMS);
+  if (!sh || sh.getLastRow() < 2) return [];
+  var data = sh.getDataRange().getValues();
+  var H = data[0].map(function(x){ return String(x).trim(); });
+  var idx = {}; H.forEach(function(h,i){ idx[h] = i; });
+  var out = [];
+  for (var r = 1; r < data.length; r++) {
+    var row = data[r];
+    var modulo = String(row[idx['modulo']] || '').trim();
+    if (!modulo) continue;
+    out.push({
+      modulo: modulo,
+      hoja: String(row[idx['hoja']] || '').trim(),
+      col_estado: String(row[idx['col_estado']] || '').trim(),
+      estados_cierre: String(row[idx['estados_cierre']] || '').split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(String),
+      col_fecha_inicio: String(row[idx['col_fecha_inicio']] || '').trim(),
+      col_fecha_cierre: String(row[idx['col_fecha_cierre']] || '').trim(),
+      col_responsable: (String(row[idx['col_responsable']] || '').trim() || 'created_by'),
+      plazo_dias: parseInt(row[idx['plazo_dias']], 10) || 0,
+      usa_seguimiento: String(row[idx['usa_seguimiento']] || '').trim().toUpperCase() === 'SI'
+    });
+  }
+  return out;
+}
+ 
+// ---- Endpoint principal ----
+function bs_estadisticasEmpresariales(params) {
+  try {
+    params = params || {};
+    var fModulo  = (params.modulo  && params.modulo  !== 'Todos')  ? params.modulo  : null;
+    var fUsuario = (params.usuario && params.usuario !== 'Todos')  ? params.usuario : null;
+    var fEmpresa = (params.empresa && params.empresa !== 'Todas')  ? params.empresa : null;
+    var fDesde   = params.desde ? _estParseFecha(params.desde) : null;
+    var fHasta   = params.hasta ? _estParseFecha(params.hasta) : null;
+    var hoy = new Date(); hoy.setHours(0,0,0,0);
+ 
+    var cfgs = _estLeerParams();
+    if (!cfgs.length) return { ok:false, message:'BS_Parametros vacia. Ejecuta bs_setupParametros.' };
+ 
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+ 
+    // Cargar cada hoja una sola vez
+    var cache = {};
+    cfgs.forEach(function(cfg){
+      var sh = ss.getSheetByName(cfg.hoja);
+      if (!sh || sh.getLastRow() < 2 || sh.getLastColumn() < 1) { cache[cfg.modulo] = { ci:{}, rows:[] }; return; }
+      var data = sh.getDataRange().getValues();
+      var H = data[0].map(function(x){ return String(x).trim(); });
+      var ci = {}; H.forEach(function(h,i){ ci[h] = i; });
+      cache[cfg.modulo] = { ci:ci, rows:data.slice(1) };
+    });
+ 
+    // Usuarios disponibles (sin filtros) para el desplegable
+    var usuariosSet = {};
+    cfgs.forEach(function(cfg){
+      var c = cache[cfg.modulo]; var cb = c.ci['created_by'];
+      if (cb === undefined) return;
+      c.rows.forEach(function(row){ var u = String(row[cb]||'').trim(); if (u) usuariosSet[u] = true; });
+    });
+ 
+    var totales = {}, estados = {}, porEmpresa = { RAPEL:{}, VERFRUT:{} }, tendMap = {};
+    var usuariosMap = {}, cumpModulo = {}, cumpUsuario = {}, vencidos = [];
+    var generalTotal = 0;
+    function nuevoCump(){ return { total:0, cerrados:0, a_tiempo:0, fuera:0, abierto_plazo:0, vencido:0, suma_dias_cierre:0, n_cierre:0 }; }
+    var cumpGlobal = nuevoCump();
+ 
+    cfgs.forEach(function(cfg){
+      if (fModulo && cfg.modulo !== fModulo) return;
+      var c = cache[cfg.modulo], ci = c.ci;
+      totales[cfg.modulo] = totales[cfg.modulo] || 0;
+      estados[cfg.modulo] = estados[cfg.modulo] || {};
+      cumpModulo[cfg.modulo] = cumpModulo[cfg.modulo] || nuevoCump();
+ 
+      var cEstado = ci[cfg.col_estado];
+      var cIni    = ci[cfg.col_fecha_inicio];
+      var cCierre = cfg.col_fecha_cierre ? ci[cfg.col_fecha_cierre] : undefined;
+      var cResp   = ci[cfg.col_responsable] !== undefined ? ci[cfg.col_responsable] : ci['created_by'];
+      var cEmp    = ci['empresa'];
+      var cCreated= ci['created_at'];
+      var cUpd    = ci['updated_at'];
+      var cSeg    = ci['seguimiento'];
+      var cSegFin = ci['seguimiento_fin'];
+      var cCb     = ci['created_by'];
+      var cId     = ci['id'];
+ 
+      c.rows.forEach(function(row){
+        var cbVal = cCb !== undefined ? String(row[cCb]||'').trim() : '';
+        var respVal = cResp !== undefined ? String(row[cResp]||'').trim() : cbVal;
+        var emp = cEmp !== undefined ? String(row[cEmp]||'').trim() : '';
+        var fIni = cIni !== undefined ? _estParseFecha(row[cIni]) : null;
+        if (!fIni && cCreated !== undefined) fIni = _estParseFecha(row[cCreated]);
+ 
+        // Filtros
+        if (fUsuario && respVal !== fUsuario && cbVal !== fUsuario) return;
+        if (fEmpresa && emp !== fEmpresa) return;
+        if (fDesde && fIni && fIni < fDesde) return;
+        if (fHasta && fIni && fIni > fHasta) return;
+ 
+        // Conteos
+        totales[cfg.modulo]++; generalTotal++;
+        var est = (cEstado !== undefined ? String(row[cEstado]||'').trim() : '') || '(sin estado)';
+        estados[cfg.modulo][est] = (estados[cfg.modulo][est]||0) + 1;
+        if (emp === 'RAPEL' || emp === 'VERFRUT') porEmpresa[emp][cfg.modulo] = (porEmpresa[emp][cfg.modulo]||0) + 1;
+        if (fIni) {
+          var ym = fIni.getFullYear() + '-' + ('0'+(fIni.getMonth()+1)).slice(-2);
+          tendMap[ym] = tendMap[ym] || {}; tendMap[ym][cfg.modulo] = (tendMap[ym][cfg.modulo]||0) + 1;
+        }
+        var ukey = cbVal || respVal || '(sin usuario)';
+        usuariosMap[ukey] = usuariosMap[ukey] || { total:0, porModulo:{} };
+        usuariosMap[ukey].total++; usuariosMap[ukey].porModulo[cfg.modulo] = (usuariosMap[ukey].porModulo[cfg.modulo]||0) + 1;
+ 
+        // Cumplimiento
+        var esCierre = cfg.estados_cierre.length > 0 && cfg.estados_cierre.indexOf(est.toLowerCase()) >= 0;
+        var limite = null;
+        if (cfg.usa_seguimiento && cSeg !== undefined && String(row[cSeg]||'').trim() === 'Sí' && cSegFin !== undefined) {
+          limite = _estParseFecha(row[cSegFin]);
+        }
+        if (!limite && fIni && cfg.plazo_dias > 0) { limite = new Date(fIni.getTime()); limite.setDate(limite.getDate() + cfg.plazo_dias); }
+ 
+        var CM = cumpModulo[cfg.modulo];
+        cumpUsuario[ukey] = cumpUsuario[ukey] || nuevoCump();
+        var CU = cumpUsuario[ukey];
+        CM.total++; CU.total++; cumpGlobal.total++;
+ 
+        if (esCierre) {
+          CM.cerrados++; CU.cerrados++; cumpGlobal.cerrados++;
+          var fCierre = (cCierre !== undefined ? _estParseFecha(row[cCierre]) : null) || (cUpd !== undefined ? _estParseFecha(row[cUpd]) : null);
+          var aTiempo = (limite && fCierre) ? (fCierre <= limite) : true;
+          if (aTiempo) { CM.a_tiempo++; CU.a_tiempo++; cumpGlobal.a_tiempo++; } else { CM.fuera++; CU.fuera++; cumpGlobal.fuera++; }
+          if (fIni && fCierre) { var dd = Math.round((fCierre - fIni)/86400000); if (dd >= 0) { CM.suma_dias_cierre += dd; CM.n_cierre++; CU.suma_dias_cierre += dd; CU.n_cierre++; cumpGlobal.suma_dias_cierre += dd; cumpGlobal.n_cierre++; } }
+        } else if (limite && hoy > limite) {
+          CM.vencido++; CU.vencido++; cumpGlobal.vencido++;
+          vencidos.push({ modulo:cfg.modulo, id:(cId!==undefined?row[cId]:''), usuario:ukey, empresa:emp,
+            fecha_inicio: fIni ? Utilities.formatDate(fIni, Session.getScriptTimeZone(), 'dd/MM/yyyy') : '',
+            limite: Utilities.formatDate(limite, Session.getScriptTimeZone(), 'dd/MM/yyyy'),
+            dias_vencido: Math.round((hoy - limite)/86400000) });
+        } else {
+          CM.abierto_plazo++; CU.abierto_plazo++; cumpGlobal.abierto_plazo++;
+        }
+      });
+    });
+ 
+    function cerrarCump(c){
+      var cumplidos = c.a_tiempo + c.abierto_plazo;
+      c.pct_cierre = c.total ? Math.round(c.cerrados*1000/c.total)/10 : 0;
+      c.pct_cumplimiento = c.total ? Math.round(cumplidos*1000/c.total)/10 : 0;
+      c.pct_a_tiempo = c.cerrados ? Math.round(c.a_tiempo*1000/c.cerrados)/10 : 0;
+      c.tiempo_prom_cierre = c.n_cierre ? Math.round(c.suma_dias_cierre*10/c.n_cierre)/10 : 0;
+      delete c.suma_dias_cierre; delete c.n_cierre;
+      return c;
+    }
+    cerrarCump(cumpGlobal);
+    Object.keys(cumpModulo).forEach(function(k){ cerrarCump(cumpModulo[k]); });
+    var porUsuario = Object.keys(cumpUsuario).map(function(k){ var c = cerrarCump(cumpUsuario[k]); c.usuario = k; return c; });
+    porUsuario.sort(function(a,b){ return b.pct_cumplimiento - a.pct_cumplimiento; });
+    vencidos.sort(function(a,b){ return b.dias_vencido - a.dias_vencido; });
+ 
+    var ymKeys = Object.keys(tendMap).sort();
+    var modList = cfgs.filter(function(cf){ return !fModulo || cf.modulo === fModulo; }).map(function(cf){ return cf.modulo; });
+    var tendencia = { labels: ymKeys, series: {} };
+    modList.forEach(function(m){ tendencia.series[m] = ymKeys.map(function(k){ return tendMap[k][m] || 0; }); });
+ 
+    var usuarios = Object.keys(usuariosMap).map(function(k){ return { usuario:k, total:usuariosMap[k].total, porModulo:usuariosMap[k].porModulo }; });
+    usuarios.sort(function(a,b){ return b.total - a.total; });
+ 
+    return {
+      ok: true,
+      generado: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'),
+      filtros: { modulo: fModulo||'Todos', usuario: fUsuario||'Todos', empresa: fEmpresa||'Todas', desde: params.desde||'', hasta: params.hasta||'' },
+      totales: totales,
+      general: generalTotal,
+      porEmpresa: porEmpresa,
+      estados: estados,
+      tendencia: tendencia,
+      usuarios: usuarios,
+      usuariosDisponibles: Object.keys(usuariosSet).sort(),
+      cumplimiento: { global: cumpGlobal, porModulo: cumpModulo, porUsuario: porUsuario, vencidosAbiertos: vencidos.slice(0, 100) }
+    };
+  } catch (e) {
+    return { ok:false, message:'Error: ' + e.message };
+  }
+}
+ function _testEst() { Logger.log(JSON.stringify(bs_estadisticasEmpresariales({}))); }
+ // ============================================================
+//  ALERTAS POR WHATSAPP (CallMeBot)  - resumen SIN datos personales
+//  Va junto al correo, en el mismo disparador diario.
+//
+//  SETUP por cada admin (una sola vez, GRATIS):
+//   1) Guarda en contactos el numero ACTUAL del bot:  +34 644 94 58 67
+//      (CallMeBot rota el numero; si algun dia deja de responder, verifica
+//       el vigente en callmebot.com/blog/free-api-whatsapp-messages/)
+//   2) Desde TU WhatsApp envia a ese contacto el texto EXACTO:
+//        I allow callmebot to send me messages
+//   3) Te llega: "API Activated... Your APIKEY is 123456". Copia ese apikey.
+//   4) Pega el apikey de cada persona en BS_WA_CONFIG (abajo).
+//   5) Run -> _diagWhatsApp  (prueba el 1er admin; la 1ra vez pide autorizar
+//      "conectar a servicio externo"). Si el BODY dice "Message queued" -> OK.
+//
+//  Nota: el API gratuito de CallMeBot es de uso personal. Para 3-4 admins
+//  internos esta bien; si crece o se vuelve critico, migramos a otra via.
+// ============================================================
+ 
+var BS_WA_CONFIG = [
+  { nombre: 'Joel Timoteo',  telefono: '+51960853224', apikey: '' },  // <-- pega aqui tu apikey
+  { nombre: 'Jorge Chavez',  telefono: '+51976042199', apikey: '' },
+  { nombre: 'Olga Vilela',   telefono: '+51945189783', apikey: '' },
+  { nombre: 'Daniela Reyna', telefono: '+51955007064', apikey: '' }
+];
+ 
+function _bsWhatsApp(telefono, apikey, mensaje) {
+  try {
+    if (!apikey) { Logger.log('Sin apikey para ' + telefono + ' (se omite)'); return false; }
+    var url = 'https://api.callmebot.com/whatsapp.php'
+            + '?phone='  + encodeURIComponent(telefono)
+            + '&text='   + encodeURIComponent(mensaje)
+            + '&apikey=' + encodeURIComponent(apikey);
+    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    Logger.log('WhatsApp ' + telefono + ' -> ' + resp.getResponseCode());
+    return true;
+  } catch (e) {
+    Logger.log('WhatsApp error (' + telefono + '): ' + e.message);
+    return false;
+  }
+}
+ 
+// Envia un texto libre por WhatsApp a todos los admins con apikey.
+function _bsWhatsAppTodos(mensaje) {
+  if (!BS_WA_CONFIG.length) return;
+  BS_WA_CONFIG.forEach(function(a){
+    if (a && a.telefono && a.apikey) _bsWhatsApp(a.telefono, a.apikey, mensaje);
+  });
+}
+ 
+// Resumen fijo (lo usa la alerta de seguimiento de quejas).
+function _bsAlertaWhatsApp(nVencidos, nPorVencer) {
+  var msg = '🔔 *Bienestar Social* — Seguimiento de quejas\n'
+          + '⚠ Vencidos: ' + nVencidos + '\n'
+          + '⏰ Por vencer: ' + nPorVencer + '\n'
+          + 'Ingresa al sistema para ver el detalle.';
+  _bsWhatsAppTodos(msg);
+}
+ 
+// Prueba el envio al PRIMER admin de la lista y muestra la respuesta del bot.
+function _diagWhatsApp() {
+  if (!BS_WA_CONFIG.length || !BS_WA_CONFIG[0].apikey) {
+    Logger.log('Primero pega el apikey en BS_WA_CONFIG[0] (' + (BS_WA_CONFIG[0] ? BS_WA_CONFIG[0].telefono : 'vacio') + ').');
+    return;
+  }
+  var a = BS_WA_CONFIG[0];
+  var url = 'https://api.callmebot.com/whatsapp.php'
+          + '?phone='  + encodeURIComponent(a.telefono)
+          + '&text='   + encodeURIComponent('Prueba Bienestar (CallMeBot)')
+          + '&apikey=' + encodeURIComponent(a.apikey);
+  var r = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  Logger.log('CODE: ' + r.getResponseCode());
+  Logger.log('BODY: ' + r.getContentText());
+}
+ 
+// Prueba el resumen completo a todos los admins configurados.
+function _testWhatsApp() { _bsAlertaWhatsApp(3, 1); }
+// Crea/recrea el disparador diario (07:00). Borra el previo para evitar duplicados/fantasmas.
+function bs_crearTriggerCumplimientoTodos() {
+  ScriptApp.getProjectTriggers().forEach(function(tr){
+    if (tr.getHandlerFunction() === 'bs_alertasCumplimientoTodos') ScriptApp.deleteTrigger(tr);
+  });
+  ScriptApp.newTrigger('bs_alertasCumplimientoTodos').timeBased().atHour(7).everyDays(1).create();
+  Logger.log('Trigger diario (07:00) creado para bs_alertasCumplimientoTodos');
+  return 'Trigger diario (07:00) creado.';
+}
+function _diagWhatsApp() {
+  var telefono = '+51960853224';
+  var apikey   = 'TU_APIKEY';   // <-- la que te respondió el bot
+  var url = 'https://api.callmebot.com/whatsapp.php?phone=' + encodeURIComponent(telefono)
+          + '&text=' + encodeURIComponent('Prueba Bienestar') + '&apikey=' + encodeURIComponent(apikey);
+  var r = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  Logger.log('BODY: ' + r.getContentText());
+}
+ /****************************************************************
+ * Histórico de Accidentes — Bienestar Social (RR.LL.)
+ * ----------------------------------------------------------------
+ * Guarda CADA creación / actualización de un caso (incluyendo
+ * descanso médico y formularios) de forma HISTÓRICA, sin
+ * sobrescribir. Alimenta la hoja "Historial" del export Excel.
+ *
+ * Usa SpreadsheetApp.getActiveSpreadsheet() igual que el resto de
+ * tus funciones bs_ (el GAS está enlazado al spreadsheet), así que
+ * NO hay que configurar ningún ID.
+ *
+ * PASOS:
+ *   1) Pega este archivo como un .gs nuevo en el editor.
+ *   2) Ejecuta UNA vez bs_setupHistorialAccidentes().
+ *   3) Agrega el case en doPost (ver abajo).
+ *   4) Agrega 1 línea en bs_crearAccidente y 1 en bs_actualizarAccidente.
+ *   5) Implementar -> versión nueva.
+ ****************************************************************/
+ 
+const BS_HOJA_HISTORIAL_ACC = 'BS_Accidentes_Historial';
+const BS_HIST_ACC_COLS = [
+  'timestamp', 'id_caso', 'dni', 'nombre', 'tipo_cambio', 'usuario',
+  'descanso_medico', 'dm_inicio', 'dm_fin', 'dm_dias',
+  'formulario_con_goce', 'goce_inicio', 'goce_fin', 'goce_dias',
+  'estado_caso', 'detalle_json'
+];
+ 
+function _bsHistSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(BS_HOJA_HISTORIAL_ACC);
+  if (!sh) {
+    sh = ss.insertSheet(BS_HOJA_HISTORIAL_ACC);
+    sh.getRange(1, 1, 1, BS_HIST_ACC_COLS.length).setValues([BS_HIST_ACC_COLS]);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+ 
+// (2) Ejecuta UNA vez para crear la hoja de historial.
+function bs_setupHistorialAccidentes() {
+  const sh = _bsHistSheet_();
+  const msg = 'OK: hoja "' + BS_HOJA_HISTORIAL_ACC + '" lista (' + (sh.getLastRow() - 1) + ' registros).';
+  Logger.log(msg);
+  return msg;
+}
+ 
+/**
+ * Registra un movimiento en el historial. NUNCA lanza error (no rompe el guardado).
+ * @param {number|string} idCaso  id del caso
+ * @param {Object} datos          objeto con los campos del caso/formulario
+ * @param {string} usuario        quién hace el cambio
+ * @param {string} tipoCambio     'CREACION' | 'ACTUALIZACION' | 'DM' | 'FORMULARIO'
+ */
+function bs_logHistorialAccidente(idCaso, datos, usuario, tipoCambio) {
+  try {
+    const sh = _bsHistSheet_();
+    const d = datos || {};
+    sh.appendRow([
+      new Date(),
+      idCaso || d.id || '',
+      d.dni || '',
+      d.nombre || '',
+      tipoCambio || 'ACTUALIZACION',
+      usuario || d.created_by || '',
+      d.descanso_medico || '',
+      d.descanso_medico_inicio || '',
+      d.descanso_medico_fin || '',
+      d.descanso_medico_dias || '',
+      d.formulario_con_goce || '',
+      d.goce_inicio || '',
+      d.goce_fin || '',
+      d.goce_dias || '',
+      d.estado_caso || '',
+      JSON.stringify(d)
+    ]);
+  } catch (err) {
+    Logger.log('bs_logHistorialAccidente ERROR: ' + err);
+  }
+}
+ 
+/**
+ * Devuelve TODO el historial (o el de un caso si se pasa params.id_caso).
+ * Lo consume la hoja "Historial" del export Excel.
+ */
+function bs_listarTodoHistorialAccidentes(params) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sh = ss.getSheetByName(BS_HOJA_HISTORIAL_ACC);
+    if (!sh || sh.getLastRow() < 2) return { ok: true, items: [] };
+    const vals = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn()).getValues();
+    const headers = vals[0];
+    const items = [];
+    for (let i = 1; i < vals.length; i++) {
+      const o = {};
+      for (let j = 0; j < headers.length; j++) { o[headers[j]] = vals[i][j]; }
+      items.push(o);
+    }
+    if (params && params.id_caso) {
+      const idc = String(params.id_caso);
+      return { ok: true, items: items.filter(function (x) { return String(x.id_caso) === idc; }) };
+    }
+    return { ok: true, items: items };
+  } catch (err) {
+    return { ok: false, error: String(err), items: [] };
+  }
+}
+ 
+/****************************************************************
+ * (3) En doPost, dentro del switch(params.action), agrega:
+ *
+ *   case 'bs_listarTodoHistorialAccidentes':
+ *     result = bs_listarTodoHistorialAccidentes(params); break;
+ *
+ * ----------------------------------------------------------------
+ * (4) Conecta el log a tus funciones existentes (1 línea cada una):
+ *
+ *   // En bs_crearAccidente, DESPUÉS de guardar y tener el id nuevo:
+ *   bs_logHistorialAccidente(idNuevo, datos, usuario, 'CREACION');
+ *
+ *   // En bs_actualizarAccidente, DESPUÉS de guardar:
+ *   bs_logHistorialAccidente(idCaso, datos, usuario, 'ACTUALIZACION');
+ *
+ *   Donde:
+ *     - idNuevo / idCaso = el id del caso
+ *     - datos            = el objeto con los campos del formulario que ya manejas
+ *     - usuario          = quien registra/actualiza (ej. params.usuario)
+ ****************************************************************/
+ /****************************************************************
+ * bs_listarTodosSeguimientos — Bienestar Social (RR.LL.)
+ * ----------------------------------------------------------------
+ * Devuelve TODOS los seguimientos de accidentes en UNA sola llamada
+ * (en vez de uno por caso). Lo usa el export Excel para armar la
+ * hoja "Seguimientos" al instante.
+ *
+ * Usa getActiveSpreadsheet() (igual que tus demás bs_), así que NO
+ * hay nada que configurar. La hoja se ubica de forma tolerante.
+ *
+ * PASOS:
+ *   1) Pega este archivo como un .gs nuevo.
+ *   2) En doPost, dentro del switch(params.action), agrega:
+ *        case 'bs_listarTodosSeguimientos':
+ *          result = bs_listarTodosSeguimientos(params); break;
+ *   3) Implementar -> versión nueva.
+ *
+ * (Si por algo no encuentra la hoja, devuelve ok:false y el export
+ *  cae automáticamente al método caso-por-caso. Nunca se queda sin datos.)
+ ****************************************************************/
+ 
+function _bsHojaSeguimientos_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // 1) Constante de config, si existe (p. ej. BS_CONFIG.HOJA_ACC_SEGUIMIENTOS)
+  try {
+    if (typeof BS_CONFIG !== 'undefined' && BS_CONFIG && BS_CONFIG.HOJA_ACC_SEGUIMIENTOS) {
+      const s1 = ss.getSheetByName(BS_CONFIG.HOJA_ACC_SEGUIMIENTOS);
+      if (s1) return s1;
+    }
+  } catch (e) {}
+  // 2) Nombre literal habitual
+  const s2 = ss.getSheetByName('BS_Accidentes_Seguimientos');
+  if (s2) return s2;
+  // 3) Cualquier hoja cuyo nombre relacione accidentes + seguimientos
+  const all = ss.getSheets();
+  for (let i = 0; i < all.length; i++) {
+    const n = all[i].getName();
+    if (/seguimiento/i.test(n) && /accidente/i.test(n)) return all[i];
+  }
+  return null;
+}
+ 
+function bs_listarTodosSeguimientos(params) {
+  try {
+    const sh = _bsHojaSeguimientos_();
+    if (!sh) return { ok: false, error: 'Hoja de seguimientos no encontrada', items: [] };
+    if (sh.getLastRow() < 2) return { ok: true, items: [] };
+    const vals = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn()).getValues();
+    const headers = vals[0];
+    const items = [];
+    for (let i = 1; i < vals.length; i++) {
+      const o = {};
+      for (let j = 0; j < headers.length; j++) { o[headers[j]] = vals[i][j]; }
+      items.push(o);
+    }
+    // opcional: filtrar por un caso
+    if (params && params.id_caso) {
+      const idc = String(params.id_caso);
+      return { ok: true, items: items.filter(function (x) { return String(x.id_caso) === idc; }) };
+    }
+    return { ok: true, items: items };
+  } catch (err) {
+    return { ok: false, error: String(err), items: [] };
+  }
+}
+/*************************************************************************
+ * SEGUIMIENTOS ACUMULABLES DE HALLAZGOS (QUEJAS)
+ * Réplica del patrón de Accidentes (bs_crearSeguimiento / bs_listarSeguimientos)
+ * Hoja: BS_Quejas_Seguimientos  |  Script ENLAZADO: getActiveSpreadsheet()
+ *
+ * PASOS:
+ *   1) Pega este bloque al final del proyecto Apps Script.
+ *   2) Ejecuta una vez  bs_setupSeguimientosQueja()  (crea la hoja).
+ *   3) Agrega los 2 case del router en doPost (ver final del archivo).
+ *   4) Implementar -> Administrar implementaciones -> ✏️ -> Versión nueva.
+ *************************************************************************/
+ 
+var BS_QSEG_SHEET   = 'BS_Quejas_Seguimientos';
+var BS_QSEG_HEADERS = ['id','id_queja','numero_seguimiento','fecha_seguimiento','detalle','created_by','created_at'];
+ 
+function _bsQSegSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(BS_QSEG_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(BS_QSEG_SHEET);
+    sh.getRange(1, 1, 1, BS_QSEG_HEADERS.length).setValues([BS_QSEG_HEADERS]);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+ 
+/** Crea/asegura la hoja. Ejecutar una vez. */
+function bs_setupSeguimientosQueja() {
+  var sh = _bsQSegSheet_();
+  return 'OK: hoja ' + BS_QSEG_SHEET + ' lista (' + sh.getLastRow() + ' fila/s).';
+}
+ 
+/** Lista los seguimientos de un hallazgo (id por POSICIÓN, igual que Accidentes). */
+function bs_listarSeguimientosQueja(id_queja) {
+  try {
+    var sheet = _bsQSegSheet_();
+    var lr = sheet.getLastRow();
+    if (lr < 2) return { ok: true, items: [] };
+    var lc = sheet.getLastColumn();
+    var headers = sheet.getRange(1, 1, 1, lc).getValues()[0];
+    var data = sheet.getRange(2, 1, lr - 1, lc).getValues();
+    var iIdQ = headers.indexOf('id_queja');
+    var target = String(id_queja).trim();
+    var items = [];
+    for (var r = 0; r < data.length; r++) {
+      if (String(data[r][iIdQ]).trim() !== target) continue;
+      var o = {};
+      for (var c = 0; c < headers.length; c++) o[headers[c]] = data[r][c];
+      items.push(o);
+    }
+    items.sort(function(a, b) { return (Number(a.numero_seguimiento) || 0) - (Number(b.numero_seguimiento) || 0); });
+    return { ok: true, items: items };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+ 
+/** Agrega un seguimiento.  datos = { fecha_seguimiento, detalle } */
+function bs_crearSeguimientoQueja(usuario, id_queja, datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = _bsQSegSheet_();
+    datos = datos || {};
+    if (!datos.fecha_seguimiento || !datos.detalle) return { ok: false, message: 'Completa fecha y detalle' };
+ 
+    const lastRow = sheet.getLastRow();
+    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+ 
+    // numero_seguimiento (consecutivo dentro del hallazgo)
+    const existentes = bs_listarSeguimientosQueja(id_queja);
+    const numero = (existentes.items ? existentes.items.length : 0) + 1;
+ 
+    sheet.appendRow([
+      id,
+      parseInt(id_queja),
+      numero,
+      datos.fecha_seguimiento ? new Date(datos.fecha_seguimiento) : new Date(),
+      datos.detalle || '',
+      usuario,
+      new Date()
+    ]);
+ 
+    // Refrescar updated_at del hallazgo padre (solo si la columna existe; NO toca cantidad_quejas)
+    const sheetQ = ss.getSheetByName('BS_Quejas');
+    if (sheetQ) {
+      const dataQ = sheetQ.getDataRange().getValues();
+      const hdrQ = dataQ[0];
+      for (let i = 1; i < dataQ.length; i++) {
+        if (parseInt(dataQ[i][0]) === parseInt(id_queja)) {
+          const colUpd = hdrQ.indexOf('updated_at');
+          if (colUpd >= 0) sheetQ.getRange(i + 1, colUpd + 1).setValue(new Date());
+          break;
+        }
+      }
+    }
+ 
+    return { ok: true, id: id, numero: numero, message: 'Seguimiento #' + numero + ' registrado' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+ 
+/*************************************************************************
+ * ROUTER (doPost) — agrega estos 2 case con el MISMO envoltorio que usas
+ * en tus case de Accidentes (bs_listarSeguimientos / bs_crearSeguimiento):
+ *
+ *   case 'bs_listarSeguimientosQueja':
+ *     return bs_listarSeguimientosQueja(params.id_queja);
+ *
+ *   case 'bs_crearSeguimientoQueja':
+ *     return bs_crearSeguimientoQueja(params.usuario, params.id_queja, params.datos);
+ *
+ * (Si tu router envuelve con ContentService/_json, aplícalo igual aquí.)
+ *************************************************************************/
+ function _quienEnvia(){
+  Logger.log('Remitente efectivo: ' + Session.getEffectiveUser().getEmail());
+  Logger.log('Usuario activo: ' + Session.getActiveUser().getEmail());
+}
+function _probarReenvio() {
+  MailApp.sendEmail({
+    to: 'joel.timoteo@unifrutti.com',
+    subject: 'Prueba Bienestar - reenvio automatico',
+    htmlBody: '<p>Prueba de reenvio automatico a los 5 admins. Si te llega reenviado, la regla funciona.</p>'
+  });
+  Logger.log('Enviado a joel.timoteo@unifrutti.com. Revisa tu bandeja y el reenvio a los 5.');
+}
+/*************************************************************************
+ * MÓDULO RENDICIONES — Bienestar Social (RR.LL.)
+ * ----------------------------------------------------------------------
+ * ADITIVO Y SEGURO: solo crea/usa la hoja "BS_Rendiciones".
+ * No modifica ninguna otra hoja ni función.
+ *
+ * PASOS DE DESPLIEGUE:
+ *   1) Pega TODO este bloque al FINAL del código GAS de Bienestar Social.
+ *   2) Ejecuta UNA vez:  Run -> bs_setupRendiciones   (crea la hoja).
+ *   3) Agrega los 5 case del router en doPost (ver al final de este archivo).
+ *   4) Implementar -> Administrar implementaciones -> ✏️ -> Nueva versión -> Implementar.
+ *
+ * Columnas (18), idénticas al formulario:
+ *   id · fecha · semana · anio · rendicion · empresa ·
+ *   monto_reclutamiento · monto_relaciones_laborales · monto_capacitaciones ·
+ *   monto_bienestar · monto_total · responsable · estado · fecha_deposito ·
+ *   observaciones · created_by · created_at · updated_at
+ *************************************************************************/
+ 
+var BS_REND_SHEET   = 'BS_Rendiciones';
+var BS_REND_HEADERS = ['id','fecha','semana','anio','rendicion','empresa',
+  'monto_reclutamiento','monto_relaciones_laborales','monto_capacitaciones','monto_bienestar','monto_total',
+  'responsable','estado','fecha_deposito','observaciones','created_by','created_at','updated_at'];
+ 
+// Crea la hoja si no existe (idempotente). Ejecutar UNA vez.
+function bs_setupRendiciones() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(BS_REND_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(BS_REND_SHEET);
+    sh.appendRow(BS_REND_HEADERS);
+    var hr = sh.getRange(1, 1, 1, BS_REND_HEADERS.length);
+    hr.setFontWeight('bold').setBackground('#0a2540').setFontColor('#ffffff').setHorizontalAlignment('center');
+    sh.setFrozenRows(1);
+    sh.autoResizeColumns(1, BS_REND_HEADERS.length);
+    Logger.log('BS_Rendiciones creada.');
+    return 'BS_Rendiciones creada con ' + BS_REND_HEADERS.length + ' columnas.';
+  }
+  Logger.log('BS_Rendiciones ya existe.');
+  return 'BS_Rendiciones ya existe.';
+}
+ 
+// Crear (header-based: mapea por nombre de encabezado, no por posición).
+function bs_crearRendicion(usuario, datos) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(BS_REND_SHEET);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Rendiciones no existe. Ejecuta bs_setupRendiciones.' };
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h){ return String(h).trim(); });
+    var lastRow = sheet.getLastRow();
+    var id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    var now = new Date();
+    datos = datos || {};
+    var fecha = datos.fecha ? new Date(datos.fecha) : now;
+    var v = {
+      id: id,
+      fecha: fecha,
+      semana: parseInt(datos.semana) || '',
+      anio: parseInt(datos.anio) || (fecha ? fecha.getFullYear() : now.getFullYear()),
+      rendicion: datos.rendicion || '',
+      empresa: datos.empresa || '',
+      monto_reclutamiento: parseFloat(datos.monto_reclutamiento) || 0,
+      monto_relaciones_laborales: parseFloat(datos.monto_relaciones_laborales) || 0,
+      monto_capacitaciones: parseFloat(datos.monto_capacitaciones) || 0,
+      monto_bienestar: parseFloat(datos.monto_bienestar) || 0,
+      monto_total: parseFloat(datos.monto_total) || 0,
+      responsable: datos.responsable || '',
+      estado: datos.estado || 'NO DEPOSITADO',
+      fecha_deposito: datos.fecha_deposito ? new Date(datos.fecha_deposito) : '',
+      observaciones: datos.observaciones || '',
+      created_by: usuario || '',
+      created_at: now,
+      updated_at: now
+    };
+    var fila = headers.map(function(h){ return (v[h] !== undefined) ? v[h] : ''; });
+    sheet.appendRow(fila);
+    return { ok: true, id: id, message: 'Rendición registrada' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+ 
+// Listar (filtros opcionales: anio, empresa, responsable, estado). Ordena por id desc.
+function bs_listarRendiciones(filtros) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(BS_REND_SHEET);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Rendiciones no existe' };
+    var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { ok: true, items: [], total: 0 };
+    var headers = data[0];
+    var items = data.slice(1).map(function(row) {
+      var obj = {};
+      headers.forEach(function(h, i) { var v = row[i]; if (v instanceof Date) v = v.toISOString(); obj[String(h).trim()] = v; });
+      return obj;
+    });
+    filtros = filtros || {};
+    if (filtros.anio)        items = items.filter(function(i){ return String(i.anio) === String(filtros.anio); });
+    if (filtros.empresa)     items = items.filter(function(i){ return i.empresa === filtros.empresa; });
+    if (filtros.responsable) items = items.filter(function(i){ return i.responsable === filtros.responsable; });
+    if (filtros.estado)      items = items.filter(function(i){ return String(i.estado).toUpperCase() === String(filtros.estado).toUpperCase(); });
+    items.sort(function(a, b) { return (b.id || 0) - (a.id || 0); });
+    return { ok: true, items: items, total: items.length };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+ 
+// Actualizar por id.
+function bs_actualizarRendicion(usuario, id, datos) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(BS_REND_SHEET);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Rendiciones no existe' };
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0].map(function(h){ return String(h).trim(); });
+    var updatables = ['fecha','semana','anio','rendicion','empresa','monto_reclutamiento','monto_relaciones_laborales',
+      'monto_capacitaciones','monto_bienestar','monto_total','responsable','estado','fecha_deposito','observaciones'];
+    var dateFields = ['fecha','fecha_deposito'];
+    var numFields  = ['semana','anio','monto_reclutamiento','monto_relaciones_laborales','monto_capacitaciones','monto_bienestar','monto_total'];
+    datos = datos || {};
+    for (var i = 1; i < data.length; i++) {
+      if (parseInt(data[i][0]) === parseInt(id)) {
+        var rowNum = i + 1;
+        updatables.forEach(function(field) {
+          if (datos[field] !== undefined) {
+            var colIdx = headers.indexOf(field);
+            if (colIdx >= 0) {
+              var val = datos[field];
+              if (dateFields.indexOf(field) >= 0) val = val ? new Date(val) : '';
+              else if (numFields.indexOf(field) >= 0) val = parseFloat(val) || 0;
+              sheet.getRange(rowNum, colIdx + 1).setValue(val);
+            }
+          }
+        });
+        var colUpd = headers.indexOf('updated_at');
+        if (colUpd >= 0) sheet.getRange(rowNum, colUpd + 1).setValue(new Date());
+        return { ok: true, message: 'Rendición actualizada' };
+      }
+    }
+    return { ok: false, message: 'Rendición no encontrada' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+ 
+// Eliminar por id.
+function bs_eliminarRendicion(usuario, id) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(BS_REND_SHEET);
+    if (!sheet) return { ok: false, message: 'Hoja BS_Rendiciones no existe' };
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (parseInt(data[i][0]) === parseInt(id)) {
+        sheet.deleteRow(i + 1);
+        return { ok: true, message: 'Rendición eliminada' };
+      }
+    }
+    return { ok: false, message: 'Rendición no encontrada' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+ 
+// Reporte consolidado (KPIs + por empresa + por categoría + por responsable + tendencia mensual).
+function bs_reporteRendiciones(filtros) {
+  try {
+    var r = bs_listarRendiciones(filtros);
+    if (!r.ok) return r;
+    var items = r.items;
+    var cat = { reclutamiento:0, relaciones_laborales:0, capacitaciones:0, bienestar:0 };
+    var porEmpresa = {
+      RAPEL:   { total:0, reclutamiento:0, relaciones_laborales:0, capacitaciones:0, bienestar:0, n:0 },
+      VERFRUT: { total:0, reclutamiento:0, relaciones_laborales:0, capacitaciones:0, bienestar:0, n:0 }
+    };
+    var porResponsable = {}, porMes = {};
+    var total = 0, depMonto = 0, penMonto = 0, nDep = 0, nPen = 0;
+    function emp(v){ var s = String(v||'').toUpperCase(); return s.indexOf('VERFRUT')>=0 ? 'VERFRUT' : (s.indexOf('RAPEL')>=0 ? 'RAPEL' : null); }
+ 
+    items.forEach(function(it){
+      var mt  = parseFloat(it.monto_total) || 0;
+      var rec = parseFloat(it.monto_reclutamiento) || 0;
+      var rll = parseFloat(it.monto_relaciones_laborales) || 0;
+      var cap = parseFloat(it.monto_capacitaciones) || 0;
+      var bie = parseFloat(it.monto_bienestar) || 0;
+      total += mt; cat.reclutamiento += rec; cat.relaciones_laborales += rll; cat.capacitaciones += cap; cat.bienestar += bie;
+ 
+      if (String(it.estado).toUpperCase() === 'DEPOSITADO') { depMonto += mt; nDep++; }
+      else { penMonto += mt; nPen++; }
+ 
+      var e = emp(it.empresa);
+      if (e) { var o = porEmpresa[e]; o.total+=mt; o.reclutamiento+=rec; o.relaciones_laborales+=rll; o.capacitaciones+=cap; o.bienestar+=bie; o.n++; }
+ 
+      var rs = String(it.responsable || '(sin responsable)').trim();
+      if (!porResponsable[rs]) porResponsable[rs] = { total:0, n:0 };
+      porResponsable[rs].total += mt; porResponsable[rs].n++;
+ 
+      var ym = '';
+      if (it.fecha) { var d = new Date(it.fecha); if (!isNaN(d.getTime())) ym = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2); }
+      if (ym) { porMes[ym] = (porMes[ym] || 0) + mt; }
+    });
+ 
+    var responsables = Object.keys(porResponsable).map(function(k){ return { responsable:k, total:porResponsable[k].total, n:porResponsable[k].n }; });
+    responsables.sort(function(a,b){ return b.total - a.total; });
+    var tendencia = Object.keys(porMes).sort().map(function(k){ return { periodo:k, monto:porMes[k] }; });
+ 
+    return {
+      ok: true,
+      total_registros: items.length,
+      monto_total: total,
+      depositado: { monto: depMonto, n: nDep },
+      pendiente:  { monto: penMonto, n: nPen },
+      porCategoria: cat,
+      porEmpresa: porEmpresa,
+      porResponsable: responsables,
+      tendencia: tendencia,
+      generado: new Date().toISOString()
+    };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+ 
+// Test opcional desde el editor.
+function _testRendiciones() {
+  Logger.log(JSON.stringify(bs_reporteRendiciones({}), null, 2));
+}
+ 
+/*************************************************************************
+ * IMPORTAR HISTÓRICO DE RENDICIONES  (v2 — montos con "S/" )
+ * ----------------------------------------------------------------------
+ * REEMPLAZA al bloque de importación anterior (mismos nombres de función).
+ * Borra el bloque viejo y pega este en su lugar.
+ *
+ * Novedad: _impNum() limpia "S/", espacios y separadores de miles antes
+ * de convertir, así los montos guardados como TEXTO ahora sí se leen.
+ *
+ * PASOS:
+ *   1) Reemplaza el bloque anterior por este (Ctrl+S).
+ *   2) Run -> bs_limpiarRendicionesImportadas   (borra las filas que el
+ *      import anterior metió con montos en 0; respeta tus registros manuales).
+ *   3) Run -> bs_importarRendiciones            (re-importa con montos OK).
+ *   4) Revisa BS_Rendiciones: los montos deben aparecer como número.
+ *************************************************************************/
+ 
+var BS_REND_IMPORT_SHEETS = ['DETALLE 2025', 'DETALLE 2026'];
+ 
+function _impFecha(v) {
+  if (v instanceof Date && !isNaN(v.getTime())) return v;
+  if (v === null || v === undefined || v === '') return '';
+  var d = new Date(v);
+  return isNaN(d.getTime()) ? '' : d;
+}
+ 
+function _impEstado(v) {
+  var s = String(v == null ? '' : v).trim().toUpperCase();
+  if (!s) return 'NO DEPOSITADO';
+  if (s.indexOf('NO') >= 0 && s.indexOf('DEPOSIT') >= 0) return 'NO DEPOSITADO';
+  if (s.indexOf('DEPOSIT') >= 0) return 'DEPOSITADO';
+  return s; // valores raros (ej. '653') quedan tal cual para revisión manual
+}
+ 
+// Convierte a número aunque venga como texto: "S/ 1,234.56" -> 1234.56
+function _impNum(v) {
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  if (v === null || v === undefined) return 0;
+  var s = String(v).trim();
+  if (!s) return 0;
+  s = s.replace(/s\/\.?/i, '').replace(/\s/g, ''); // quita "S/" y espacios
+  if (s.indexOf('.') === -1 && s.indexOf(',') > -1) {
+    s = s.replace(/,/g, '.');   // coma usada como decimal
+  } else {
+    s = s.replace(/,/g, '');    // coma usada como miles
+  }
+  var n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+ 
+// Borra solo las filas que metió la importación (created_by = 'IMPORT').
+function bs_limpiarRendicionesImportadas() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(BS_REND_SHEET);
+  if (!sh) return 'No existe BS_Rendiciones';
+  var data = sh.getDataRange().getValues();
+  if (data.length < 2) return 'Sin filas que borrar.';
+  var headers = data[0].map(function(h){ return String(h).trim(); });
+  var iCb = headers.indexOf('created_by');
+  if (iCb < 0) return 'No se encontró la columna created_by';
+  var borradas = 0;
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][iCb]).trim().toUpperCase() === 'IMPORT') { sh.deleteRow(i + 1); borradas++; }
+  }
+  Logger.log('Filas importadas borradas: ' + borradas);
+  return 'Filas importadas borradas: ' + borradas;
+}
+ 
+function bs_importarRendiciones() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var dest = ss.getSheetByName(BS_REND_SHEET);
+  if (!dest) return 'ERROR: no existe BS_Rendiciones. Ejecuta bs_setupRendiciones primero.';
+ 
+  var headers = dest.getRange(1, 1, 1, dest.getLastColumn()).getValues()[0].map(function(h){ return String(h).trim(); });
+ 
+  var nextId = 1, existentes = {};
+  var destLastRow = dest.getLastRow();
+  if (destLastRow > 1) {
+    var iId = headers.indexOf('id'), iRend = headers.indexOf('rendicion');
+    var destData = dest.getRange(2, 1, destLastRow - 1, dest.getLastColumn()).getValues();
+    destData.forEach(function(r){
+      var idv = parseInt(r[iId]) || 0; if (idv >= nextId) nextId = idv + 1;
+      var rd = String(r[iRend] || '').trim(); if (rd) existentes[rd] = true;
+    });
+  }
+ 
+  var now = new Date();
+  var nuevas = [], importadas = 0, omitidas = 0, sinHoja = [];
+ 
+  BS_REND_IMPORT_SHEETS.forEach(function(nombre){
+    var src = ss.getSheetByName(nombre);
+    if (!src) { sinHoja.push(nombre); return; }
+    var anioHoja = (String(nombre).match(/(\d{4})/) || [])[1] || '';
+    var lr = src.getLastRow(); if (lr < 2) return;
+    var lc = src.getLastColumn();
+    var data = src.getRange(2, 1, lr - 1, lc).getValues();
+ 
+    data.forEach(function(row){
+      var fecha = _impFecha(row[0]);
+      var rend  = String(row[2] || '').trim();
+      if (!fecha && !rend) return;
+      if (rend && existentes[rend]) { omitidas++; return; }
+ 
+      var anio;
+      if (fecha instanceof Date) anio = fecha.getFullYear();
+      else if (anioHoja) anio = parseInt(anioHoja);
+      else anio = now.getFullYear();
+ 
+      var v = {
+        id: nextId++,
+        fecha: fecha,
+        semana: parseInt(row[1]) || '',
+        anio: anio,
+        rendicion: rend,
+        empresa: String(row[3] || '').trim(),
+        monto_reclutamiento: _impNum(row[5]),
+        monto_relaciones_laborales: _impNum(row[6]),
+        monto_capacitaciones: _impNum(row[7]),
+        monto_bienestar: _impNum(row[8]),
+        monto_total: _impNum(row[4]),
+        responsable: String(row[9] || '').trim(),
+        estado: _impEstado(row[10]),
+        fecha_deposito: _impFecha(row[11]),
+        observaciones: '',
+        created_by: 'IMPORT',
+        created_at: now,
+        updated_at: now
+      };
+      if (rend) existentes[rend] = true;
+      nuevas.push(headers.map(function(h){ return (v[h] !== undefined) ? v[h] : ''; }));
+      importadas++;
+    });
+  });
+ 
+  if (nuevas.length) {
+    dest.getRange(dest.getLastRow() + 1, 1, nuevas.length, headers.length).setValues(nuevas);
+  }
+ 
+  var msg = 'Importación rendiciones: ' + importadas + ' insertadas, ' + omitidas + ' omitidas (ya existían).';
+  if (sinHoja.length) msg += '  ⚠ Hojas no encontradas: ' + sinHoja.join(', ') + '.';
+  Logger.log(msg);
+  return msg;
+}
+function _diagImportRend() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  ['DETALLE 2025','DETALLE 2026'].forEach(function(nombre){
+    var sh = ss.getSheetByName(nombre);
+    if (!sh) { Logger.log('NO EXISTE: ' + nombre); return; }
+    var lc = sh.getLastColumn(), lr = sh.getLastRow();
+    Logger.log('=== ' + nombre + ' | cols=' + lc + ' filas=' + lr + ' ===');
+    Logger.log('HEADERS: ' + JSON.stringify(sh.getRange(1,1,1,lc).getValues()[0]));
+    var n = Math.min(3, lr-1);
+    if (n > 0) {
+      sh.getRange(2,1,n,lc).getValues().forEach(function(row, idx){
+        Logger.log('FILA ' + (idx+2) + ': ' + JSON.stringify(row.map(function(v){ return v + ' [' + (typeof v) + ']'; })));
+      });
+    }
+  });
+}
+/*************************************************************************
+ * SEÑAL DE TIEMPO REAL → FIREBASE RTDB  (gratis, plan Spark)
+ * ----------------------------------------------------------------------
+ * Reutiliza la MISMA base del Sistema RL (sistema-rl-verfrut-default-rtdb)
+ * en una ruta NUEVA: bienestar/senales. No toca nada del Sistema RL.
+ *
+ * Cómo funciona:
+ *   - Cada vez que un usuario CREA / ACTUALIZA / ELIMINA en cualquier
+ *     módulo, el GAS escribe un timestamp en Firebase.
+ *   - Las páginas (panel, quejas, etc.) escuchan ese timestamp y se
+ *     refrescan solas en < 2 segundos.
+ *
+ * PASOS:
+ *   1) Pega este bloque al FINAL del código GAS.
+ *   2) Verifica BS_FIREBASE_URL (abajo). Es la misma URL que usa tu
+ *      Sistema RL para Firebase. Si tu RTDB es de otra región, ajusta.
+ *   3) En doPost, agrega UNA sola línea ANTES del return (ver abajo).
+ *   4) Run -> _testSenalFirebase  (debe loguear código 200).
+ *   5) Implementar -> ✏️ -> Nueva versión.
+ *
+ *   En Firebase (console.firebase.google.com -> Realtime Database ->
+ *   Reglas), asegúrate de que la ruta bienestar/senales permita
+ *   lectura y escritura. Si tus reglas actuales ya son abiertas para
+ *   el Sistema RL, no toques nada. Si son restrictivas, agrega:
+ *
+ *     "bienestar": {
+ *       "senales": { ".read": true, ".write": true }
+ *     }
+ *
+ *   (Solo guarda timestamps — ningún dato sensible viaja por aquí.)
+ *************************************************************************/
+ 
+var BS_FIREBASE_URL = 'https://sistema-rl-verfrut-default-rtdb.firebaseio.com'; // <-- verifica que coincide con tu RTDB
+ 
+// Escribe la señal. NUNCA rompe el guardado si Firebase falla.
+function _notificarFirebase(accion) {
+  try {
+    var modulo = String(accion || '')
+      .replace(/^bs_(crear|actualizar|eliminar)/, '')
+      .toLowerCase() || 'general';
+    var ahora = Date.now();
+    var payload = {};
+    payload['global'] = ahora;
+    payload[modulo] = ahora;
+    UrlFetchApp.fetch(BS_FIREBASE_URL + '/bienestar/senales.json', {
+      method: 'patch',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+  } catch (e) { /* silencioso: la señal nunca debe romper un registro */ }
+}
+ 
+// Prueba manual desde el editor: debe loguear 200 y verse en Firebase.
+function _testSenalFirebase() {
+  var r = UrlFetchApp.fetch(BS_FIREBASE_URL + '/bienestar/senales.json', {
+    method: 'patch',
+    contentType: 'application/json',
+    payload: JSON.stringify({ global: Date.now(), test: Date.now() }),
+    muteHttpExceptions: true
+  });
+  Logger.log('Código: ' + r.getResponseCode());
+  Logger.log('Body: ' + r.getContentText());
+  Logger.log(r.getResponseCode() === 200
+    ? 'OK ✓ — revisa bienestar/senales en la consola de Firebase.'
+    : 'FALLÓ — revisa BS_FIREBASE_URL y las reglas de la base.');
+}
+ 
+/*************************************************************************
+ * ROUTER (doPost) — UNA SOLA LÍNEA, sin tocar ninguna función de módulo.
+ *
+ * En tu doPost, localiza el final del switch, donde está:
+ *
+ *       default: result = { ok: false, message: 'Accion no reconocida: ' + action };
+ *     }
+ *     return ContentService.createTextOutput(JSON.stringify(result))...
+ *
+ * y ENTRE el cierre del switch `}` y el `return`, pega esta línea:
+ *
+ *     try { if (result && result.ok && /^bs_(crear|actualizar|eliminar)/.test(action)) _notificarFirebase(action); } catch(e) {}
+ *
+ * Con eso, CUALQUIER creación/actualización/eliminación de CUALQUIER
+ * módulo (quejas, accidentes, hostigamiento, subsidios, rendiciones,
+ * seguimientos, sugerencias) dispara la señal automáticamente —
+ * incluso los módulos que agreguemos en el futuro.
+ *************************************************************************/
+ /*************************************************************************
+ * PERMISOS Y USUARIOS — Bienestar Social  (rendiciones / panel / estadísticas)
+ * ----------------------------------------------------------------------
+ * Hace 3 cosas:
+ *   A) Agrega columnas nuevas a la hoja Usuarios:
+ *        mod_rendiciones, mod_panel, mod_estadisticas
+ *      y rellena los usuarios EXISTENTES sin quitarle acceso a nadie:
+ *        - admins (jtimoteo/ovilela/jchavez o rol admin) → todo TRUE
+ *        - resto → mod_panel TRUE (antes el panel era visible para todos),
+ *                  mod_rendiciones FALSE, mod_estadisticas FALSE
+ *   B) Crea/actualiza los usuarios indicados con sus permisos exactos.
+ *   C) Reemplaza bs_login para que la sesión incluya los permisos nuevos.
+ *
+ * PASOS:
+ *   1) Pega TODO este bloque al FINAL del código GAS.
+ *   2) BORRA tu función bs_login antigua (este bloque trae la nueva).
+ *   3) Run -> bs_migrarUsuariosPermisos      (una vez; mira el Log)
+ *   4) Run -> bs_provisionarUsuariosBienestar (una vez; mira el Log)
+ *   5) Implementar -> ✏️ -> Nueva versión.
+ *   6) IMPORTANTE: los usuarios deben CERRAR SESIÓN y volver a entrar
+ *      para que su sesión cargue los permisos nuevos.
+ *
+ * Contraseña inicial de usuarios NUEVOS:  <usuario>2026
+ *   (ej. cbeserra2026). Pueden cambiarse luego en la hoja con
+ *   bs_hashPassword. Los usuarios que YA existen conservan su clave.
+ *************************************************************************/
+ 
+var BS_PERM_COLS_NUEVAS = ['mod_rendiciones', 'mod_panel', 'mod_estadisticas'];
+var BS_ADMINS_CORE = ['jtimoteo', 'ovilela', 'jchavez'];
+ 
+// ---------- A) Migración de columnas + backfill ----------
+function bs_migrarUsuariosPermisos() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Usuarios');
+  if (!sh) return 'No existe la hoja Usuarios';
+ 
+  var lastCol = sh.getLastColumn();
+  var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(x){ return String(x).trim(); });
+  var agregadas = [];
+  BS_PERM_COLS_NUEVAS.forEach(function(h){
+    if (headers.indexOf(h) === -1) {
+      lastCol++;
+      sh.getRange(1, lastCol).setValue(h)
+        .setFontWeight('bold').setBackground('#0a2540').setFontColor('#ffffff').setHorizontalAlignment('center');
+      headers.push(h); agregadas.push(h);
+    }
+  });
+ 
+  // Backfill de usuarios existentes (sin quitar acceso a nadie)
+  var lastRow = sh.getLastRow();
+  var rellenados = 0;
+  if (lastRow > 1) {
+    var data = sh.getRange(1, 1, lastRow, sh.getLastColumn()).getValues();
+    var H = data[0].map(function(x){ return String(x).trim(); });
+    var iU = H.indexOf('usuario'), iR = H.indexOf('rol');
+    var iRen = H.indexOf('mod_rendiciones'), iPan = H.indexOf('mod_panel'), iEst = H.indexOf('mod_estadisticas');
+    for (var r = 1; r < lastRow; r++) {
+      var u = String(data[r][iU] || '').trim().toLowerCase();
+      if (!u) continue;
+      var esAdmin = BS_ADMINS_CORE.indexOf(u) >= 0 || /admin|geren/i.test(String(data[r][iR] || ''));
+      var cambios = false;
+      function setSiVacio(colIdx, valor) {
+        if (colIdx >= 0 && (data[r][colIdx] === '' || data[r][colIdx] === null || data[r][colIdx] === undefined)) {
+          sh.getRange(r + 1, colIdx + 1).setValue(valor);
+          cambios = true;
+        }
+      }
+      setSiVacio(iRen, esAdmin ? true : false);
+      setSiVacio(iPan, esAdmin ? true : true);   // todos conservan el panel que ya veían
+      setSiVacio(iEst, esAdmin ? true : false);
+      if (cambios) rellenados++;
+    }
+  }
+  var msg = (agregadas.length ? 'Columnas agregadas: ' + agregadas.join(', ') : 'Columnas ya existían') +
+            ' | Usuarios rellenados: ' + rellenados;
+  Logger.log(msg);
+  return msg;
+}
+ 
+// ---------- B) Alta/actualización de los usuarios indicados ----------
+function bs_provisionarUsuariosBienestar() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Usuarios');
+  if (!sh) return 'No existe la hoja Usuarios';
+ 
+  // q=quejas a=accidentes h=hostigamiento s=subsidios r=rendiciones p=panel e=estadisticas
+  var USUARIOS = [
+    // Grupo 1: SOLO accidentes
+    { u:'cbeserra', nombre:'C. BESERRA',        q:false, a:true,  h:false, s:false, r:false, p:false, e:false },
+    { u:'mmechato', nombre:'M. MECHATO',        q:false, a:true,  h:false, s:false, r:false, p:false, e:false },
+    { u:'nestrada', nombre:'N. ESTRADA',        q:false, a:true,  h:false, s:false, r:false, p:false, e:false },
+    // Grupo 2: todo menos rendiciones, panel y estadísticas
+    { u:'rfigueroa', nombre:'RUBI FIGUEROA',    q:true,  a:true,  h:true,  s:true,  r:false, p:false, e:false },
+    { u:'tvera',     nombre:'TANIA VERA',       q:true,  a:true,  h:true,  s:true,  r:false, p:false, e:false },
+    // Grupo 3: igual que grupo 2, pero SIN hostigamiento
+    { u:'lmorales',  nombre:'L. MORALES',       q:true,  a:true,  h:false, s:true,  r:false, p:false, e:false },
+    // Grupo 4: dreyna — todo MENOS rendiciones y estadísticas (panel SÍ)
+    { u:'dreyna',    nombre:'DANIELA REYNA',    q:true,  a:true,  h:true,  s:true,  r:false, p:true,  e:false }
+  ];
+ 
+  var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function(x){ return String(x).trim(); });
+  function ix(n){ return headers.indexOf(n); }
+  var faltan = ['usuario','password_hash','nombre','rol','mod_quejas','mod_accidentes','mod_hostigamiento','mod_subsidios','mod_rendiciones','mod_panel','mod_estadisticas','activo']
+    .filter(function(c){ return ix(c) < 0; });
+  if (faltan.length) return 'Faltan columnas: ' + faltan.join(', ') + '. Ejecuta primero bs_migrarUsuariosPermisos.';
+ 
+  var lastRow = sh.getLastRow();
+  var data = lastRow > 1 ? sh.getRange(1, 1, lastRow, sh.getLastColumn()).getValues() : [headers];
+  var filaDe = {};
+  for (var r = 1; r < data.length; r++) {
+    var u = String(data[r][ix('usuario')] || '').trim().toLowerCase();
+    if (u) filaDe[u] = r + 1; // fila real en la hoja
+  }
+ 
+  var now = new Date(), creados = [], actualizados = [];
+  USUARIOS.forEach(function(cfg){
+    var flags = {
+      mod_quejas: cfg.q, mod_accidentes: cfg.a, mod_hostigamiento: cfg.h, mod_subsidios: cfg.s,
+      mod_rendiciones: cfg.r, mod_panel: cfg.p, mod_estadisticas: cfg.e
+    };
+    if (filaDe[cfg.u]) {
+      // Existe: actualizar SOLO permisos (+ activo y updated_at). No toca clave ni rol.
+      var fila = filaDe[cfg.u];
+      Object.keys(flags).forEach(function(col){ sh.getRange(fila, ix(col) + 1).setValue(flags[col]); });
+      if (ix('activo') >= 0) sh.getRange(fila, ix('activo') + 1).setValue(true);
+      if (ix('updated_at') >= 0) sh.getRange(fila, ix('updated_at') + 1).setValue(now);
+      actualizados.push(cfg.u);
+    } else {
+      // No existe: crear con clave inicial <usuario>2026 y rol 'usuario'
+      var v = {
+        usuario: cfg.u,
+        password_hash: bs_hashPassword(cfg.u + '2026'),
+        nombre: cfg.nombre,
+        rol: 'usuario',
+        email: '', telefono: '',
+        mod_quejas: flags.mod_quejas, mod_accidentes: flags.mod_accidentes,
+        mod_hostigamiento: flags.mod_hostigamiento, mod_subsidios: flags.mod_subsidios,
+        mod_rendiciones: flags.mod_rendiciones, mod_panel: flags.mod_panel, mod_estadisticas: flags.mod_estadisticas,
+        activo: true, created_at: now, updated_at: now
+      };
+      sh.appendRow(headers.map(function(h){ return (v[h] !== undefined) ? v[h] : ''; }));
+      creados.push(cfg.u + ' (clave: ' + cfg.u + '2026)');
+    }
+  });
+ 
+  var msg = 'Creados: ' + (creados.length ? creados.join(', ') : 'ninguno') +
+            ' | Actualizados: ' + (actualizados.length ? actualizados.join(', ') : 'ninguno');
+  Logger.log(msg);
+  return msg;
+}
+ 
+// ---------- C) bs_login NUEVO (borra el antiguo y deja este) ----------
+function bs_login(usuario, password) {
+  if (!usuario || !password) return { ok: false, message: 'Faltan campos' };
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(BS_CONFIG.HOJA_USUARIOS);
+  if (!sheet) return { ok: false, message: 'Hoja Usuarios no existe' };
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(function(h){ return String(h).trim(); });
+  const rows = data.slice(1);
+  const passwordHash = bs_hashPassword(password);
+  function gv(row, col) { var i = headers.indexOf(col); return i >= 0 ? row[i] : undefined; }
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (gv(row,'usuario') === usuario && gv(row,'password_hash') === passwordHash && gv(row,'activo') === true) {
+      return {
+        ok: true,
+        user: {
+          usuario: gv(row,'usuario'),
+          nombre: gv(row,'nombre'),
+          rol: gv(row,'rol'),
+          email: gv(row,'email'),
+          permisos: {
+            quejas:        gv(row,'mod_quejas') === true,
+            accidentes:    gv(row,'mod_accidentes') === true,
+            hostigamiento: gv(row,'mod_hostigamiento') === true,
+            subsidios:     gv(row,'mod_subsidios') === true,
+            rendiciones:   gv(row,'mod_rendiciones') === true,
+            panel:         gv(row,'mod_panel') === true,
+            estadisticas:  gv(row,'mod_estadisticas') === true
+          },
+          loginAt: new Date().toISOString()
+        }
+      };
+    }
+  }
+  return { ok: false, message: 'Usuario o contrasena incorrectos' };
+}
+ /*************************************************************************
+ * PERMISOS DESDE LA HOJA — fuente única de verdad
+ * ----------------------------------------------------------------------
+ * Devuelve los permisos REALES de un usuario leyendo la hoja Usuarios
+ * de Bienestar. El portal lo consulta al entrar (venga del login propio
+ * o del ancla del Sistema RR.LL) y corrige la sesión.
+ *
+ * Con esto, los permisos se administran SOLO en la hoja Usuarios:
+ * cambias un TRUE/FALSE allí y listo — sin tocar código nunca más.
+ *
+ * PASOS:
+ *   1) Pega esta función al final del código GAS de Bienestar.
+ *   2) Agrega este case en doPost (junto al de bs_login):
+ *
+ *        case 'bs_permisosUsuario': result = bs_permisosUsuario(params.usuario); break;
+ *
+ *   3) Ctrl+S -> Implementar -> ✏️ -> Nueva versión.
+ *************************************************************************/
+ 
+function bs_permisosUsuario(usuario) {
+  try {
+    var u = String(usuario || '').trim().toLowerCase();
+    if (!u) return { ok: false, message: 'Falta usuario' };
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(BS_CONFIG.HOJA_USUARIOS);
+    if (!sheet) return { ok: false, message: 'Hoja Usuarios no existe' };
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0].map(function(h){ return String(h).trim(); });
+    function gv(row, col) { var i = headers.indexOf(col); return i >= 0 ? row[i] : undefined; }
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (String(gv(row, 'usuario') || '').trim().toLowerCase() === u && gv(row, 'activo') === true) {
+        return {
+          ok: true,
+          usuario: gv(row, 'usuario'),
+          nombre: gv(row, 'nombre'),
+          rol: gv(row, 'rol'),
+          permisos: {
+            quejas:        gv(row, 'mod_quejas') === true,
+            accidentes:    gv(row, 'mod_accidentes') === true,
+            hostigamiento: gv(row, 'mod_hostigamiento') === true,
+            subsidios:     gv(row, 'mod_subsidios') === true,
+            rendiciones:   gv(row, 'mod_rendiciones') === true,
+            panel:         gv(row, 'mod_panel') === true,
+            estadisticas:  gv(row, 'mod_estadisticas') === true
+          }
+        };
+      }
+    }
+    return { ok: false, message: 'Usuario no encontrado o inactivo' };
+  } catch (err) { return { ok: false, message: err.message }; }
+}
+function numerarIdsSubsidios() {
+  var sh = SpreadsheetApp.getActive().getSheetByName('BS_Subsidios');
+  var last = sh.getLastRow();
+  if (last < 2) return;
+  var ids = sh.getRange(2, 1, last - 1, 1).getValues();
+  var max = 0;
+  ids.forEach(function(r){ var n = parseInt(r[0]); if (!isNaN(n) && n > max) max = n; });
+  var cambios = 0;
+  for (var i = 0; i < ids.length; i++) {
+    if (ids[i][0] === '' || ids[i][0] === null) { max++; ids[i][0] = max; cambios++; }
+  }
+  sh.getRange(2, 1, ids.length, 1).setValues(ids);
+  Logger.log('IDs asignados: ' + cambios);
+}
+/* =========================================================================
+ * BS-IMPORTAR-SUBSIDIOS · Backend Apps Script — Bienestar Social · Unifrutti
+ * -------------------------------------------------------------------------
+ * INSTALACIÓN (una sola vez):
+ * 1. Abre script.google.com → tu proyecto de Bienestar Social.
+ * 2. Crea un archivo nuevo (+ → Secuencia de comandos) llamado
+ *    "bs-importar-subsidios" y pega TODO este código.
+ * 3. En tu función doPost(e), dentro del switch de acciones, agrega:
+ *
+ *      case 'bs_importarSubsidios':
+ *        result = bs_importarSubsidios(params);
+ *        break;
+ *
+ * 4. Implementar → Administrar implementaciones → ✏️ → Nueva versión →
+ *    Implementar. (NUNCA "Nueva implementación": conserva la URL fija.)
+ *
+ * QUÉ HACE:
+ * Recibe { usuario, modo, filas:[{anio, mes, tipo, numero, ...}] } desde el
+ * botón "📥 Importar Excel" del módulo Subsidios y hace UPSERT en la hoja
+ * BS_Subsidios:
+ *  - Si la fila coincide con un registro existente (mismo EXPEDIENTE, o
+ *    mismo DNI + año + tipo + periodo) → ACTUALIZA solo los campos que
+ *    vienen con valor (no pisa con vacíos).
+ *  - Si no existe → AGREGA con id correlativo nuevo.
+ *  - Nunca borra registros.
+ * Lee los nombres de columna de la fila 1 de la hoja, así que funciona
+ * aunque cambies el orden de las columnas.
+ * ========================================================================= */
+ 
+function bs_importarSubsidios(d) {
+  try {
+    if (!d || !d.filas || !d.filas.length) {
+      return { ok: false, message: 'No llegaron filas para importar.' };
+    }
+    if (d.filas.length > 200) {
+      return { ok: false, message: 'Máximo 200 filas por lote (el frontend envía lotes de 100).' };
+    }
+ 
+    var lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try {
+      var ss = SpreadsheetApp.getActive();
+      var sh = ss.getSheetByName('BS_Subsidios');
+      if (!sh) return { ok: false, message: 'No existe la hoja BS_Subsidios.' };
+ 
+      var lastCol = sh.getLastColumn();
+      var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+      var idx = {};
+      headers.forEach(function (h, i) { idx[String(h).trim()] = i; });
+      if (idx['id'] === undefined) {
+        return { ok: false, message: 'La hoja BS_Subsidios no tiene columna "id" en la fila 1.' };
+      }
+ 
+      var lastRow = sh.getLastRow();
+      var data = lastRow > 1 ? sh.getRange(2, 1, lastRow - 1, lastCol).getValues() : [];
+ 
+      // ---- clave de coincidencia (upsert) ----
+      function claveDe(get) {
+        var exp = String(get('expediente') || '').trim().toUpperCase();
+        if (exp) return 'EXP:' + exp;
+        return 'K:' + [
+          String(get('numero') || '').trim(),
+          String(get('anio') || '').trim(),
+          String(get('tipo') || '').trim().toUpperCase(),
+          String(get('periodo') || '').trim().toUpperCase()
+        ].join('|');
+      }
+ 
+      var mapa = {};   // clave → índice de fila en `data`
+      var maxId = 0;
+      data.forEach(function (r, i) {
+        var id = parseInt(r[idx['id']], 10);
+        if (!isNaN(id) && id > maxId) maxId = id;
+        var g = function (c) { return idx[c] === undefined ? '' : r[idx[c]]; };
+        var k = claveDe(g);
+        if (k !== 'K:|||' && mapa[k] === undefined) mapa[k] = i;
+      });
+ 
+      var creados = 0, actualizados = 0, errores = [];
+      var ahora = new Date();
+      var usuario = d.usuario || 'importacion';
+      var soloAgregar = (d.modo === 'solo_agregar');
+ 
+      d.filas.forEach(function (f, n) {
+        try {
+          var g = function (c) { return f[c] === undefined || f[c] === null ? '' : f[c]; };
+          var k = claveDe(g);
+ 
+          if (!soloAgregar && mapa[k] !== undefined) {
+            // ---- ACTUALIZAR (solo campos con valor) ----
+            var rowN = mapa[k] + 2; // +2: encabezado + base 1
+            var rowVals = sh.getRange(rowN, 1, 1, lastCol).getValues()[0];
+            for (var c in f) {
+              if (c === 'id' || idx[c] === undefined) continue;
+              var v = f[c];
+              if (v === '' || v === null || v === undefined) continue;
+              rowVals[idx[c]] = v;
+            }
+            if (idx['updated_at'] !== undefined) rowVals[idx['updated_at']] = ahora;
+            sh.getRange(rowN, 1, 1, lastCol).setValues([rowVals]);
+            actualizados++;
+          } else {
+            // ---- CREAR ----
+            maxId++;
+            var nueva = [];
+            for (var i2 = 0; i2 < lastCol; i2++) nueva.push('');
+            nueva[idx['id']] = maxId;
+            for (var c2 in f) {
+              if (c2 === 'id' || idx[c2] === undefined) continue;
+              nueva[idx[c2]] = f[c2];
+            }
+            if (idx['created_by'] !== undefined) nueva[idx['created_by']] = usuario;
+            if (idx['created_at'] !== undefined) nueva[idx['created_at']] = ahora;
+            if (idx['updated_at'] !== undefined) nueva[idx['updated_at']] = ahora;
+            sh.appendRow(nueva);
+            // registrar en el mapa para no duplicar dentro del mismo lote
+            data.push(nueva);
+            if (k !== 'K:|||') mapa[k] = data.length - 1;
+            creados++;
+          }
+        } catch (e) {
+          errores.push('Fila ' + (n + 1) + ': ' + e.message);
+        }
+      });
+ 
+      return { ok: true, creados: creados, actualizados: actualizados, errores: errores };
+    } finally {
+      lock.releaseLock();
+    }
+  } catch (e) {
+    return { ok: false, message: 'Error al importar: ' + e.message };
+  }
+}
+/* =========================================================================
+ * BS-SEGURIDAD · Tokens de sesión + validación de permisos en el servidor
+ * Bienestar Social · Unifrutti
+ * -------------------------------------------------------------------------
+ * PROBLEMA QUE RESUELVE:
+ * La URL del WebApp es pública. Sin esto, cualquiera que la conozca puede
+ * hacer POST directo a bs_listarHostigamiento (u otra acción) y leer datos
+ * confidenciales sin pasar por el login. Con esto, TODA acción exige un
+ * token emitido por bs_login, y las acciones de cada módulo exigen además
+ * el permiso correspondiente del usuario.
+ *
+ * INSTALACIÓN (3 pasos):
+ *
+ * 1. Crea un archivo nuevo en el editor de Apps Script llamado
+ *    "bs-seguridad" y pega TODO este código.
+ *
+ * 2. En doPost(e), JUSTO DESPUÉS de parsear params y ANTES del switch:
+ *
+ *      var _acceso = bs_validarAcceso(params);
+ *      if (!_acceso.ok) {
+ *        return ContentService.createTextOutput(JSON.stringify(_acceso))
+ *          .setMimeType(ContentService.MimeType.JSON);
+ *      }
+ *
+ * 3. En bs_login, cuando el usuario y contraseña son correctos y ya tienes
+ *    armado el objeto del usuario (el que va en { ok:true, user: ... }),
+ *    agrega UNA línea antes de devolverlo:
+ *
+ *      objetoUsuario.token = bs_emitirToken(objetoUsuario);
+ *
+ *    (objetoUsuario debe tener .usuario, .rol y .permisos)
+ *
+ * Luego: Implementar → Administrar implementaciones → ✏️ → Nueva versión.
+ *
+ * NOTA: al desplegar, los usuarios con sesión abierta verán "Sesión
+ * expirada" una sola vez y deberán volver a iniciar sesión (su sesión
+ * antigua no tiene token). Es esperado.
+ * ========================================================================= */
+ 
+var BS_SEG = {
+  TTL_HORAS: 12,            // duración del token (horas)
+  EXENTAS: ['bs_login'],    // acciones que NO requieren token
+  // Acciones que además del token exigen el permiso del módulo:
+  PERMISOS: {
+    quejas: ['bs_crearQueja', 'bs_listarQuejas', 'bs_actualizarQueja',
+             'bs_listarSeguimientosQueja', 'bs_crearSeguimientoQueja'],
+    accidentes: ['bs_crearAccidente', 'bs_listarAccidentes', 'bs_actualizarAccidente',
+                 'bs_listarSeguimientos', 'bs_crearSeguimiento',
+                 'bs_listarTodoHistorialAccidentes', 'bs_listarTodosSeguimientos'],
+    hostigamiento: ['bs_crearHostigamiento', 'bs_listarHostigamiento', 'bs_actualizarHostigamiento'],
+    subsidios: ['bs_crearSubsidio', 'bs_listarSubsidios', 'bs_actualizarSubsidio', 'bs_importarSubsidios']
+  }
+  // Cualquier otra acción bs_* (dashboard, alertas, documentos, rendiciones,
+  // sugerencias, estadísticas, etc.) exige token válido, sin permiso extra.
+};
+ 
+/* ---------- EMITIR TOKEN (llamar desde bs_login) ---------- */
+function bs_emitirToken(u) {
+  var token = Utilities.getUuid() + Utilities.getUuid().slice(0, 8);
+  var expira = Date.now() + BS_SEG.TTL_HORAS * 3600 * 1000;
+  var data = {
+    usuario: (u && u.usuario) || '',
+    rol: (u && u.rol) || '',
+    permisos: (u && u.permisos) || {},
+    expira: expira
+  };
+  // Cache (rápido, máx 6 h) + hoja (respaldo hasta que expire)
+  try {
+    CacheService.getScriptCache().put('bs_tok_' + token, JSON.stringify(data),
+      Math.min(21600, Math.floor(BS_SEG.TTL_HORAS * 3600)));
+  } catch (e) {}
+  var sh = _bsSheetTokens_();
+  sh.appendRow([token, data.usuario, data.rol, JSON.stringify(data.permisos), new Date(), new Date(expira)]);
+  _bsPurgarTokens_(sh);
+  return token;
+}
+ 
+/* ---------- VALIDAR ACCESO (llamar desde doPost) ---------- */
+function bs_validarAcceso(params) {
+  try {
+    var action = params && params.action;
+    if (!action) return { ok: false, code: 400, message: 'Acción no especificada.' };
+    if (BS_SEG.EXENTAS.indexOf(action) >= 0) return { ok: true };
+ 
+    var token = params.token;
+    if (!token) return _bsNoAutorizado_();
+ 
+    var s = _bsBuscarToken_(String(token));
+    if (!s || !s.expira || Date.now() > s.expira) return _bsNoAutorizado_();
+ 
+    // Permiso por módulo (los admins pasan todo)
+    var rol = String(s.rol || '').toLowerCase();
+    if (rol.indexOf('admin') < 0) {
+      for (var mod in BS_SEG.PERMISOS) {
+        if (BS_SEG.PERMISOS[mod].indexOf(action) >= 0) {
+          if (!s.permisos || !s.permisos[mod]) {
+            return { ok: false, code: 403, message: 'No tienes permiso para el módulo "' + mod + '".' };
+          }
+          break;
+        }
+      }
+    }
+    params._sesion = s; // disponible para las acciones (quién es el usuario real)
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, code: 500, message: 'Error validando la sesión: ' + e.message };
+  }
+}
+ 
+function _bsNoAutorizado_() {
+  return { ok: false, code: 401, message: 'Sesión inválida o expirada. Vuelve a iniciar sesión.' };
+}
+ 
+/* ---------- helpers ---------- */
+function _bsBuscarToken_(token) {
+  // 1) cache
+  try {
+    var c = CacheService.getScriptCache().get('bs_tok_' + token);
+    if (c) return JSON.parse(c);
+  } catch (e) {}
+  // 2) hoja
+  var sh = _bsSheetTokens_();
+  var last = sh.getLastRow();
+  if (last < 2) return null;
+  var vals = sh.getRange(2, 1, last - 1, 6).getValues();
+  for (var i = vals.length - 1; i >= 0; i--) {
+    if (String(vals[i][0]) === token) {
+      var s = {
+        usuario: vals[i][1],
+        rol: vals[i][2],
+        permisos: {},
+        expira: vals[i][5] ? new Date(vals[i][5]).getTime() : 0
+      };
+      try { s.permisos = JSON.parse(vals[i][3] || '{}'); } catch (e) {}
+      // re-cachear para las siguientes llamadas
+      try {
+        var restante = Math.floor((s.expira - Date.now()) / 1000);
+        if (restante > 30) {
+          CacheService.getScriptCache().put('bs_tok_' + token, JSON.stringify(s), Math.min(21600, restante));
+        }
+      } catch (e2) {}
+      return s;
+    }
+  }
+  return null;
+}
+ 
+function _bsSheetTokens_() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName('BS_Tokens');
+  if (!sh) {
+    sh = ss.insertSheet('BS_Tokens');
+    sh.appendRow(['token', 'usuario', 'rol', 'permisos', 'creado', 'expira']);
+    sh.getRange(1, 1, 1, 6).setFontWeight('bold');
+    sh.hideSheet(); // hoja interna, no estorba
+  }
+  return sh;
+}
+ 
+// Limpia tokens vencidos cuando la hoja crece (se llama al emitir)
+function _bsPurgarTokens_(sh) {
+  try {
+    var last = sh.getLastRow();
+    if (last < 300) return;
+    var vals = sh.getRange(2, 6, last - 1, 1).getValues();
+    var ahora = Date.now();
+    for (var i = vals.length - 1; i >= 0; i--) {
+      var exp = vals[i][0] ? new Date(vals[i][0]).getTime() : 0;
+      if (exp && exp < ahora) sh.deleteRow(i + 2);
+    }
+  } catch (e) {}
+}
