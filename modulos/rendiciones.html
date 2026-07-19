@@ -44,9 +44,13 @@
 
       <!-- Header -->
       <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: var(--bs-mod-rend, #0f766e);">
-        <div>
-          <h1 style="color: var(--bs-mod-rend);">📑 Rendiciones</h1>
-          <p class="bs-text-subtle" style="margin: 0;">Rendiciones de gastos RAPEL y VERFRUT (Reclutamiento, RR.LL., Capacitaciones, Bienestar) y control de depósito.</p>
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">📑</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Rendiciones</b></div>
+            <h1 style="color: var(--bs-mod-rend);">Rendiciones</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Rendiciones de gastos RAPEL y VERFRUT (Reclutamiento, RR.LL., Capacitaciones, Bienestar) y control de depósito.</p>
+          </div>
         </div>
         <button class="bs-btn" style="background: var(--bs-mod-rend); color: white;" onclick="openModal()">+ Nueva Rendición</button>
       </div>
@@ -492,7 +496,7 @@
 
       cont.innerHTML =
         '<div class="bs-flex bs-gap" style="flex-wrap:wrap;margin-bottom:.8rem;">' +
-          kpi('Rendiciones', items.length, '#0033A0') +
+          kpi('Rendiciones', items.length, '#0a2463') +
           kpi('Monto total', fmtMoney(total), 'var(--bs-mod-rend)') +
           kpi('Depositado', fmtMoney(depositado), '#16a34a') +
           kpi('Pendiente', fmtMoney(pendiente), '#d97706') +
@@ -547,7 +551,7 @@
           data: {
             labels: MESES,
             datasets: [
-              { type:'bar',  label:'RAPEL',   data: monthMap.RAPEL.monto,   backgroundColor:'#0033A0', order:2 },
+              { type:'bar',  label:'RAPEL',   data: monthMap.RAPEL.monto,   backgroundColor:'#0a2463', order:2 },
               { type:'bar',  label:'VERFRUT', data: monthMap.VERFRUT.monto, backgroundColor:'#059669', order:2 },
               { type:'line', label:'TOTAL',   data: monthMap.TOTAL.monto,   borderColor:'#dc2626', backgroundColor:'#dc2626', borderWidth:2, tension:0.3, pointRadius:4, pointHoverRadius:6, fill:false, order:1 }
             ]
@@ -591,7 +595,7 @@
           data: {
             labels: MESES,
             datasets: [
-              { type:'bar',  label:'RAPEL',   data: monthMap.RAPEL.count,   backgroundColor:'#0033A0', order:2 },
+              { type:'bar',  label:'RAPEL',   data: monthMap.RAPEL.count,   backgroundColor:'#0a2463', order:2 },
               { type:'bar',  label:'VERFRUT', data: monthMap.VERFRUT.count, backgroundColor:'#059669', order:2 },
               { type:'line', label:'TOTAL',   data: monthMap.TOTAL.count,   borderColor:'#dc2626', backgroundColor:'#dc2626', borderWidth:2, tension:0.3, pointRadius:4, pointHoverRadius:6, fill:false, order:1 }
             ]
@@ -635,7 +639,7 @@
         data: {
           labels: ['Reclutamiento','RR.LL.','Capacitaciones','Bienestar'],
           datasets: [
-            { label:'RAPEL',   data:[empMap.RAPEL.rec, empMap.RAPEL.rll, empMap.RAPEL.cap, empMap.RAPEL.bien], backgroundColor:'#0033A0' },
+            { label:'RAPEL',   data:[empMap.RAPEL.rec, empMap.RAPEL.rll, empMap.RAPEL.cap, empMap.RAPEL.bien], backgroundColor:'#0a2463' },
             { label:'VERFRUT', data:[empMap.VERFRUT.rec, empMap.VERFRUT.rll, empMap.VERFRUT.cap, empMap.VERFRUT.bien], backgroundColor:'#059669' }
           ]
         },
@@ -863,7 +867,7 @@
     btn.id = 'btnPDF';
     btn.textContent = '\uD83D\uDCC4 Reporte PDF';
     btn.onclick = emitirPDF;
-    btn.style.cssText = 'position:fixed;right:18px;bottom:64px;z-index:9999;background:#0033A0;color:#fff;border:none;padding:11px 16px;border-radius:10px;cursor:pointer;font:600 14px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+    btn.style.cssText = 'position:fixed;right:18px;bottom:64px;z-index:9999;background:#0a2463;color:#fff;border:none;padding:11px 16px;border-radius:10px;cursor:pointer;font:600 14px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
     function poner(){ document.body.appendChild(btn); }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
   })();

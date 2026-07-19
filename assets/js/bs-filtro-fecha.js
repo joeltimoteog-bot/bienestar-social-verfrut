@@ -11,7 +11,7 @@ window.BSFiltroFecha = (function () {
     campoFecha: 'fecha',
     campoAnio: '',
     campoMes: '',
-    color: '#0033A0',
+    color: '#0a2463',
     anchorId: 'bsFiltroFecha',
     onChange: function () {}
   };

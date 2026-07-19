@@ -34,12 +34,19 @@
     <main class="bs-main">
 
       <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: var(--bs-mod-accidentes);">
-        <div>
-          <h1 style="color: var(--bs-mod-accidentes);">🩺 Accidentes Laborales</h1>
-          <p class="bs-text-subtle" style="margin: 0;">Reporte y seguimiento de accidentes laborales con atenciones médicas y restricciones.</p>
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">🩺</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Accidentes Laborales</b></div>
+            <h1 style="color: var(--bs-mod-accidentes);">Accidentes Laborales</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Reporte y seguimiento de accidentes laborales con atenciones médicas y restricciones.</p>
+          </div>
         </div>
         <button class="bs-btn" style="background: var(--bs-mod-accidentes); color: white;" onclick="openModalCaso()">+ Nuevo Caso</button>
       </div>
+
+      <!-- KPIs del módulo -->
+      <div id="kpiAccidentes" class="bs-kpis" style="display:none"></div>
 
       <div class="bs-card bs-mb">
         <div class="bs-grid bs-grid-4 bs-gap">
@@ -660,6 +667,25 @@
     }
 
     let casosCache = [];
+    function pintarKpisAcc(items) {
+      var el = document.getElementById('kpiAccidentes');
+      if (!el) return;
+      items = items || [];
+      if (!items.length) { el.style.display = 'none'; return; }
+      var act = 0, restr = 0, reinc = 0;
+      items.forEach(function(c) {
+        var e = String(c.estado_caso || '').toLowerCase();
+        if (e.indexOf('restric') >= 0) restr++;
+        else if (e.indexOf('reincorp') >= 0) reinc++;
+        else if (e.indexOf('activo') >= 0 || e.indexOf('tratamiento') >= 0) act++;
+      });
+      el.innerHTML =
+        '<div class="bs-kpi" style="--kc:#0a2463"><span class="t">📋</span><div class="v">' + items.length + '</div><div class="l">Casos (según filtros)</div></div>' +
+        '<div class="bs-kpi" style="--kc:#dc2626"><span class="t">🔴</span><div class="v">' + act + '</div><div class="l">Activos</div></div>' +
+        '<div class="bs-kpi" style="--kc:#b45309"><span class="t">⚠️</span><div class="v">' + restr + '</div><div class="l">Con restricción</div></div>' +
+        '<div class="bs-kpi" style="--kc:#15803d"><span class="t">✅</span><div class="v">' + reinc + '</div><div class="l">Reincorporados</div></div>';
+      el.style.display = 'grid';
+    }
     async function cargar() {
       const filtros = {
         empresa: document.getElementById('filterEmpresa').value,
@@ -677,6 +703,7 @@
           cont.innerHTML = _c.html;
           casosCache = _c.items || [];
           window.__BS_EXPORT_DATA__ = _c.items || [];
+          pintarKpisAcc(casosCache);
           _pintado = true;
         }
       } catch(e) {}
@@ -689,6 +716,7 @@
         res.items = res.items.filter(BSFiltroFecha.pasa);
         var _sameA = _pintado && _cn(res.items) === _cn(casosCache);
         casosCache = res.items;
+        pintarKpisAcc(casosCache);
         if (_sameA) return;
         if (res.items.length === 0) {
           cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay casos registrados con esos filtros.</p></div>';
@@ -998,7 +1026,7 @@
   var btn = document.createElement('button');
   btn.textContent = '\u2B07\uFE0F Exportar Excel';
   btn.onclick = exportar;
-  btn.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;background:#0033A0;color:#fff;border:none;padding:11px 16px;border-radius:10px;cursor:pointer;font:600 14px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+  btn.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;background:#0a2463;color:#fff;border:none;padding:11px 16px;border-radius:10px;cursor:pointer;font:600 14px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
   function poner(){ document.body.appendChild(btn); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
 })();

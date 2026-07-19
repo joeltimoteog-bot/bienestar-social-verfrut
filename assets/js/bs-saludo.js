@@ -51,7 +51,7 @@
       st.id = 'bsSaludoCss';
       st.textContent =
         '#bsSaludoBar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;' +
-        'background:linear-gradient(120deg,#0a3d91,#1d5fc4);color:#fff;' +
+        'background:linear-gradient(120deg,#1e3a8a,#1d5fc4);color:#fff;' +
         'padding:9px 16px;border-radius:10px;margin:0 0 14px;font-family:Inter,system-ui,sans-serif;' +
         'font-size:.9rem;box-shadow:0 4px 14px rgba(10,61,145,.18);}' +
         '#bsSaludoBar .em{font-size:1.05rem;}' +

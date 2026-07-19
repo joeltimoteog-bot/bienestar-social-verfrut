@@ -35,11 +35,11 @@
       max-width:480px;width:100%;overflow:hidden;transform:translateY(-12px);
       transition:transform .2s;border:1px solid #e5e7eb}
     .appmsys-overlay.appmsys-on .appmsys-box{transform:translateY(0)}
-    .appmsys-header{background:linear-gradient(135deg,#0B1E45 0%,#1e3a8a 100%);
+    .appmsys-header{background:linear-gradient(135deg,#0a1c4d 0%,#1e3a8a 100%);
       color:#fff;padding:14px 18px;display:flex;align-items:center;gap:10px;
       font-weight:600;font-size:14px;letter-spacing:.3px}
     .appmsys-logo{width:24px;height:24px;background:#fff;border-radius:50%;
-      display:flex;align-items:center;justify-content:center;color:#0B1E45;
+      display:flex;align-items:center;justify-content:center;color:#0a1c4d;
       font-weight:800;font-size:11px;flex-shrink:0}
     .appmsys-body{padding:22px 20px;font-size:14px;color:#1f2937;line-height:1.5;
       white-space:pre-wrap;word-break:break-word}

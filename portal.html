@@ -12,7 +12,7 @@
 
   <!-- ===== PORTAL PRO: estilos (marca de agua, banner, chips, tarjetas) ===== -->
   <style>
-    :root{ --pro-navy:#0a3d91; --pro-red:#E2001A; --pro-muted:#64748b; --pro-wm:0.05; }
+    :root{ --pro-navy:#1e3a8a; --pro-red:#E2001A; --pro-muted:#64748b; --pro-wm:0.05; }
 
     /* Marca de agua */
     body::before{
@@ -25,7 +25,7 @@
 
     /* Banner de bienvenida */
     .pro-welcome{position:relative;overflow:hidden;border-radius:18px;color:#fff;
-      background:linear-gradient(120deg,#0a3d91,#0d47a6 55%,#1d5fc4);
+      background:linear-gradient(120deg,#1e3a8a,#0d47a6 55%,#1d5fc4);
       padding:22px 26px;margin:0 0 22px;box-shadow:0 10px 26px rgba(10,61,145,.20);}
     .pro-welcome::after{content:"";position:absolute;right:-40px;top:-40px;width:210px;height:210px;
       background:radial-gradient(circle,rgba(226,0,26,.35),transparent 70%);}
@@ -54,7 +54,7 @@
       overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.05);cursor:pointer;
       transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
       display:flex;flex-direction:column;min-height:206px;}
-    .pro-card:hover{transform:translateY(-5px);box-shadow:0 14px 30px color-mix(in srgb,var(--mc) 22%, rgba(0,27,85,.12));border-color:color-mix(in srgb,var(--mc) 45%, #fff);}
+    .pro-card:hover{transform:translateY(-5px);box-shadow:0 14px 30px color-mix(in srgb,var(--mc) 22%, rgba(7,18,51,.12));border-color:color-mix(in srgb,var(--mc) 45%, #fff);}
     .pro-card.pro-off{opacity:.55;cursor:not-allowed;}
     .pro-card.pro-off:hover{transform:none;box-shadow:0 1px 4px rgba(15,23,42,.05);border-color:#e6ebf2;}
     .pro-card .strip{position:absolute;top:0;left:0;right:0;height:4px;background:var(--mc);}
@@ -101,7 +101,7 @@
       font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s ease,opacity .15s ease;}
     .atr-btn:hover{transform:translateY(-1px);opacity:.92;}
     .atr-btn.wsp{background:#25d366;color:#fff;}
-    .atr-btn.mail{background:#0a3d91;color:#fff;}
+    .atr-btn.mail{background:#1e3a8a;color:#fff;}
     .atr-btn.copy{background:#e2e8f0;color:#334155;}
     .atr-nota{font-size:.72rem;color:#94a3b8;margin-top:8px;}
 
@@ -115,7 +115,7 @@
     @keyframes bellShake{0%,88%,100%{transform:rotate(0)}90%{transform:rotate(12deg)}93%{transform:rotate(-10deg)}96%{transform:rotate(6deg)}}
     .atr-bell .n{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;
       background:#dc2626;color:#fff;font-size:.66rem;font-weight:800;display:flex;align-items:center;justify-content:center;
-      border:2px solid #0a3d91;}
+      border:2px solid #1e3a8a;}
     .atr-bell .n.ambar{background:#d97706;}
 
     /* Toast de aviso de atrasos */
@@ -130,7 +130,7 @@
     .atr-toast.ambar .tt{color:#b45309;}
     .atr-toast .tx{font-size:.78rem;color:#475569;line-height:1.45;margin:0;}
     .atr-toast .tx b{color:#0f172a;}
-    .atr-toast .cta{font-size:.74rem;font-weight:700;color:#0a3d91;margin-top:6px;display:block;}
+    .atr-toast .cta{font-size:.74rem;font-weight:700;color:#1e3a8a;margin-top:6px;display:block;}
     .atr-toast .x{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:.9rem;padding:2px;flex-shrink:0;}
     @media(max-width:560px){.atr-toast{left:16px;right:16px;bottom:16px;max-width:none;}}
   </style>
@@ -280,14 +280,14 @@
 
     // ===== MÓDULOS ===== (idéntico a tu configuración)
     const MODULOS = [
-      { id: 'sugerencias', permiso: null, url: 'modulos/sugerencias.html', title: 'Sugerencias de Mejora', desc: 'Propon mejoras del sistema y dale seguimiento.', icon: '💡', color: '#0033A0', confidencial: false, siempre: true },
+      { id: 'sugerencias', permiso: null, url: 'modulos/sugerencias.html', title: 'Sugerencias de Mejora', desc: 'Propon mejoras del sistema y dale seguimiento.', icon: '💡', color: '#0a2463', confidencial: false, siempre: true },
       { id: 'quejas', permiso: 'quejas', url: 'modulos/quejas.html', title: 'Quejas y Sugerencias', desc: 'Registro y seguimiento de quejas, reclamos y sugerencias del personal.', icon: '📋', color: 'var(--bs-mod-quejas)' },
       { id: 'accidentes', permiso: 'accidentes', url: 'modulos/accidentes.html', title: 'Accidentes Laborales', desc: 'Reporte y seguimiento de accidentes laborales con seguimientos médicos.', icon: '🩺', color: 'var(--bs-mod-accidentes)' },
       { id: 'hostigamiento', permiso: 'hostigamiento', url: 'modulos/hostigamiento.html', title: 'Hostigamiento Sexual', desc: 'Denuncias por hostigamiento sexual. Acceso restringido (Ley 29733).', icon: '🔒', color: 'var(--bs-mod-hostigamiento)', confidencial: true },
       { id: 'subsidios', permiso: 'subsidios', url: 'modulos/subsidios.html', title: 'Subsidios', desc: 'Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, etc.).', icon: '💰', color: 'var(--bs-mod-subsidios)' },
       { id: 'rendiciones', permiso: 'rendiciones', url: 'modulos/rendiciones.html', title: 'Rendiciones', desc: 'Rendiciones de gastos RAPEL y VERFRUT por categoría y control de depósito.', icon: '📑', color: '#059669' },
       { id: 'panel', permiso: 'panel', url: 'panel.html', title: 'Panel / Dashboard', desc: 'Resumen consolidado de todos los modulos (KPIs y graficos).', icon: '📊', color: '#16a34a' },
-      { id: 'estadisticas', adminOnly: true, permiso: 'estadisticas', url: 'modulos/estadisticas.html', title: 'Estadísticas Empresariales', desc: 'Indicadores y cumplimiento de todos los módulos. Solo gerencia.', icon: '📈', color: '#0033A0' }
+      { id: 'estadisticas', adminOnly: true, permiso: 'estadisticas', url: 'modulos/estadisticas.html', title: 'Estadísticas Empresariales', desc: 'Indicadores y cumplimiento de todos los módulos. Solo gerencia.', icon: '📈', color: '#0a2463' }
     ];
 
     function renderModules() {

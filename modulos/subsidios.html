@@ -35,9 +35,13 @@
 
       <!-- Header -->
       <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: var(--bs-mod-subsidios);">
-        <div>
-          <h1 style="color: var(--bs-mod-subsidios);">💰 Subsidios</h1>
-          <p class="bs-text-subtle" style="margin: 0;">Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, lactancia, sepelio).</p>
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">💰</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Subsidios</b></div>
+            <h1 style="color: var(--bs-mod-subsidios);">Subsidios</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, lactancia, sepelio).</p>
+          </div>
         </div>
         <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
           <button class="bs-btn bs-btn-outline" style="border:1.5px solid var(--bs-mod-subsidios); color: var(--bs-mod-subsidios); background:#fff;" onclick="openImportModal()">📥 Importar Excel</button>
@@ -51,13 +55,13 @@
         .rec-kpi{flex:1;min-width:150px;background:var(--bs-surface-alt);border-radius:10px;padding:10px 14px;}
         .rec-kpi .v{font-size:1.15rem;font-weight:800;line-height:1.2;}
         .rec-kpi .l{font-size:.68rem;font-weight:700;color:var(--bs-text-subtle);text-transform:uppercase;letter-spacing:.03em;}
-        .rec-kpi.verde .v{color:#15803d;}.rec-kpi.azul .v{color:#0a3d91;}.rec-kpi.ambar .v{color:#b45309;}.rec-kpi.gris .v{color:#334155;}
+        .rec-kpi.verde .v{color:#15803d;}.rec-kpi.azul .v{color:#1e3a8a;}.rec-kpi.ambar .v{color:#b45309;}.rec-kpi.gris .v{color:#334155;}
         .rec-year{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px dashed var(--bs-border);flex-wrap:wrap;}
         .rec-year:last-child{border-bottom:none;}
         .rec-year .yr{font-weight:800;color:var(--bs-primary);min-width:52px;font-size:1rem;}
         .rec-year .dt{font-size:.76rem;color:var(--bs-text-muted);min-width:190px;}
         .rec-year .dt b{color:#15803d;}
-        .rec-year .dt .pc{color:#0a3d91;font-weight:700;}
+        .rec-year .dt .pc{color:#1e3a8a;font-weight:700;}
         .rec-year .dt .nr{color:#b45309;font-weight:700;}
         .rec-bar{flex:1;min-width:160px;height:10px;background:#e2e8f0;border-radius:6px;overflow:hidden;}
         .rec-bar i{display:block;height:100%;background:linear-gradient(90deg,#15803d,#22c55e);border-radius:6px;}
@@ -1109,7 +1113,7 @@
   var btn = document.createElement('button');
   btn.textContent = '⬇️ Exportar Excel';
   btn.onclick = exportar;
-  btn.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;background:#0033A0;color:#fff;border:none;padding:11px 16px;border-radius:10px;cursor:pointer;font:600 14px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+  btn.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;background:#0a2463;color:#fff;border:none;padding:11px 16px;border-radius:10px;cursor:pointer;font:600 14px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
   function poner(){ document.body.appendChild(btn); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
 })();

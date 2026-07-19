@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
-    --navy:#0033A0; --green:#E2231A;
+    --navy:#0a2463; --green:#dc2626;
     --c-quejas:#f97316; --c-accidentes:#ef4444; --c-host:#7c3aed; --c-subs:#06b6d4;
     --bg:#f1f5f9; --card:#ffffff; --muted:#64748b; --line:#e2e8f0;
   }
@@ -416,7 +416,7 @@ function render(d){
   const sumEmp = e => (d.quejas.porEmpresa[e]||0) + (d.accidentes.porEmpresa[e]||0) + (d.subsidios.porEmpresa[e]||0);
   mkChart('chartEmpresa', {
     type:'bar',
-    data:{ labels:['RAPEL','VERFRUT'], datasets:[{ label:'Casos', data:[sumEmp('RAPEL'), sumEmp('VERFRUT')], backgroundColor:['#0033A0','#E2231A'], borderRadius:8 }] },
+    data:{ labels:['RAPEL','VERFRUT'], datasets:[{ label:'Casos', data:[sumEmp('RAPEL'), sumEmp('VERFRUT')], backgroundColor:['#0a2463','#dc2626'], borderRadius:8 }] },
     options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
   });
 
@@ -461,7 +461,7 @@ function renderCasosContrato(d){
   const t = d.porTipo || {prueba:0,plazoFijo:0,indeterminado:0,sinDato:0};
 
   document.getElementById('fuerzaResumen').innerHTML =
-    '<span class="chip" style="background:#e7edfb;color:#0033A0"><span class="dot" style="background:#2A5BD7"></span>Prueba ' + fmt(t.prueba) + '</span>' +
+    '<span class="chip" style="background:#e7edfb;color:#0a2463"><span class="dot" style="background:#3b82f6"></span>Prueba ' + fmt(t.prueba) + '</span>' +
     '<span class="chip ambar"><span class="dot"></span>Plazo fijo ' + fmt(t.plazoFijo) + '</span>' +
     '<span class="chip rojo"><span class="dot"></span>Indeterminado ' + fmt(t.indeterminado) + '</span>' +
     (t.sinDato ? '<span class="chip" style="background:#eef2f7;color:#475569"><span class="dot" style="background:#94a3b8"></span>Sin dato ' + fmt(t.sinDato) + '</span>' : '') +
@@ -470,7 +470,7 @@ function renderCasosContrato(d){
   mkChart('chartContrato', {
     type:'doughnut',
     data:{ labels:['Período de prueba','Plazo fijo','Indeterminado','Sin dato'],
-      datasets:[{ data:[t.prueba, t.plazoFijo, t.indeterminado, t.sinDato||0], backgroundColor:['#2A5BD7','#f59e0b','#E2231A','#cbd5e1'], borderColor:'#fff', borderWidth:2 }] },
+      datasets:[{ data:[t.prueba, t.plazoFijo, t.indeterminado, t.sinDato||0], backgroundColor:['#3b82f6','#f59e0b','#dc2626','#cbd5e1'], borderColor:'#fff', borderWidth:2 }] },
     options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } }
   });
 
@@ -478,7 +478,7 @@ function renderCasosContrato(d){
   mkChart('chartAntiguedad', {
     type:'bar',
     data:{ labels:['< 3 m','3 m–1 a','1–3 a','3–4.5 a','≥ 4.5 a','Sin dato'],
-      datasets:[{ label:'Casos', data:[an.m3||0, an.m3a12||0, an.a1a3||0, an.a3a54||0, an.mas54||0, an.sinDato||0], backgroundColor:'#0033A0', borderRadius:6 }] },
+      datasets:[{ label:'Casos', data:[an.m3||0, an.m3a12||0, an.a1a3||0, an.a3a54||0, an.mas54||0, an.sinDato||0], backgroundColor:'#0a2463', borderRadius:6 }] },
     options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
   });
 }

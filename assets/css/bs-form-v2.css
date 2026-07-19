@@ -6,13 +6,13 @@
    ============================================================ */
 
 :root {
-  --bs-uf-blue:        #0033A0;
+  --bs-uf-blue:        #0a2463;
   --bs-uf-blue-dark:   #002472;
   --bs-uf-blue-soft:   #eef3ff;
-  --bs-uf-red:         #E2231A;
+  --bs-uf-red:         #dc2626;
   --bs-uf-red-soft:    #fff0ef;
   --bs-uf-border:      #d8e0ec;
-  --bs-uf-text:        #0b1e45;
+  --bs-uf-text:        #0a1c4d;
   --bs-uf-muted:       #64748b;
 }
 
@@ -28,7 +28,7 @@
   background: #ffffff !important;
   border-radius: 16px !important;
   border: 1px solid var(--bs-uf-border) !important;
-  box-shadow: 0 24px 60px rgba(0, 51, 160, 0.18) !important;
+  box-shadow: 0 24px 60px rgba(10,36,99, 0.18) !important;
 }
 
 /* Banda corporativa azul + rojo arriba */
@@ -131,7 +131,7 @@
 .bs-modal .bs-textarea:focus {
   outline: none !important;
   border-color: var(--bs-uf-blue) !important;
-  box-shadow: 0 0 0 3px rgba(0, 51, 160, 0.18) !important;
+  box-shadow: 0 0 0 3px rgba(10,36,99, 0.18) !important;
 }
 .bs-modal .bs-input[readonly],
 .bs-modal .bs-textarea[readonly] {
@@ -161,7 +161,7 @@
   border-radius: 8px !important;
   font-weight: 600 !important;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 51, 160, 0.28);
+  box-shadow: 0 4px 12px rgba(10,36,99, 0.28);
   transition: background .15s ease, transform .1s ease;
 }
 .bs-modal #btnSubmit:hover { background: var(--bs-uf-blue-dark) !important; }

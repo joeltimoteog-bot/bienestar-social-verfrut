@@ -34,12 +34,16 @@
     <main class="bs-main">
 
       <!-- Header -->
-      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: #0033A0;">
-        <div>
-          <h1 style="color: #0033A0;">💡 Sugerencias de Mejora del Sistema</h1>
-          <p class="bs-text-subtle" style="margin: 0;">Comparte tus ideas para mejorar Bienestar Social. El administrador las revisa y les da seguimiento.</p>
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: #0a2463;">
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">💡</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Sugerencias de Mejora del Sistema</b></div>
+            <h1 style="color: #0a2463;">Sugerencias de Mejora del Sistema</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Comparte tus ideas para mejorar Bienestar Social. El administrador las revisa y les da seguimiento.</p>
+          </div>
         </div>
-        <button class="bs-btn" style="background: #0033A0; color: white;" onclick="openModal()">+ Nueva Sugerencia</button>
+        <button class="bs-btn" style="background: #0a2463; color: white;" onclick="openModal()">+ Nueva Sugerencia</button>
       </div>
 
       <!-- Filtros -->
@@ -131,7 +135,7 @@
       </div>
       <div class="bs-modal-footer">
         <button class="bs-btn bs-btn-ghost" onclick="closeModal()">Cancelar</button>
-        <button class="bs-btn" id="btnSubmit" onclick="submitForm()" style="background: #0033A0; color: white;">Enviar sugerencia</button>
+        <button class="bs-btn" id="btnSubmit" onclick="submitForm()" style="background: #0a2463; color: white;">Enviar sugerencia</button>
       </div>
     </div>
   </div>
@@ -165,7 +169,7 @@
       <div class="bs-modal-footer">
         <button class="bs-btn bs-btn-ghost" onclick="closeGestion()">Cancelar</button>
         <button class="bs-btn" id="btnFinalizar" onclick="finalizar()" style="background: #16a34a; color: white;">✓ Finalizar</button>
-        <button class="bs-btn" id="btnSubmit" onclick="submitGestion()" style="background: #0033A0; color: white;">Guardar cambios</button>
+        <button class="bs-btn" id="btnSubmit" onclick="submitGestion()" style="background: #0a2463; color: white;">Guardar cambios</button>
       </div>
     </div>
   </div>
@@ -385,9 +389,9 @@
       document.getElementById('g_estado').value = s.estado || 'Recibida';
       document.getElementById('g_respuesta').value = s.respuesta_admin || '';
       document.getElementById('g_detalle').innerHTML =
-        '<div style="font-weight:700;color:#0033A0;margin-bottom:0.3rem;">#'+s.id+' · '+esc(s.titulo)+'</div>' +
+        '<div style="font-weight:700;color:#0a2463;margin-bottom:0.3rem;">#'+s.id+' · '+esc(s.titulo)+'</div>' +
         '<div style="color:#64748b;margin-bottom:0.5rem;font-size:0.82rem;">'+esc(s.nombre_usuario || s.usuario)+' · '+esc(s.modulo)+' · '+fechaCorta(s.fecha)+' · Prioridad: '+esc(s.prioridad)+'</div>' +
-        '<div style="white-space:pre-wrap;color:#0b1e45;">'+esc(s.descripcion)+'</div>';
+        '<div style="white-space:pre-wrap;color:#0a1c4d;">'+esc(s.descripcion)+'</div>';
       document.getElementById('gestionAlert').innerHTML = '';
       document.getElementById('gestionModal').classList.add('bs-active');
     }

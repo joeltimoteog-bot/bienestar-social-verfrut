@@ -37,12 +37,16 @@
 
       <!-- Header -->
       <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: var(--bs-mod-quejas);">
-        <div>
-          <h1 style="color: var(--bs-mod-quejas);">📋 Hallazgos y Sugerencias</h1>
-          <p class="bs-text-subtle" style="margin: 0;">Registro y seguimiento de hallazgos, reclamos y sugerencias del personal.</p>
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">📋</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Hallazgos y Sugerencias</b></div>
+            <h1 style="color: var(--bs-mod-quejas);">Hallazgos y Sugerencias</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Registro y seguimiento de hallazgos, reclamos y sugerencias del personal.</p>
+          </div>
         </div>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-          <button class="bs-btn" style="background:#0b1e45;color:#fff;" onclick="BSDashQuejas.abrir()">📊 Estadísticas</button>
+          <button class="bs-btn" style="background:#0a1c4d;color:#fff;" onclick="BSDashQuejas.abrir()">📊 Estadísticas</button>
           <button class="bs-btn" style="background: var(--bs-mod-quejas); color: white;" onclick="openModal()">+ Nuevo Hallazgo</button>
         </div>
       </div>
@@ -978,7 +982,7 @@
   var btn = document.createElement('button');
   btn.textContent = '\u2B07\uFE0F Exportar Excel';
   btn.onclick = exportar;
-  btn.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;background:#0033A0;color:#fff;border:none;padding:11px 16px;border-radius:10px;cursor:pointer;font:600 14px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+  btn.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;background:#0a2463;color:#fff;border:none;padding:11px 16px;border-radius:10px;cursor:pointer;font:600 14px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)';
   function poner(){ document.body.appendChild(btn); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
 })();
