@@ -302,7 +302,7 @@
       const _fkey = JSON.stringify([filtros, privacyMode]);
       let _pintado = false;
       try {
-        const _c = JSON.parse(sessionStorage.getItem('bs_cache_hostigamiento_v2') || 'null');
+        const _c = JSON.parse(sessionStorage.getItem('bs_cache_hostigamiento_v3') || 'null');
         if (_c && _c.fkey === _fkey && _c.html) {
           cont.innerHTML = _c.html;
           _CACHE_H = _c.items || [];
@@ -360,7 +360,7 @@
           html += '<p class="bs-text-xs bs-text-muted bs-mt" style="text-align:right;">🔐 Modo discreto activo. Los nombres están parcialmente ocultos.</p>';
         }
         cont.innerHTML = html;
-        try { sessionStorage.setItem('bs_cache_hostigamiento_v2', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
+        try { sessionStorage.setItem('bs_cache_hostigamiento_v3', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
       } catch(err) {
         cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
       }

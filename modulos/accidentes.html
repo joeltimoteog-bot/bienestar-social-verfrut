@@ -729,7 +729,7 @@
       const _fkey = JSON.stringify(filtros);
       let _pintado = false;
       try {
-        const _c = JSON.parse(localStorage.getItem('bs_cache_accidentes_v2') || 'null');
+        const _c = JSON.parse(localStorage.getItem('bs_cache_accidentes_v3') || 'null');
         if (_c && _c.fkey === _fkey && _c.html) {
           cont.innerHTML = _c.html;
           casosCache = _c.items || [];
@@ -783,7 +783,7 @@
         });
         html += '</tbody></table></div>';
         cont.innerHTML = html;
-        try { localStorage.setItem('bs_cache_accidentes_v2', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
+        try { localStorage.setItem('bs_cache_accidentes_v3', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
       } catch(err) {
         cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
       }
