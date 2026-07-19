@@ -51,7 +51,10 @@ function bsCalcularEdad(fechaNac) {
  */
 function bsFechaInput(fechaISO) {
   if (!fechaISO) return '';
-  try { return new Date(fechaISO).toISOString().split('T')[0]; } catch (e) { return ''; }
+  try {
+    if (window.bsFechaYMD) return window.bsFechaYMD(fechaISO);
+    return new Date(fechaISO).toISOString().split('T')[0];
+  } catch (e) { return ''; }
 }
 
 /**

@@ -22,6 +22,30 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function debounce(fn, ms) { var t; return function () { clearTimeout(t); var a = arguments, s = this; t = setTimeout(function () { fn.apply(s, a); }, ms); }; }
 
+  /* ---------- FECHAS SEGURAS (fix zona horaria Perú UTC-5) ----------
+   * new Date('2024-11-04') se interpreta como medianoche UTC; al mostrarla
+   * con toLocaleDateString en Lima retrocede un día (03/11/2024).
+   * Estas funciones leen la fecha del TEXTO (sin conversión de zona) y solo
+   * usan Date como último recurso, siempre en UTC. */
+  function _pad2(n) { return ('0' + n).slice(-2); }
+  window.bsFechaYMD = function (v) { // → 'YYYY-MM-DD' (para <input type=date>)
+    if (v === null || v === undefined || v === '') return '';
+    var s = String(v).trim();
+    var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);            // ISO o ISO con hora
+    if (m) return m[1] + '-' + _pad2(+m[2]) + '-' + _pad2(+m[3]);
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);              // dd/mm/yyyy
+    if (m) return m[3] + '-' + _pad2(+m[2]) + '-' + _pad2(+m[1]);
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return '';
+    return d.getUTCFullYear() + '-' + _pad2(d.getUTCMonth() + 1) + '-' + _pad2(d.getUTCDate());
+  };
+  window.bsFechaDMY = function (v) { // → 'dd/mm/yyyy' (para mostrar en tablas)
+    var ymd = window.bsFechaYMD(v);
+    if (!ymd) return '-';
+    var p = ymd.split('-');
+    return p[2] + '/' + p[1] + '/' + p[0];
+  };
+
   /* ---------- estilos compartidos ---------- */
   function injectCss() {
     if (document.getElementById('bsMejorasCss')) return;
@@ -88,6 +112,19 @@
       '#bsmWspBtn:hover{transform:scale(1.08);}' +
       '#bsmWspBtn svg{width:26px;height:26px;fill:#fff;}' +
       'tbody tr[data-bsm-i]{cursor:pointer;}' +
+      /* evidencias en la ficha */
+      '#bsmEvid{margin-top:14px;border-top:2px solid #eef2f7;padding-top:10px;}' +
+      '#bsmEvid .et{font-weight:800;font-size:.8rem;color:#0a3d91;text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;}' +
+      '#bsmEvid .ei{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed #eef2f7;font-size:.82rem;}' +
+      '#bsmEvid .ei a{color:#0a3d91;font-weight:700;text-decoration:none;flex:1;word-break:break-all;}' +
+      '#bsmEvid .ei a:hover{text-decoration:underline;}' +
+      '#bsmEvid .ei .ef{font-size:.7rem;color:#94a3b8;white-space:nowrap;}' +
+      '#bsmEvid .eb{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}' +
+      '#bsmEvid .eb button{background:#0a3d91;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;}' +
+      '#bsmEvid .eb button:disabled{opacity:.5;cursor:wait;}' +
+      '#bsmEvid .em2{font-size:.74rem;color:#64748b;}' +
+      '#bsmEvid .em2.err{color:#b91c1c;font-weight:700;}' +
+      '#bsmEvid .em2.okk{color:#15803d;font-weight:700;}' +
       /* resumen estados por año */
       '.bsm-res{background:#fff;border:1px solid #e6ebf2;border-radius:12px;padding:12px 16px;margin:0 0 12px;font-family:Inter,system-ui,sans-serif;box-shadow:0 1px 4px rgba(15,23,42,.05);}' +
       '.bsm-res .rt{font-weight:800;font-size:.82rem;color:#0a3d91;margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em;}' +
@@ -539,7 +576,97 @@
       var lbl = k.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
       return '<div class="fi"><span class="fk">' + esc(lbl) + '</span><span class="fv">' + esc(v) + '</span></div>';
     }).join('');
-    bsmOverlay('📄 Detalle del registro', html || '<p>Sin datos.</p>');
+
+    // sección de evidencias (solo si el caso tiene ID y estamos en un módulo)
+    var evid = '';
+    if (MOD_KEY && o.id) {
+      evid = '<div id="bsmEvid">' +
+        '<div class="et">📎 Evidencias del caso (capturas, informes, declaraciones)</div>' +
+        '<div id="bsmEvidList"><span class="em2">Cargando evidencias…</span></div>' +
+        '<div class="eb">' +
+          '<input type="file" id="bsmEvidFile" accept="image/*,application/pdf" multiple style="display:none;">' +
+          '<button id="bsmEvidBtn" type="button">📤 Subir evidencia</button>' +
+          '<span class="em2" id="bsmEvidMsg">Imagen o PDF · máx. 6 MB por archivo</span>' +
+        '</div></div>';
+    }
+
+    bsmOverlay('📄 Detalle del registro', (html || '<p>Sin datos.</p>') + evid);
+    if (MOD_KEY && o.id) bsmEvidInit(o.id);
+  }
+
+  /* ============ EVIDENCIAS: listar + subir a Drive vía GAS ============ */
+  function bsmEvidInit(casoId) {
+    var btn = document.getElementById('bsmEvidBtn');
+    var inp = document.getElementById('bsmEvidFile');
+    if (!btn || !inp) return;
+    btn.onclick = function () { inp.click(); };
+    inp.onchange = function () { bsmEvidSubir(casoId, inp.files); };
+    bsmEvidCargar(casoId);
+  }
+
+  function bsmEvidCargar(casoId) {
+    var list = document.getElementById('bsmEvidList');
+    if (!list) return;
+    fetch(API_URL, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'bs_listarDocumentos', modulo: MOD_KEY, caso_id: casoId })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!list.isConnected) return;
+      if (!d || !d.ok) { list.innerHTML = '<span class="em2 err">No se pudieron cargar (¿backend de evidencias instalado?).</span>'; return; }
+      if (!d.items || !d.items.length) { list.innerHTML = '<span class="em2">Sin evidencias aún. Sube la primera con el botón de abajo.</span>'; return; }
+      list.innerHTML = d.items.map(function (f) {
+        var ico = /pdf/i.test(f.mime || '') ? '📄' : '🖼️';
+        return '<div class="ei">' + ico + ' <a href="' + esc(f.url) + '" target="_blank" rel="noopener">' + esc(f.nombre) + '</a>' +
+          '<span class="ef">' + esc(f.subido_por || '') + (f.fecha ? ' · ' + esc(f.fecha) : '') + '</span></div>';
+      }).join('');
+    }).catch(function () {
+      if (list.isConnected) list.innerHTML = '<span class="em2 err">Error de conexión al cargar evidencias.</span>';
+    });
+  }
+
+  function bsmEvidSubir(casoId, files) {
+    var btn = document.getElementById('bsmEvidBtn');
+    var msg = document.getElementById('bsmEvidMsg');
+    if (!files || !files.length) return;
+    var lista = Array.prototype.slice.call(files);
+    var pend = lista.length, errores = 0;
+    btn.disabled = true;
+
+    lista.forEach(function (file) {
+      if (file.size > 6 * 1024 * 1024) {
+        errores++; pend--;
+        msg.className = 'em2 err'; msg.textContent = '"' + file.name + '" supera 6 MB.';
+        if (!pend) fin();
+        return;
+      }
+      msg.className = 'em2'; msg.textContent = 'Subiendo ' + file.name + '…';
+      var fr = new FileReader();
+      fr.onload = function () {
+        var b64 = String(fr.result).split(',')[1] || '';
+        fetch(API_URL, {
+          method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'bs_subirDocumento', modulo: MOD_KEY, caso_id: casoId,
+            nombre: file.name, mime: file.type || 'application/octet-stream',
+            base64: b64, usuario: (user && (user.nombre || user.usuario)) || ''
+          })
+        }).then(function (r) { return r.json(); }).then(function (d) {
+          if (!d || !d.ok) errores++;
+          pend--; if (!pend) fin();
+        }).catch(function () { errores++; pend--; if (!pend) fin(); });
+      };
+      fr.onerror = function () { errores++; pend--; if (!pend) fin(); };
+      fr.readAsDataURL(file);
+    });
+
+    function fin() {
+      btn.disabled = false;
+      var inp = document.getElementById('bsmEvidFile');
+      if (inp) inp.value = '';
+      if (errores) { msg.className = 'em2 err'; msg.textContent = '⚠ ' + errores + ' archivo(s) no se subieron. Revisa tamaño/formato o el backend.'; }
+      else { msg.className = 'em2 okk'; msg.textContent = '✅ Evidencia(s) guardada(s) en Drive.'; }
+      bsmEvidCargar(casoId);
+    }
   }
 
   /* ============ RESUMEN "ESTADOS POR AÑO" (genérico) ============ */

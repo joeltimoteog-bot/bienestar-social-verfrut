@@ -295,7 +295,7 @@
       const _fkey = JSON.stringify([filtros, privacyMode]);
       let _pintado = false;
       try {
-        const _c = JSON.parse(localStorage.getItem('bs_cache_hostigamiento_v1') || 'null');
+        const _c = JSON.parse(localStorage.getItem('bs_cache_hostigamiento_v2') || 'null');
         if (_c && _c.fkey === _fkey && _c.html) {
           cont.innerHTML = _c.html;
           _CACHE_H = _c.items || [];
@@ -327,7 +327,7 @@
         html += '<thead><tr><th>ID</th><th>Fecha</th><th>Denunciante</th><th>Denunciado</th><th>Fundo</th><th>Empresa</th><th>Estado</th><th></th></tr></thead><tbody>';
         window.__BS_EXPORT_DATA__ = res.items || [];
         res.items.forEach(function(d) {
-          const fecha = d.fecha_denuncia ? new Date(d.fecha_denuncia).toLocaleDateString('es-PE') : '-';
+          const fecha = bsFechaDMY(d.fecha_denuncia);
           const denunciante = mask(d.denunciante_nombre, privacyMode);
           const denunciado = mask(d.denunciado_nombre, privacyMode);
           const statusBadge = d.status === 'Resuelto' ? 'bs-badge-success'
@@ -350,7 +350,7 @@
           html += '<p class="bs-text-xs bs-text-muted bs-mt" style="text-align:right;">🔐 Modo discreto activo. Los nombres están parcialmente ocultos.</p>';
         }
         cont.innerHTML = html;
-        try { localStorage.setItem('bs_cache_hostigamiento_v1', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
+        try { localStorage.setItem('bs_cache_hostigamiento_v2', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
       } catch(err) {
         cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
       }
@@ -436,7 +436,7 @@
           let v = d[f];
           if (v === null || v === undefined) v = '';
           if (DATE_FIELDS.indexOf(f) >= 0 && v) {
-            try { v = new Date(v).toISOString().split('T')[0]; } catch(e) { v = ''; }
+            v = bsFechaYMD(v);
           }
           el.value = v;
         }

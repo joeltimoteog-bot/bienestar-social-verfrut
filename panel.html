@@ -194,7 +194,7 @@ if (!auth) { window.location.href = 'index.html'; }
   var esAdm = auth && (ADMINS.indexOf(String(auth.usuario||'').toLowerCase()) >= 0 || /admin|geren/i.test(String(auth.rol||'')));
   var P = (auth && auth.permisos) || {};
   if (auth && !esAdm && P.panel !== true && P.mod_panel !== true) {
-    alert('No tienes permiso para acceder al Panel consolidado');
+    appAlert('No tienes permiso para acceder al Panel consolidado');
     window.location.href = 'portal.html';
   }
 })();

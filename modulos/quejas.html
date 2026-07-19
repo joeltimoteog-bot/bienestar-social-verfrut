@@ -463,7 +463,7 @@
         html += '<thead><tr><th>ID</th><th>Fecha</th><th>Clasif.</th><th>Empresa</th><th>Sector</th><th>Detalle</th><th>Estado</th><th>Seguimiento</th><th></th></tr></thead><tbody>';
         window.__BS_EXPORT_DATA__ = res.items || [];
         res.items.forEach(function(q) {
-          const fecha = q.fecha_recepcion ? new Date(q.fecha_recepcion).toLocaleDateString('es-PE') : '-';
+          const fecha = bsFechaDMY(q.fecha_recepcion);
           const detRaw = (q.detalle || '');
           const detalleCorto = esc(detRaw.substring(0, 80)) + (detRaw.length > 80 ? '...' : '');
           const estadoBadge = q.resultado === 'Resuelto' ? 'bs-badge-success' : q.resultado === 'Cerrado' ? 'bs-badge-info' : 'bs-badge-warning';
@@ -533,8 +533,7 @@
 
     // ===== SEGUIMIENTO =====
     function _fechaInput(v) {
-      if (!v) return "";
-      try { return new Date(v).toISOString().split("T")[0]; } catch(e) { return ""; }
+      return bsFechaYMD(v);
     }
     function onSeguimientoChange() {
       const v = document.getElementById("seguimiento").value;
@@ -619,7 +618,7 @@
         if (el) {
           let v = q[f] || '';
           if (f.indexOf('fecha_') === 0 && v) {
-            try { v = new Date(v).toISOString().split('T')[0]; } catch(e) { v = ''; }
+            v = bsFechaYMD(v);
           }
           el.value = v;
         }
@@ -883,7 +882,7 @@
         if (!res.items || res.items.length === 0) { cont.innerHTML = '<p class="bs-text-muted bs-text-sm">No hay seguimientos registrados a\u00fan. Agrega el primero abajo \u2b07\ufe0f</p>'; return; }
         let html = '';
         res.items.forEach(function(sg) {
-          const fecha = sg.fecha_seguimiento ? new Date(sg.fecha_seguimiento).toLocaleDateString('es-PE') : '-';
+          const fecha = bsFechaDMY(sg.fecha_seguimiento);
           html += '<div style="padding: 0.85rem; border-left: 3px solid var(--bs-mod-quejas); background: var(--bs-surface-alt); margin-bottom: 0.5rem; border-radius: 0 var(--bs-radius-sm) var(--bs-radius-sm) 0;">' +
             '<div class="bs-flex bs-justify-between bs-items-center"><strong>Seguimiento #' + sg.numero_seguimiento + '</strong>' +
             '<span class="bs-text-xs bs-text-muted">' + fecha + '</span></div>' +

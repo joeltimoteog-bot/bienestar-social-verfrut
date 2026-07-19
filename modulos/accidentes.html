@@ -669,7 +669,7 @@
       const _fkey = JSON.stringify(filtros);
       let _pintado = false;
       try {
-        const _c = JSON.parse(localStorage.getItem('bs_cache_accidentes_v1') || 'null');
+        const _c = JSON.parse(localStorage.getItem('bs_cache_accidentes_v2') || 'null');
         if (_c && _c.fkey === _fkey && _c.html) {
           cont.innerHTML = _c.html;
           casosCache = _c.items || [];
@@ -695,7 +695,7 @@
         html += '<thead><tr><th>ID</th><th>DNI</th><th>Trabajador</th><th>Sector</th><th>Empresa</th><th>Fecha accidente</th><th>Parte cuerpo</th><th>Tipo</th><th># Atenc.</th><th>Estado caso</th><th>Acciones</th></tr></thead><tbody>';
         window.__BS_EXPORT_DATA__ = res.items || [];
         res.items.forEach(function(c) {
-          const fecha = c.dia_accidente ? new Date(c.dia_accidente).toLocaleDateString('es-PE') : '-';
+          const fecha = bsFechaDMY(c.dia_accidente);
           const estadoBadge = c.estado_caso === 'Cerrado' || c.estado_caso === 'Reincorporado' ? 'bs-badge-success'
             : c.estado_caso === 'Con restricción' ? 'bs-badge-warning' : 'bs-badge-info';
           const tipoBadge = c.tipo_accidente === 'Grave' || c.tipo_accidente === 'Mortal' ? 'bs-badge-danger'
@@ -719,7 +719,7 @@
         });
         html += '</tbody></table></div>';
         cont.innerHTML = html;
-        try { localStorage.setItem('bs_cache_accidentes_v1', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
+        try { localStorage.setItem('bs_cache_accidentes_v2', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
       } catch(err) {
         cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
       }
@@ -756,7 +756,7 @@
           let v = c[f];
           if (v === null || v === undefined) v = '';
           if (DATE_FIELDS.indexOf(f) >= 0 && v) {
-            try { v = new Date(v).toISOString().split('T')[0]; } catch(e) { v = ''; }
+            v = bsFechaYMD(v);
           }
           el.value = v;
         }
@@ -821,7 +821,7 @@
         if (res.items.length === 0) { cont.innerHTML = '<p class="bs-text-muted bs-text-sm">No hay seguimientos registrados aún. Agrega el primero abajo ⬇️</p>'; return; }
         let html = '';
         res.items.forEach(function(s) {
-          const fecha = s.fecha_seguimiento ? new Date(s.fecha_seguimiento).toLocaleDateString('es-PE') : '-';
+          const fecha = bsFechaDMY(s.fecha_seguimiento);
           html += '<div style="padding: 0.85rem; border-left: 3px solid var(--bs-mod-accidentes); background: var(--bs-surface-alt); margin-bottom: 0.5rem; border-radius: 0 var(--bs-radius-sm) var(--bs-radius-sm) 0;">' +
             '<div class="bs-flex bs-justify-between bs-items-center"><strong>Seguimiento #' + s.numero_seguimiento + '</strong>' +
             '<span class="bs-text-xs bs-text-muted">' + fecha + '</span></div>' +

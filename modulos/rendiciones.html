@@ -277,7 +277,7 @@
     }
     function _fechaInput(v) {
       if (!v) return '';
-      try { return new Date(v).toISOString().split('T')[0]; } catch(e) { return ''; }
+      try { return (window.bsFechaYMD ? bsFechaYMD(v) : new Date(v).toISOString().split('T')[0]); } catch(e) { return ''; }
     }
     function _fechaCorta(v) {
       if (!v) return '-';

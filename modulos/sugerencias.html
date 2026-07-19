@@ -239,10 +239,7 @@
       });
     }
     function fechaCorta(iso) {
-      if (!iso) return '-';
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) return '-';
-      return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
+      return bsFechaDMY(iso);
     }
     function badgeEstado(e) {
       const map = {

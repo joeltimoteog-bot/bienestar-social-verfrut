@@ -39,7 +39,10 @@
           <h1 style="color: var(--bs-mod-subsidios);">💰 Subsidios</h1>
           <p class="bs-text-subtle" style="margin: 0;">Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, lactancia, sepelio).</p>
         </div>
-        <button class="bs-btn" style="background: var(--bs-mod-subsidios); color: white;" onclick="openModal()">+ Nuevo Subsidio</button>
+        <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+          <button class="bs-btn bs-btn-outline" style="border:1.5px solid var(--bs-mod-subsidios); color: var(--bs-mod-subsidios); background:#fff;" onclick="openImportModal()">📥 Importar Excel</button>
+          <button class="bs-btn" style="background: var(--bs-mod-subsidios); color: white;" onclick="openModal()">+ Nuevo Subsidio</button>
+        </div>
       </div>
 
       <!-- Resumen de recuperación por año -->
@@ -305,6 +308,34 @@
       <div class="bs-modal-footer">
         <button class="bs-btn bs-btn-ghost" onclick="closeModal()">Cancelar</button>
         <button class="bs-btn" id="btnSubmit" onclick="submitForm()" style="background: var(--bs-mod-subsidios); color: white;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL IMPORTAR EXCEL -->
+  <div class="bs-modal-overlay" id="importModal">
+    <div class="bs-modal" style="max-width: 980px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title">📥 Importar Subsidios desde Excel</h3>
+        <button class="bs-modal-close" onclick="closeImportModal()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <div class="bs-alert bs-alert-info" style="margin-bottom:.75rem;">
+          Sube tu archivo <strong>.xlsx, .xls o .csv</strong>. La primera fila debe tener los títulos de columna
+          (p.ej. <em>AÑO, MES, TIPO, DNI, APELLIDO PATERNO, APELLIDO MATERNO, NOMBRES, EMPRESA, DÍAS, INICIO, TÉRMINO, MONTO TOTAL, ESTADO GENERAL…</em>).
+          El sistema reconoce los nombres automáticamente. Si una fila coincide con un registro existente
+          (mismo <strong>expediente</strong>, o mismo <strong>DNI + año + tipo + periodo</strong>) se <strong>actualiza</strong>; si no, se <strong>agrega</strong>. No se borra nada.
+        </div>
+        <div class="bs-form-group">
+          <input type="file" id="importFile" class="bs-input" accept=".xlsx,.xls,.csv" onchange="leerArchivoImport(this)">
+        </div>
+        <div id="importResumen"></div>
+        <div id="importPreview" style="max-height: 320px; overflow:auto;"></div>
+        <div id="importAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeImportModal()">Cancelar</button>
+        <button class="bs-btn" id="btnImport" onclick="subirImport()" disabled style="background: var(--bs-mod-subsidios); color: white;">Cargar a la base</button>
       </div>
     </div>
   </div>
@@ -673,7 +704,7 @@
           let v = s[f];
           if (v === null || v === undefined) v = '';
           if (DATE_FIELDS.indexOf(f) >= 0 && v) {
-            try { v = new Date(v).toISOString().split('T')[0]; } catch(e) { v = ''; }
+            v = bsFechaYMD(v);
           }
           el.value = v;
         }
@@ -834,6 +865,192 @@
       // tipo cambia la regla
       const t = document.getElementById('tipo');
       if (t) t.addEventListener('change', calcularSubsidio);
+    }
+
+    // ===== IMPORTAR EXCEL =====
+    var _IMP_FILAS = [];      // filas listas para enviar
+    var _IMP_ERRORES = [];    // filas con problemas
+
+    // Sinónimos de encabezados (normalizados: minúsculas, sin acentos ni símbolos)
+    var IMP_SINONIMOS = {
+      anio: ['anio','ano','year'],
+      mes: ['mes','month'],
+      tipo: ['tipo','tiposubsidio','tipodesubsidio'],
+      numero: ['numero','dni','documento','nrodocumento','ndocumento','numerodni','nrodni','doc','dnice'],
+      apellido_paterno: ['apellidopaterno','appaterno','paterno'],
+      apellido_materno: ['apellidomaterno','apmaterno','materno'],
+      nombres: ['nombres','nombre','trabajador','nombrecompleto','apellidosynombres'],
+      descripcion: ['descripcion'],
+      estado: ['estado','estadodocumento','estadodoc'],
+      dias: ['dias','ndias','totaldias','diassubsidio','diassubsidiados'],
+      calculo_por_dia: ['calculopordia','subsidiodiario','calculodia','pordia','montodiario'],
+      pago_empresa: ['pagoempresa','pagoemp'],
+      reembolso_por_mes: ['reembolsopormes','reembolso','reembolsomes'],
+      recuperado_essalud: ['recuperadoessalud','essalud','recuperado','montoessalud'],
+      monto_total: ['montototal','total','monto','importetotal'],
+      periodo: ['periodo'],
+      expediente: ['expediente','expedienteessalud','nexpediente','nroexpediente'],
+      inicio: ['inicio','fechainicio','fechainicial','desde','fechadeinicio'],
+      termino: ['termino','fechatermino','fechafin','fin','hasta','fechadetermino'],
+      observaciones: ['observaciones','observacion','obs'],
+      diferencias: ['diferencias','diferencia'],
+      tipo_pago_planilla: ['tipopagoplanilla','pagoplanilla','tipopago'],
+      estado_general: ['estadogeneral','estadogral','situacion'],
+      empresa: ['empresa','razonsocial','compania']
+    };
+    function _impNorm(s) {
+      return String(s == null ? '' : s).toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // quita acentos
+        .replace(/ñ/g, 'n').replace(/[^a-z0-9]/g, '');
+    }
+    function _impCampo(header) {
+      var h = _impNorm(header);
+      if (!h) return null;
+      for (var campo in IMP_SINONIMOS) {
+        if (IMP_SINONIMOS[campo].indexOf(h) >= 0) return campo;
+      }
+      return null;
+    }
+    // Convierte serial de Excel o texto a 'YYYY-MM-DD'
+    function _impFecha(v) {
+      if (v === null || v === undefined || v === '') return '';
+      if (typeof v === 'number' && isFinite(v) && v > 20000 && v < 60000) {
+        var d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);
+        return d.getUTCFullYear() + '-' + ('0'+(d.getUTCMonth()+1)).slice(-2) + '-' + ('0'+d.getUTCDate()).slice(-2);
+      }
+      return bsFechaYMD(v);
+    }
+    function _impEmpresa(v) {
+      var s = String(v || '').toUpperCase();
+      if (s.indexOf('RAPEL') >= 0) return 'RAPEL';
+      if (s.indexOf('VERFRUT') >= 0) return 'VERFRUT';
+      return String(v || '').trim();
+    }
+
+    function openImportModal() {
+      _IMP_FILAS = []; _IMP_ERRORES = [];
+      document.getElementById('importFile').value = '';
+      document.getElementById('importResumen').innerHTML = '';
+      document.getElementById('importPreview').innerHTML = '';
+      document.getElementById('importAlert').innerHTML = '';
+      document.getElementById('btnImport').disabled = true;
+      document.getElementById('importModal').classList.add('bs-active');
+    }
+    function closeImportModal() { document.getElementById('importModal').classList.remove('bs-active'); }
+
+    function leerArchivoImport(input) {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      if (typeof XLSX === 'undefined') { document.getElementById('importAlert').innerHTML = '<div class="bs-alert bs-alert-danger">La librería de Excel aún se está cargando. Intenta de nuevo en unos segundos.</div>'; return; }
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          var aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+          procesarImport(aoa);
+        } catch (err) {
+          document.getElementById('importAlert').innerHTML = '<div class="bs-alert bs-alert-danger">No se pudo leer el archivo: ' + esc(err.message) + '</div>';
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function procesarImport(aoa) {
+      _IMP_FILAS = []; _IMP_ERRORES = [];
+      document.getElementById('importAlert').innerHTML = '';
+      if (!aoa || aoa.length < 2) {
+        document.getElementById('importAlert').innerHTML = '<div class="bs-alert bs-alert-danger">El archivo no tiene datos (se necesita fila de títulos + al menos 1 fila).</div>';
+        return;
+      }
+      // Buscar la fila de encabezados dentro de las primeras 5 filas (por si hay título arriba)
+      var hIdx = 0, mejorMapeo = null, mejorCount = 0;
+      for (var i = 0; i < Math.min(5, aoa.length); i++) {
+        var mapeo = (aoa[i] || []).map(_impCampo);
+        var count = mapeo.filter(Boolean).length;
+        if (count > mejorCount) { mejorCount = count; mejorMapeo = mapeo; hIdx = i; }
+      }
+      if (!mejorMapeo || mejorCount < 3) {
+        document.getElementById('importAlert').innerHTML = '<div class="bs-alert bs-alert-danger">No se reconocieron los títulos de columna. Revisa que la primera fila tenga encabezados como AÑO, TIPO, DNI, EMPRESA, DÍAS…</div>';
+        return;
+      }
+      var FECHAS = ['inicio', 'termino'];
+      for (var r = hIdx + 1; r < aoa.length; r++) {
+        var row = aoa[r] || [];
+        var vacia = row.every(function (c) { return c === '' || c === null || c === undefined; });
+        if (vacia) continue;
+        var f = {};
+        for (var c = 0; c < mejorMapeo.length; c++) {
+          var campo = mejorMapeo[c];
+          if (!campo) continue;
+          var v = row[c];
+          if (v === null || v === undefined) v = '';
+          if (FECHAS.indexOf(campo) >= 0) v = _impFecha(v);
+          else if (campo === 'empresa') v = _impEmpresa(v);
+          else if (typeof v === 'string') v = v.trim();
+          f[campo] = v;
+        }
+        // Año: si falta, derivarlo de la fecha de inicio
+        if (!f.anio && f.inicio) f.anio = String(f.inicio).slice(0, 4);
+        // Validación mínima (los mismos requeridos del formulario)
+        var faltan = [];
+        if (!f.anio) faltan.push('año');
+        if (!f.tipo) faltan.push('tipo');
+        if (!f.empresa) faltan.push('empresa');
+        if (f.dias === '' || f.dias === null || f.dias === undefined) faltan.push('días');
+        if (faltan.length) _IMP_ERRORES.push({ fila: r + 1, faltan: faltan, f: f });
+        else _IMP_FILAS.push(f);
+      }
+      // Resumen + vista previa
+      var camposDetectados = [];
+      mejorMapeo.forEach(function (m) { if (m && camposDetectados.indexOf(m) < 0) camposDetectados.push(m); });
+      var res = '<div class="bs-alert ' + (_IMP_FILAS.length ? 'bs-alert-success' : 'bs-alert-danger') + '">' +
+        '✅ <strong>' + _IMP_FILAS.length + '</strong> filas listas para cargar' +
+        (_IMP_ERRORES.length ? ' · ⚠️ <strong>' + _IMP_ERRORES.length + '</strong> filas con datos faltantes (no se cargarán)' : '') +
+        '<br><span class="bs-text-xs bs-text-muted">Columnas reconocidas: ' + esc(camposDetectados.join(', ')) + '</span></div>';
+      if (_IMP_ERRORES.length) {
+        res += '<div class="bs-text-xs bs-text-muted" style="margin-bottom:.5rem;">' +
+          _IMP_ERRORES.slice(0, 5).map(function (e2) { return 'Fila ' + e2.fila + ': falta ' + e2.faltan.join(', '); }).join(' · ') +
+          (_IMP_ERRORES.length > 5 ? ' · …' : '') + '</div>';
+      }
+      document.getElementById('importResumen').innerHTML = res;
+      var prev = _IMP_FILAS.slice(0, 15);
+      var cols = ['anio','mes','tipo','numero','apellido_paterno','apellido_materno','nombres','empresa','dias','inicio','termino','monto_total','estado_general'];
+      var html = '<div class="bs-table-wrap"><table class="bs-table"><thead><tr>' +
+        cols.map(function (c) { return '<th>' + c.replace(/_/g, ' ') + '</th>'; }).join('') + '</tr></thead><tbody>';
+      prev.forEach(function (f) {
+        html += '<tr>' + cols.map(function (c) { return '<td>' + esc(f[c] === undefined ? '' : f[c]) + '</td>'; }).join('') + '</tr>';
+      });
+      html += '</tbody></table></div>';
+      if (_IMP_FILAS.length > 15) html += '<p class="bs-text-xs bs-text-muted">… y ' + (_IMP_FILAS.length - 15) + ' filas más.</p>';
+      document.getElementById('importPreview').innerHTML = _IMP_FILAS.length ? html : '';
+      document.getElementById('btnImport').disabled = _IMP_FILAS.length === 0;
+    }
+
+    async function subirImport() {
+      if (!_IMP_FILAS.length) return;
+      var btn = document.getElementById('btnImport');
+      btn.disabled = true;
+      var LOTE = 100, tot = { creados: 0, actualizados: 0, errores: [] };
+      try {
+        for (var i = 0; i < _IMP_FILAS.length; i += LOTE) {
+          btn.textContent = 'Cargando ' + Math.min(i + LOTE, _IMP_FILAS.length) + ' / ' + _IMP_FILAS.length + '…';
+          var res = await api('bs_importarSubsidios', { usuario: user.usuario, modo: 'upsert', filas: _IMP_FILAS.slice(i, i + LOTE) });
+          if (!res.ok) throw new Error(res.message || 'Error en el servidor. ¿Está instalada la acción bs_importarSubsidios en el Apps Script?');
+          tot.creados += res.creados || 0;
+          tot.actualizados += res.actualizados || 0;
+          if (res.errores && res.errores.length) tot.errores = tot.errores.concat(res.errores);
+        }
+        document.getElementById('importAlert').innerHTML = '<div class="bs-alert bs-alert-success">✅ Importación completa: <strong>' +
+          tot.creados + '</strong> nuevos · <strong>' + tot.actualizados + '</strong> actualizados' +
+          (tot.errores.length ? ' · ⚠️ ' + tot.errores.length + ' con error: ' + esc(tot.errores.slice(0, 3).join(' · ')) : '') + '</div>';
+        cargarSubsidios();
+      } catch (err) {
+        document.getElementById('importAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + esc(err.message) + '</div>';
+        btn.disabled = false;
+      } finally {
+        btn.textContent = 'Cargar a la base';
+      }
     }
 
     // ===== INIT =====
