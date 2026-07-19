@@ -42,7 +42,10 @@
             <p class="bs-text-subtle" style="margin: 0;">Reporte y seguimiento de accidentes laborales con atenciones médicas y restricciones.</p>
           </div>
         </div>
-        <button class="bs-btn" style="background: var(--bs-mod-accidentes); color: white;" onclick="openModalCaso()">+ Nuevo Caso</button>
+        <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+          <button class="bs-btn bs-btn-outline" style="border:1.5px solid var(--bs-mod-accidentes); color: var(--bs-mod-accidentes); background:#fff;" onclick="openImportModalAcc()">📥 Importar Excel</button>
+          <button class="bs-btn" style="background: var(--bs-mod-accidentes); color: white;" onclick="openModalCaso()">+ Nuevo Caso</button>
+        </div>
       </div>
 
       <!-- KPIs del módulo -->
@@ -508,6 +511,34 @@
     </div>
   </div>
 
+  <!-- MODAL IMPORTAR EXCEL (ACCIDENTES) -->
+  <div class="bs-modal-overlay" id="importModalAcc">
+    <div class="bs-modal" style="max-width: 1020px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title">📥 Importar Accidentes desde Excel</h3>
+        <button class="bs-modal-close" onclick="closeImportModalAcc()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <div class="bs-alert bs-alert-info" style="margin-bottom:.75rem;">
+          Sube tu archivo <strong>.xlsx, .xls o .csv</strong> con la primera fila de títulos
+          (p.ej. <em>DNI, NOMBRE, SECTOR, EMPRESA, DÍA DEL ACCIDENTE, PARTE DEL CUERPO, TIPO DE LESIÓN, ESTADO CASO…</em>).
+          Se reconocen los nombres automáticamente. Si una fila coincide con un caso existente
+          (mismo <strong>DNI + fecha de accidente</strong>) se <strong>actualiza</strong>; si no, se <strong>agrega</strong>. No se borra nada.
+        </div>
+        <div class="bs-form-group">
+          <input type="file" id="importFileAcc" class="bs-input" accept=".xlsx,.xls,.csv" onchange="leerArchivoImportAcc(this)">
+        </div>
+        <div id="importResumenAcc"></div>
+        <div id="importPreviewAcc" style="max-height: 320px; overflow:auto;"></div>
+        <div id="importAlertAcc"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeImportModalAcc()">Cancelar</button>
+        <button class="bs-btn" id="btnImportAcc" onclick="subirImportAcc()" disabled style="background: var(--bs-mod-accidentes); color: white;">Cargar a la base</button>
+      </div>
+    </div>
+  </div>
+
   <script src="../assets/js/trabajadores.js"></script>
   <script>
     const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
@@ -714,6 +745,7 @@
         var _cn = function(a){ return JSON.stringify((a||[]).map(function(x){ return JSON.stringify(x); }).sort()); };
         BSFiltroFecha.refrescar(res.items);
         res.items = res.items.filter(BSFiltroFecha.pasa);
+        res.items = res.items.filter(function(x){ return !x.anulado; });
         var _sameA = _pintado && _cn(res.items) === _cn(casosCache);
         casosCache = res.items;
         pintarKpisAcc(casosCache);
@@ -745,6 +777,7 @@
             '<td style="white-space: nowrap;">' +
               '<button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editarCaso(' + c.id + ')" style="margin-right: 4px;">Editar</button>' +
               '<button class="bs-btn bs-btn-sm" style="background: var(--bs-mod-accidentes); color: white;" onclick="verSeguimientos(' + c.id + ')">Seguim.</button>' +
+              '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + c.id + ')">✖</button>' +
             '</td>' +
           '</tr>';
         });
@@ -756,7 +789,21 @@
       }
     }
 
+
+    async function bsAnular(id) {
+      if (!id) return appAlert('Este registro no tiene ID; numéralo en la hoja para poder anularlo.');
+      if (!(await appConfirm('¿Anular el registro #' + id + '? No se elimina: queda marcado como ANULADO y sale de la vista.'))) return;
+      var motivo = window.prompt('Motivo de la anulación (obligatorio):') || '';
+      if (!motivo.trim()) return appAlert('Debes indicar un motivo para anular.');
+      try {
+        const res = await api('bs_anularRegistro', { usuario: user.usuario, modulo: 'accidentes', id: parseInt(id), motivo: motivo.trim() });
+        if (res.ok) { appAlert('Registro #' + id + ' anulado.'); cargar(); }
+        else appAlert('Error: ' + (res.message || 'No se pudo anular.'));
+      } catch (e) { appAlert('Error: ' + e.message); }
+    }
+
     const ALL_FIELDS = ['dni','nombre','edad','telefono','fundo','sexo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','tipo_lesion','diagnostico','tipo_accidente','seguro','detalle','estatus_accidente','centro_atencion','tipo_derivacion','especialidades','staff_medico','estado','situacion','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','responsable','descanso_medico','formulario_con_goce','responsable_autorizar','numero_atenciones','estado_caso','empresa','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','goce_inicio','goce_fin','goce_dias','accidente_hora_inicio','accidente_hora_fin'];
+    window.__BS_EXPORT_ORDER = ['id'].concat(ALL_FIELDS).concat(['created_by','created_at','updated_at','anulado']);
     const DATE_FIELDS = ['fecha_ingreso','dia_accidente','dia_reportado','fecha_reincorporo','fecha_fin_restriccion','descanso_medico_inicio','descanso_medico_fin','goce_inicio','goce_fin'];
 
     function openModalCaso() {
@@ -922,6 +969,144 @@
     BSFiltroFecha.init({ campoFecha: 'dia_accidente', color: 'var(--bs-mod-accidentes)', onChange: cargar });
     cargar();
 
+
+    // ===== IMPORTAR EXCEL (ACCIDENTES) =====
+    var _IMPA_FILAS = [], _IMPA_ERRORES = [];
+    var IMPA_SINONIMOS = {
+      dni: ['dni','documento','nrodocumento','numerodni','nrodni','doc','dnice','ce'],
+      nombre: ['nombre','nombres','trabajador','nombrecompleto','apellidosynombres','colaborador'],
+      edad: ['edad'],
+      telefono: ['telefono','celular','fono','movil'],
+      fundo: ['fundo','sector','sectorarea','area','zona','sede'],
+      sexo: ['sexo','genero'],
+      fecha_ingreso: ['fechaingreso','fechadeingreso','ingreso','fechainiciodeperiodo'],
+      dia_accidente: ['diaaccidente','diadelaccidente','fechaaccidente','fechadelaccidente','fechaaccid'],
+      dia_reportado: ['diareportado','fechareportado','fechadereporte','diareporte','fechareporte'],
+      parte_cuerpo: ['partecuerpo','partedelcuerpo','partecuerpoafectada','partedelcuerpoafectada'],
+      tipo_lesion: ['tipolesion','tipodelesion','lesion'],
+      diagnostico: ['diagnostico','dx'],
+      tipo_accidente: ['tipoaccidente','tipodeaccidente'],
+      seguro: ['seguro','tiposeguro'],
+      detalle: ['detalle','descripcion','detalledelaccidente'],
+      estatus_accidente: ['estatusaccidente','estatus','estatusdelaccidente'],
+      centro_atencion: ['centroatencion','centrodeatencion','clinica','hospital','centromedico'],
+      tipo_derivacion: ['tipoderivacion','derivacion'],
+      especialidades: ['especialidades','especialidad'],
+      staff_medico: ['staffmedico','medico','doctor'],
+      estado: ['estado'],
+      situacion: ['situacion'],
+      fecha_reincorporo: ['fechareincorporo','reincorporo','fechadereincorporacion','fechareincorporacion'],
+      fecha_fin_restriccion: ['fechafinrestriccion','finrestriccion','fechafinderestriccion'],
+      dias_restriccion: ['diasrestriccion','diasderestriccion'],
+      detalle_restriccion: ['detallerestriccion','detallederestriccion'],
+      responsable: ['responsable'],
+      descanso_medico: ['descansomedico','dm'],
+      formulario_con_goce: ['formulariocongoce','congoce','formulariogoce'],
+      responsable_autorizar: ['responsableautorizar','responsabledeautorizar'],
+      numero_atenciones: ['numeroatenciones','atenciones','natenciones','natencion'],
+      estado_caso: ['estadocaso','estadodelcaso'],
+      empresa: ['empresa','razonsocial','compania'],
+      descanso_medico_inicio: ['descansomedicoinicio','dminicio','iniciodescanso'],
+      descanso_medico_fin: ['descansomedicofin','dmfin','findescanso'],
+      descanso_medico_dias: ['descansomedicodias','dmdias','diasdescanso'],
+      goce_inicio: ['goceinicio','iniciogoce'],
+      goce_fin: ['gocefin','fingoce'],
+      goce_dias: ['gocedias','diasgoce']
+    };
+    var IMPA_FECHAS = ['fecha_ingreso','dia_accidente','dia_reportado','fecha_reincorporo','fecha_fin_restriccion','descanso_medico_inicio','descanso_medico_fin','goce_inicio','goce_fin'];
+    function _impaNorm(x){ return String(x==null?'':x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ñ/g,'n').replace(/[^a-z0-9]/g,''); }
+    function _impaCampo(h){ h=_impaNorm(h); if(!h) return null; for (var c in IMPA_SINONIMOS){ if (IMPA_SINONIMOS[c].indexOf(h)>=0) return c; } return null; }
+    function _impaFecha(v){
+      if (v===null||v===undefined||v==='') return '';
+      if (typeof v==='number' && isFinite(v) && v>20000 && v<60000){
+        var d=new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000);
+        return d.getUTCFullYear()+'-'+('0'+(d.getUTCMonth()+1)).slice(-2)+'-'+('0'+d.getUTCDate()).slice(-2);
+      }
+      return bsFechaYMD(v);
+    }
+    function _impaEmpresa(v){ var t=String(v||'').toUpperCase(); if(t.indexOf('RAPEL')>=0) return 'RAPEL'; if(t.indexOf('VERFRUT')>=0) return 'VERFRUT'; return String(v||'').trim(); }
+    function openImportModalAcc(){
+      _IMPA_FILAS=[]; _IMPA_ERRORES=[];
+      document.getElementById('importFileAcc').value='';
+      document.getElementById('importResumenAcc').innerHTML='';
+      document.getElementById('importPreviewAcc').innerHTML='';
+      document.getElementById('importAlertAcc').innerHTML='';
+      document.getElementById('btnImportAcc').disabled=true;
+      document.getElementById('importModalAcc').classList.add('bs-active');
+    }
+    function closeImportModalAcc(){ document.getElementById('importModalAcc').classList.remove('bs-active'); }
+    function leerArchivoImportAcc(input){
+      var file=input.files&&input.files[0]; if(!file) return;
+      if (typeof XLSX==='undefined'){ document.getElementById('importAlertAcc').innerHTML='<div class="bs-alert bs-alert-danger">La librería de Excel aún se está cargando. Intenta de nuevo en unos segundos.</div>'; return; }
+      var reader=new FileReader();
+      reader.onload=function(e){
+        try{
+          var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+          var aoa=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:''});
+          procesarImportAcc(aoa);
+        }catch(err){ document.getElementById('importAlertAcc').innerHTML='<div class="bs-alert bs-alert-danger">No se pudo leer el archivo: '+esc(err.message)+'</div>'; }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+    function procesarImportAcc(aoa){
+      _IMPA_FILAS=[]; _IMPA_ERRORES=[];
+      document.getElementById('importAlertAcc').innerHTML='';
+      if(!aoa||aoa.length<2){ document.getElementById('importAlertAcc').innerHTML='<div class="bs-alert bs-alert-danger">El archivo no tiene datos.</div>'; return; }
+      var hIdx=0, mejor=null, mc=0;
+      for (var i=0;i<Math.min(6,aoa.length);i++){ var mp=(aoa[i]||[]).map(_impaCampo); var c=mp.filter(Boolean).length; if(c>mc){mc=c;mejor=mp;hIdx=i;} }
+      if(!mejor||mc<3){ document.getElementById('importAlertAcc').innerHTML='<div class="bs-alert bs-alert-danger">No se reconocieron los títulos. Revisa que existan encabezados como DNI, NOMBRE, EMPRESA, DÍA DEL ACCIDENTE…</div>'; return; }
+      for (var r=hIdx+1;r<aoa.length;r++){
+        var row=aoa[r]||[];
+        if(row.every(function(x){return x===''||x===null||x===undefined;})) continue;
+        var f={};
+        for (var k=0;k<mejor.length;k++){
+          var campo=mejor[k]; if(!campo) continue;
+          var v=row[k]; if(v===null||v===undefined) v='';
+          if (IMPA_FECHAS.indexOf(campo)>=0) v=_impaFecha(v);
+          else if (campo==='empresa') v=_impaEmpresa(v);
+          else if (typeof v==='string') v=v.trim();
+          f[campo]=v;
+        }
+        var faltan=[];
+        if(!f.dni) faltan.push('DNI');
+        if(!f.nombre) faltan.push('nombre');
+        if(!f.empresa) faltan.push('empresa');
+        if(!f.dia_accidente) faltan.push('día del accidente');
+        if(faltan.length) _IMPA_ERRORES.push({fila:r+1,faltan:faltan});
+        else _IMPA_FILAS.push(f);
+      }
+      var detect=[]; mejor.forEach(function(m){ if(m&&detect.indexOf(m)<0) detect.push(m); });
+      var res='<div class="bs-alert '+(_IMPA_FILAS.length?'bs-alert-success':'bs-alert-danger')+'">✅ <strong>'+_IMPA_FILAS.length+'</strong> filas listas'+(_IMPA_ERRORES.length?' · ⚠️ <strong>'+_IMPA_ERRORES.length+'</strong> con datos faltantes (no se cargarán)':'')+'<br><span class="bs-text-xs bs-text-muted">Columnas reconocidas: '+esc(detect.join(', '))+'</span></div>';
+      if(_IMPA_ERRORES.length){ res+='<div class="bs-text-xs bs-text-muted" style="margin-bottom:.5rem;">'+_IMPA_ERRORES.slice(0,5).map(function(e2){return 'Fila '+e2.fila+': falta '+e2.faltan.join(', ');}).join(' · ')+(_IMPA_ERRORES.length>5?' · …':'')+'</div>'; }
+      document.getElementById('importResumenAcc').innerHTML=res;
+      var cols=['dni','nombre','fundo','empresa','dia_accidente','parte_cuerpo','tipo_lesion','tipo_accidente','estado_caso'];
+      var html='<div class="bs-table-wrap"><table class="bs-table"><thead><tr>'+cols.map(function(c){return '<th>'+c.replace(/_/g,' ')+'</th>';}).join('')+'</tr></thead><tbody>';
+      _IMPA_FILAS.slice(0,15).forEach(function(f){ html+='<tr>'+cols.map(function(c){return '<td>'+esc(f[c]===undefined?'':f[c])+'</td>';}).join('')+'</tr>'; });
+      html+='</tbody></table></div>';
+      if(_IMPA_FILAS.length>15) html+='<p class="bs-text-xs bs-text-muted">… y '+(_IMPA_FILAS.length-15)+' filas más.</p>';
+      document.getElementById('importPreviewAcc').innerHTML=_IMPA_FILAS.length?html:'';
+      document.getElementById('btnImportAcc').disabled=_IMPA_FILAS.length===0;
+    }
+    async function subirImportAcc(){
+      if(!_IMPA_FILAS.length) return;
+      var btn=document.getElementById('btnImportAcc'); btn.disabled=true;
+      var LOTE=100, tot={creados:0,actualizados:0,errores:[]};
+      try{
+        for (var i=0;i<_IMPA_FILAS.length;i+=LOTE){
+          btn.textContent='Cargando '+Math.min(i+LOTE,_IMPA_FILAS.length)+' / '+_IMPA_FILAS.length+'…';
+          var res=await api('bs_importarAccidentes',{usuario:user.usuario,modo:'upsert',filas:_IMPA_FILAS.slice(i,i+LOTE)});
+          if(!res.ok) throw new Error(res.message||'¿Está instalada la acción bs_importarAccidentes en el Apps Script?');
+          tot.creados+=res.creados||0; tot.actualizados+=res.actualizados||0;
+          if(res.errores&&res.errores.length) tot.errores=tot.errores.concat(res.errores);
+        }
+        document.getElementById('importAlertAcc').innerHTML='<div class="bs-alert bs-alert-success">✅ Importación completa: <strong>'+tot.creados+'</strong> nuevos · <strong>'+tot.actualizados+'</strong> actualizados'+(tot.errores.length?' · ⚠️ '+tot.errores.length+' con error: '+esc(tot.errores.slice(0,3).join(' · ')):'')+'</div>';
+        cargar();
+      }catch(err){
+        document.getElementById('importAlertAcc').innerHTML='<div class="bs-alert bs-alert-danger">Error: '+esc(err.message)+'</div>';
+        btn.disabled=false;
+      }finally{ btn.textContent='Cargar a la base'; }
+    }
+
     // ===== AUTO-ACTUALIZACIÓN (cada 60 s + al volver a la pestaña) =====
     (function(){
       var INTERVALO_MS = 60000;
@@ -946,11 +1131,18 @@
     tablas.sort(function(a,b){ return b.querySelectorAll('tbody tr').length - a.querySelectorAll('tbody tr').length; });
     return tablas[0];
   }
-  function _aoaDe(arr){
+  function _aoaDe(arr, orden){
     var headers = [];
+    (orden || window.__BS_EXPORT_ORDER || []).forEach(function(k){ if (headers.indexOf(k) < 0) headers.push(k); });
     arr.forEach(function(row){ Object.keys(row).forEach(function(k){ if(headers.indexOf(k)<0) headers.push(k); }); });
+    // solo columnas presentes en los datos o en el orden canónico con algún valor
     var aoa = [headers];
-    arr.forEach(function(row){ aoa.push(headers.map(function(h){ var v=row[h]; return (v===null||v===undefined)?'':v; })); });
+    arr.forEach(function(row){ aoa.push(headers.map(function(h){
+        var v = row[h];
+        if (v === null || v === undefined) return '';
+        if (window.bsFechaDMY && /^\d{4}-\d{1,2}-\d{1,2}(T|$)/.test(String(v))) { var f = bsFechaDMY(v); if (f !== '-') return f; }
+        return v;
+      })); });
     return XLSX.utils.aoa_to_sheet(aoa);
   }
   async function _traerSeguimientos(casos){

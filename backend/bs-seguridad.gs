@@ -46,7 +46,8 @@ var BS_SEG = {
              'bs_listarSeguimientosQueja', 'bs_crearSeguimientoQueja'],
     accidentes: ['bs_crearAccidente', 'bs_listarAccidentes', 'bs_actualizarAccidente',
                  'bs_listarSeguimientos', 'bs_crearSeguimiento',
-                 'bs_listarTodoHistorialAccidentes', 'bs_listarTodosSeguimientos'],
+                 'bs_listarTodoHistorialAccidentes', 'bs_listarTodosSeguimientos',
+                 'bs_importarAccidentes'],
     hostigamiento: ['bs_crearHostigamiento', 'bs_listarHostigamiento', 'bs_actualizarHostigamiento'],
     subsidios: ['bs_crearSubsidio', 'bs_listarSubsidios', 'bs_actualizarSubsidio', 'bs_importarSubsidios']
   }
@@ -90,6 +91,12 @@ function bs_validarAcceso(params) {
 
     // Permiso por módulo (los admins pasan todo)
     var rol = String(s.rol || '').toLowerCase();
+    if (rol.indexOf('admin') < 0 && action === 'bs_anularRegistro') {
+      var modAnu = String(params.modulo || '').toLowerCase();
+      if (BS_SEG.PERMISOS[modAnu] && (!s.permisos || !s.permisos[modAnu])) {
+        return { ok: false, code: 403, message: 'No tienes permiso para el módulo "' + modAnu + '".' };
+      }
+    }
     if (rol.indexOf('admin') < 0) {
       for (var mod in BS_SEG.PERMISOS) {
         if (BS_SEG.PERMISOS[mod].indexOf(action) >= 0) {

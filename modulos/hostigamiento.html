@@ -322,6 +322,7 @@
         _CACHE_H = res.items || [];
         BSFiltroFecha.refrescar(_CACHE_H);
         res.items = (res.items || []).filter(BSFiltroFecha.pasa);
+        res.items = res.items.filter(function(x){ return !x.anulado; });
         _CACHE_H = res.items;
         var _sameH = _pintado && _cn(_CACHE_H) === _cn(_prevH);
         if (_sameH) return;
@@ -349,7 +350,9 @@
             '<td>' + esc(d.fundo || '-') + '</td>' +
             '<td>' + esc(d.empresa || '-') + '</td>' +
             '<td><span class="bs-badge ' + statusBadge + '">' + esc(d.status || '-') + '</span></td>' +
-            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + d.id + ')">Ver / Editar</button></td>' +
+            '<td style="white-space:nowrap;"><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + d.id + ')">Ver / Editar</button> ' +
+            '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + d.id + ')">✖</button>' +
+            '</td>' +
           '</tr>';
         });
         html += '</tbody></table></div>';
@@ -364,7 +367,21 @@
     }
 
     // ===== MODAL =====
+
+    async function bsAnular(id) {
+      if (!id) return appAlert('Este registro no tiene ID; numéralo en la hoja para poder anularlo.');
+      if (!(await appConfirm('¿Anular el registro #' + id + '? No se elimina: queda marcado como ANULADO y sale de la vista.'))) return;
+      var motivo = window.prompt('Motivo de la anulación (obligatorio):') || '';
+      if (!motivo.trim()) return appAlert('Debes indicar un motivo para anular.');
+      try {
+        const res = await api('bs_anularRegistro', { usuario: user.usuario, modulo: 'hostigamiento', id: parseInt(id), motivo: motivo.trim() });
+        if (res.ok) { appAlert('Registro #' + id + ' anulado.'); cargar(); }
+        else appAlert('Error: ' + (res.message || 'No se pudo anular.'));
+      } catch (e) { appAlert('Error: ' + e.message); }
+    }
+
     const ALL_FIELDS = ['fecha_denuncia','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','fundo','decision','status','observaciones','empresa'];
+    window.__BS_EXPORT_ORDER = ['id'].concat(ALL_FIELDS).concat(['created_by','created_at','updated_at','anulado']);
     const DATE_FIELDS = ['fecha_denuncia'];
 
     // ===== NAVEGACION INTELIGENTE =====
@@ -583,9 +600,15 @@
     var data = window.__BS_EXPORT_DATA__;
     if (Array.isArray(data) && data.length){
       var headers = [];
+      (window.__BS_EXPORT_ORDER || []).forEach(function(k){ if (headers.indexOf(k) < 0) headers.push(k); });
       data.forEach(function(row){ Object.keys(row).forEach(function(k){ if(headers.indexOf(k)<0) headers.push(k); }); });
       var aoa = [headers];
-      data.forEach(function(row){ aoa.push(headers.map(function(h){ var v=row[h]; return (v===null||v===undefined)?'':v; })); });
+      data.forEach(function(row){ aoa.push(headers.map(function(h){
+        var v = row[h];
+        if (v === null || v === undefined) return '';
+        if (window.bsFechaDMY && /^\d{4}-\d{1,2}-\d{1,2}(T|$)/.test(String(v))) { var f = bsFechaDMY(v); if (f !== '-') return f; }
+        return v;
+      })); });
       ws = XLSX.utils.aoa_to_sheet(aoa);
     } else {
       var tabla = tablaPrincipal();

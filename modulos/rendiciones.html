@@ -654,6 +654,7 @@
     // ===== MODAL =====
     const ALL_FIELDS = ['empresa','rendicion','fecha','semana','responsable','estado','fecha_deposito',
                         'monto_reclutamiento','monto_relaciones_laborales','monto_capacitaciones','monto_bienestar','monto_total','observaciones'];
+    window.__BS_EXPORT_ORDER = ['id'].concat(ALL_FIELDS).concat(['created_by','created_at','updated_at','anulado']);
     const DATE_FIELDS = ['fecha','fecha_deposito'];
 
     function openModal() {
@@ -801,9 +802,15 @@
       var data = window.__BS_EXPORT_DATA__;
       if (Array.isArray(data) && data.length){
         var headers = [];
+        (window.__BS_EXPORT_ORDER || []).forEach(function(k){ if (headers.indexOf(k) < 0) headers.push(k); });
         data.forEach(function(row){ Object.keys(row).forEach(function(k){ if(headers.indexOf(k)<0) headers.push(k); }); });
         var aoa = [headers];
-        data.forEach(function(row){ aoa.push(headers.map(function(h){ var v=row[h]; return (v===null||v===undefined)?'':v; })); });
+        data.forEach(function(row){ aoa.push(headers.map(function(h){
+        var v = row[h];
+        if (v === null || v === undefined) return '';
+        if (window.bsFechaDMY && /^\d{4}-\d{1,2}-\d{1,2}(T|$)/.test(String(v))) { var f = bsFechaDMY(v); if (f !== '-') return f; }
+        return v;
+      })); });
         ws = XLSX.utils.aoa_to_sheet(aoa);
       } else {
         var tabla = document.querySelector('#tablaContainer table');

@@ -452,7 +452,7 @@
       const fCla = document.getElementById('filterClasif').value;
       const fEst = document.getElementById('filterEstado').value;
       BSFiltroFecha.refrescar(_CACHE_Q);
-      let items = _CACHE_Q.slice();
+      let items = _CACHE_Q.slice().filter(function(x){ return !x.anulado; });
       if (fEmp) items = items.filter(function(q){ return q.empresa === fEmp; });
       if (fCla) items = items.filter(function(q){ return q.clasificacion === fCla; });
       if (fEst) items = items.filter(function(q){ return q.resultado === fEst; });
@@ -485,6 +485,7 @@
             '<td>' + _segBadge(q) + '</td>' +
             '<td style="white-space:nowrap;"><div style="display:flex;gap:.35rem;align-items:center;">' +
               '<button class="bs-btn bs-btn-sm bs-btn-outline" style="min-width:74px;" onclick="editar(' + q.id + ')">✏️ Editar</button>' +
+              '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + q.id + ')">✖</button>' +
               '<button class="bs-btn bs-btn-sm" style="min-width:74px;background: var(--bs-mod-quejas); color: white;" onclick="verSeguimientosQ(' + q.id + ')">📋 Seguim.</button>' +
             '</div></td>' +
           '</tr>';
@@ -537,6 +538,21 @@
         });
       });
     }
+
+
+    async function bsAnular(id) {
+      if (!id) return appAlert('Este registro no tiene ID; numéralo en la hoja para poder anularlo.');
+      if (!(await appConfirm('¿Anular el registro #' + id + '? No se elimina: queda marcado como ANULADO y sale de la vista.'))) return;
+      var motivo = window.prompt('Motivo de la anulación (obligatorio):') || '';
+      if (!motivo.trim()) return appAlert('Debes indicar un motivo para anular.');
+      try {
+        const res = await api('bs_anularRegistro', { usuario: user.usuario, modulo: 'quejas', id: parseInt(id), motivo: motivo.trim() });
+        if (res.ok) { appAlert('Registro #' + id + ' anulado.'); cargarQuejas(); }
+        else appAlert('Error: ' + (res.message || 'No se pudo anular.'));
+      } catch (e) { appAlert('Error: ' + e.message); }
+    }
+
+    window.__BS_EXPORT_ORDER = ['id','fecha_recepcion','clasificacion','canal','categoria','sector','detalle','accion_correctiva','accion_mejora','coordinacion','fecha_levantamiento_ac','frecuencia_seguimiento_ac','fecha_seguimiento_am','observaciones','resultado','documentos','empresa','created_by','created_at','updated_at','anulado'];
 
     // ===== SEGUIMIENTO =====
     function _fechaInput(v) {
@@ -966,9 +982,15 @@
     var data = window.__BS_EXPORT_DATA__;
     if (Array.isArray(data) && data.length){
       var headers = [];
+      (window.__BS_EXPORT_ORDER || []).forEach(function(k){ if (headers.indexOf(k) < 0) headers.push(k); });
       data.forEach(function(row){ Object.keys(row).forEach(function(k){ if(headers.indexOf(k)<0) headers.push(k); }); });
       var aoa = [headers];
-      data.forEach(function(row){ aoa.push(headers.map(function(h){ var v=row[h]; return (v===null||v===undefined)?'':v; })); });
+      data.forEach(function(row){ aoa.push(headers.map(function(h){
+        var v = row[h];
+        if (v === null || v === undefined) return '';
+        if (window.bsFechaDMY && /^\d{4}-\d{1,2}-\d{1,2}(T|$)/.test(String(v))) { var f = bsFechaDMY(v); if (f !== '-') return f; }
+        return v;
+      })); });
       ws = XLSX.utils.aoa_to_sheet(aoa);
     } else {
       var tabla = tablaPrincipal();

@@ -573,7 +573,7 @@
       const fTipo = document.getElementById('filterTipo').value;
       const fAnio = document.getElementById('filterAnio').value;
       const fEst = document.getElementById('filterEstado').value;
-      let items = _CACHE_S.slice();
+      let items = _CACHE_S.slice().filter(function(x){ return !x.anulado; });
       const U = function(v){ return String(v == null ? '' : v).trim().toUpperCase(); };
       if (fEmp)  items = items.filter(function(s){ return U(s.empresa) === U(fEmp); });
       if (fTipo) items = items.filter(function(s){ return U(s.tipo) === U(fTipo); });
@@ -613,7 +613,9 @@
             '<td style="text-align: right;">' + (s.dias || 0) + '</td>' +
             '<td style="text-align: right;"><strong>' + fmtMoney(_monto) + '</strong></td>' +
             '<td><span class="bs-badge ' + estadoBadge + '">' + esc(s.estado_general || '-') + '</span></td>' +
-            '<td><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editarIdx(' + _i + ')">Editar</button></td>' +
+            '<td style="white-space:nowrap;"><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editarIdx(' + _i + ')">Editar</button> ' +
+            '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + (s.id || 0) + ')">✖</button>' +
+            '</td>' +
           '</tr>';
         });
         html += '</tbody></table></div>';
@@ -622,7 +624,21 @@
     }
 
     // ===== MODAL =====
+
+    async function bsAnular(id) {
+      if (!id) return appAlert('Este registro no tiene ID; numéralo en la hoja para poder anularlo.');
+      if (!(await appConfirm('¿Anular el registro #' + id + '? No se elimina: queda marcado como ANULADO y sale de la vista.'))) return;
+      var motivo = window.prompt('Motivo de la anulación (obligatorio):') || '';
+      if (!motivo.trim()) return appAlert('Debes indicar un motivo para anular.');
+      try {
+        const res = await api('bs_anularRegistro', { usuario: user.usuario, modulo: 'subsidios', id: parseInt(id), motivo: motivo.trim() });
+        if (res.ok) { appAlert('Registro #' + id + ' anulado.'); cargarSubsidios(); }
+        else appAlert('Error: ' + (res.message || 'No se pudo anular.'));
+      } catch (e) { appAlert('Error: ' + e.message); }
+    }
+
     const ALL_FIELDS = ['anio','mes','tipo','numero','apellido_paterno','apellido_materno','nombres','estado','dias','calculo_por_dia','pago_empresa','reembolso_por_mes','recuperado_essalud','monto_total','periodo','expediente','inicio','termino','observaciones','diferencias','estado_general','empresa'];
+    window.__BS_EXPORT_ORDER = ['id'].concat(ALL_FIELDS).concat(['created_by','created_at','updated_at','anulado']);
     const DATE_FIELDS = ['inicio','termino'];
 
     // ===== NAVEGACION INTELIGENTE =====
@@ -1097,9 +1113,15 @@
     var data = window.__BS_EXPORT_DATA__;
     if (Array.isArray(data) && data.length){
       var headers = [];
+      (window.__BS_EXPORT_ORDER || []).forEach(function(k){ if (headers.indexOf(k) < 0) headers.push(k); });
       data.forEach(function(row){ Object.keys(row).forEach(function(k){ if(headers.indexOf(k)<0) headers.push(k); }); });
       var aoa = [headers];
-      data.forEach(function(row){ aoa.push(headers.map(function(h){ var v=row[h]; return (v===null||v===undefined)?'':v; })); });
+      data.forEach(function(row){ aoa.push(headers.map(function(h){
+        var v = row[h];
+        if (v === null || v === undefined) return '';
+        if (window.bsFechaDMY && /^\d{4}-\d{1,2}-\d{1,2}(T|$)/.test(String(v))) { var f = bsFechaDMY(v); if (f !== '-') return f; }
+        return v;
+      })); });
       ws = XLSX.utils.aoa_to_sheet(aoa);
     } else {
       var tabla = tablaPrincipal();
