@@ -86,6 +86,11 @@
       <!-- Barra de filtro por periodo (Anio/Mes) -->
       <div id="bsFiltroFecha" class="bs-card bs-mb"></div>
 
+      <div class="bs-flex bs-items-center bs-gap-sm bs-mb" style="justify-content:flex-end;">
+        <input type="checkbox" id="verAnulados" onchange="cargar()">
+        <label for="verAnulados" class="bs-text-xs bs-text-muted bs-cursor-pointer">🗂 Ver anulados</label>
+      </div>
+
       <div id="tablaContainer">
         <div class="bs-text-center" style="padding: 2rem;">
           <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
@@ -722,14 +727,15 @@
         empresa: document.getElementById('filterEmpresa').value,
         estado_caso: document.getElementById('filterEstado').value,
         fundo: document.getElementById('filterFundo').value,
-        dni: document.getElementById('filterDni').value
+        dni: document.getElementById('filterDni').value,
+        _verAnulados: !!(document.getElementById('verAnulados')||{}).checked
       };
       const cont = document.getElementById('tablaContainer');
       // Caché local: pinta al instante la última vista con estos filtros
       const _fkey = JSON.stringify(filtros);
       let _pintado = false;
       try {
-        const _c = JSON.parse(localStorage.getItem('bs_cache_accidentes_v3') || 'null');
+        const _c = JSON.parse(localStorage.getItem('bs_cache_accidentes_v4') || 'null');
         if (_c && _c.fkey === _fkey && _c.html) {
           cont.innerHTML = _c.html;
           casosCache = _c.items || [];
@@ -745,7 +751,7 @@
         var _cn = function(a){ return JSON.stringify((a||[]).map(function(x){ return JSON.stringify(x); }).sort()); };
         BSFiltroFecha.refrescar(res.items);
         res.items = res.items.filter(BSFiltroFecha.pasa);
-        res.items = res.items.filter(function(x){ return !x.anulado; });
+        if (!(document.getElementById('verAnulados')||{}).checked) res.items = res.items.filter(function(x){ return !x.anulado; });
         var _sameA = _pintado && _cn(res.items) === _cn(casosCache);
         casosCache = res.items;
         pintarKpisAcc(casosCache);
@@ -763,7 +769,7 @@
             : c.estado_caso === 'Con restricción' ? 'bs-badge-warning' : 'bs-badge-info';
           const tipoBadge = c.tipo_accidente === 'Grave' || c.tipo_accidente === 'Mortal' ? 'bs-badge-danger'
             : c.tipo_accidente === 'Incapacitante' ? 'bs-badge-warning' : 'bs-badge';
-          html += '<tr>' +
+          html += '<tr' + (c.anulado ? ' style="opacity:.6;background:#fdf3f3;"' : '') + '>' +
             '<td><strong>#' + c.id + '</strong></td>' +
             '<td>' + esc(c.dni || '-') + '</td>' +
             '<td>' + esc(c.nombre || '-') + '</td>' +
@@ -777,19 +783,30 @@
             '<td style="white-space: nowrap;">' +
               '<button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editarCaso(' + c.id + ')" style="margin-right: 4px;">Editar</button>' +
               '<button class="bs-btn bs-btn-sm" style="background: var(--bs-mod-accidentes); color: white;" onclick="verSeguimientos(' + c.id + ')">Seguim.</button>' +
-              '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + c.id + ')">✖</button>' +
+              (c.anulado
+              ? '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Restaurar registro" style="color:#15803d;font-weight:800;" onclick="bsRestaurar(' + c.id + ')">↩</button>'
+              : '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + c.id + ')">✖</button>') +
             '</td>' +
           '</tr>';
         });
         html += '</tbody></table></div>';
         cont.innerHTML = html;
-        try { localStorage.setItem('bs_cache_accidentes_v3', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
+        try { localStorage.setItem('bs_cache_accidentes_v4', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
       } catch(err) {
         cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
       }
     }
 
 
+    async function bsRestaurar(id) {
+      if (!id) return;
+      if (!(await appConfirm('¿Restaurar el registro #' + id + '? Volverá a la vista normal.'))) return;
+      try {
+        const res = await api('bs_restaurarRegistro', { usuario: user.usuario, modulo: 'accidentes', id: parseInt(id) });
+        if (res.ok) { appAlert('Registro #' + id + ' restaurado.'); cargar(); }
+        else appAlert('Error: ' + (res.message || 'No se pudo restaurar.'));
+      } catch (e) { appAlert('Error: ' + e.message); }
+    }
     async function bsAnular(id) {
       if (!id) return appAlert('Este registro no tiene ID; numéralo en la hoja para poder anularlo.');
       if (!(await appConfirm('¿Anular el registro #' + id + '? No se elimina: queda marcado como ANULADO y sale de la vista.'))) return;

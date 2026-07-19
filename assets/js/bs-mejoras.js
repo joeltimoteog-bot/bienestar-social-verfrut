@@ -68,6 +68,27 @@
     return false;
   };
 
+  /* ---------- ABRIR EVIDENCIA PRIVADA (vía backend, sin enlace público) ---------- */
+  window.bsmVerEvid = function (id, a) {
+    try { if (a) a.textContent = 'Abriendo…'; } catch (e) {}
+    fetch(API_URL, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'bs_verDocumento', token: window.bsToken(), id: id })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.ok) { alert('No se pudo abrir: ' + ((d && d.message) || 'error')); return; }
+      var bin = atob(d.base64), arr = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      var blob = new Blob([arr], { type: d.mime || 'application/octet-stream' });
+      var url = URL.createObjectURL(blob);
+      var w = window.open(url, '_blank');
+      if (!w) { var l = document.createElement('a'); l.href = url; l.download = d.nombre || 'evidencia'; l.click(); }
+      try { if (a) a.textContent = d.nombre || 'evidencia'; } catch (e2) {}
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    }).catch(function (e) { alert('Error al abrir la evidencia: ' + e.message); })
+    .finally ? null : null;
+    return false;
+  };
+
   /* ---------- estilos compartidos ---------- */
   function injectCss() {
     if (document.getElementById('bsMejorasCss')) return;
@@ -638,7 +659,7 @@
       if (!d.items || !d.items.length) { list.innerHTML = '<span class="em2">Sin evidencias aún. Sube la primera con el botón de abajo.</span>'; return; }
       list.innerHTML = d.items.map(function (f) {
         var ico = /pdf/i.test(f.mime || '') ? '📄' : '🖼️';
-        return '<div class="ei">' + ico + ' <a href="' + esc(f.url) + '" target="_blank" rel="noopener">' + esc(f.nombre) + '</a>' +
+        return '<div class="ei">' + ico + ' <a href="#" onclick="return bsmVerEvid(' + Number(f.id) + ', this)">' + esc(f.nombre) + '</a>' +
           '<span class="ef">' + esc(f.subido_por || '') + (f.fecha ? ' · ' + esc(f.fecha) : '') + '</span></div>';
       }).join('');
     }).catch(function () {

@@ -90,6 +90,11 @@
       <!-- Barra de filtro por periodo (Anio/Mes) -->
       <div id="bsFiltroFecha" class="bs-card bs-mb"></div>
 
+      <div class="bs-flex bs-items-center bs-gap-sm bs-mb" style="justify-content:flex-end;">
+        <input type="checkbox" id="verAnulados" onchange="cargar()">
+        <label for="verAnulados" class="bs-text-xs bs-text-muted bs-cursor-pointer">🗂 Ver anulados</label>
+      </div>
+
       <div id="tablaContainer">
         <div class="bs-text-center" style="padding: 2rem;">
           <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
@@ -295,6 +300,8 @@
         empresa: document.getElementById('filterEmpresa').value,
         status: document.getElementById('filterStatus').value,
         fundo: document.getElementById('filterFundo').value
+      ,
+        _verAnulados: !!(document.getElementById('verAnulados')||{}).checked
       };
       const privacyMode = document.getElementById('togglePrivacy').checked;
       const cont = document.getElementById('tablaContainer');
@@ -302,7 +309,7 @@
       const _fkey = JSON.stringify([filtros, privacyMode]);
       let _pintado = false;
       try {
-        const _c = JSON.parse(sessionStorage.getItem('bs_cache_hostigamiento_v3') || 'null');
+        const _c = JSON.parse(sessionStorage.getItem('bs_cache_hostigamiento_v4') || 'null');
         if (_c && _c.fkey === _fkey && _c.html) {
           cont.innerHTML = _c.html;
           _CACHE_H = _c.items || [];
@@ -322,7 +329,7 @@
         _CACHE_H = res.items || [];
         BSFiltroFecha.refrescar(_CACHE_H);
         res.items = (res.items || []).filter(BSFiltroFecha.pasa);
-        res.items = res.items.filter(function(x){ return !x.anulado; });
+        if (!(document.getElementById('verAnulados')||{}).checked) res.items = res.items.filter(function(x){ return !x.anulado; });
         _CACHE_H = res.items;
         var _sameH = _pintado && _cn(_CACHE_H) === _cn(_prevH);
         if (_sameH) return;
@@ -342,7 +349,7 @@
             : d.status === 'Archivado' || d.status === 'Sin lugar' ? 'bs-badge-info'
             : d.status === 'Medidas dictadas' ? 'bs-badge-primary'
             : 'bs-badge-warning';
-          html += '<tr>' +
+          html += '<tr' + (d.anulado ? ' style="opacity:.6;background:#fdf3f3;"' : '') + '>' +
             '<td><strong>#' + d.id + '</strong></td>' +
             '<td>' + fecha + '</td>' +
             '<td>' + esc(denunciante) + '</td>' +
@@ -351,7 +358,9 @@
             '<td>' + esc(d.empresa || '-') + '</td>' +
             '<td><span class="bs-badge ' + statusBadge + '">' + esc(d.status || '-') + '</span></td>' +
             '<td style="white-space:nowrap;"><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + d.id + ')">Ver / Editar</button> ' +
-            '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + d.id + ')">✖</button>' +
+            (d.anulado
+              ? '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Restaurar registro" style="color:#15803d;font-weight:800;" onclick="bsRestaurar(' + d.id + ')">↩</button>'
+              : '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + d.id + ')">✖</button>') +
             '</td>' +
           '</tr>';
         });
@@ -360,7 +369,7 @@
           html += '<p class="bs-text-xs bs-text-muted bs-mt" style="text-align:right;">🔐 Modo discreto activo. Los nombres están parcialmente ocultos.</p>';
         }
         cont.innerHTML = html;
-        try { sessionStorage.setItem('bs_cache_hostigamiento_v3', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
+        try { sessionStorage.setItem('bs_cache_hostigamiento_v4', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
       } catch(err) {
         cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
       }
@@ -368,6 +377,15 @@
 
     // ===== MODAL =====
 
+    async function bsRestaurar(id) {
+      if (!id) return;
+      if (!(await appConfirm('¿Restaurar el registro #' + id + '? Volverá a la vista normal.'))) return;
+      try {
+        const res = await api('bs_restaurarRegistro', { usuario: user.usuario, modulo: 'hostigamiento', id: parseInt(id) });
+        if (res.ok) { appAlert('Registro #' + id + ' restaurado.'); cargar(); }
+        else appAlert('Error: ' + (res.message || 'No se pudo restaurar.'));
+      } catch (e) { appAlert('Error: ' + e.message); }
+    }
     async function bsAnular(id) {
       if (!id) return appAlert('Este registro no tiene ID; numéralo en la hoja para poder anularlo.');
       if (!(await appConfirm('¿Anular el registro #' + id + '? No se elimina: queda marcado como ANULADO y sale de la vista.'))) return;

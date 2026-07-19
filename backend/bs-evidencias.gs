@@ -7,8 +7,9 @@
  *    y pega TODO este código.
  * 3. En tu función doPost(e), dentro del switch/if de acciones, agrega:
  *
- *      if (accion === 'bs_subirDocumento')  return _json(bs_subirDocumento(datos));
- *      if (accion === 'bs_listarDocumentos') return _json(bs_listarDocumentos(datos));
+ *      case 'bs_subirDocumento':   result = bs_subirDocumento(params); break;
+ *      case 'bs_listarDocumentos': result = bs_listarDocumentos(params); break;
+ *      case 'bs_verDocumento':     result = bs_verDocumento(params); break;
  *
  *    (usa el mismo patrón que tus demás acciones; "datos" es el body parseado
  *     y _json tu helper de respuesta ContentService)
@@ -43,7 +44,7 @@ function bs_subirDocumento(d) {
     var nombre = String(d.nombre).replace(/[\\/:*?"<>|]/g, '_');
     var blob = Utilities.newBlob(bytes, mime, nombre);
     var file = fCaso.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    // PRIVADO: ya no se comparte con enlace público. Se sirve vía bs_verDocumento.
 
     var sh = _bsSheetDocs_();
     var id = Math.max(1, sh.getLastRow()); // correlativo simple
@@ -105,4 +106,48 @@ function _bsSheetDocs_() {
 function _bsFolder_(parent, name) {
   var it = parent.getFoldersByName(name);
   return it.hasNext() ? it.next() : parent.createFolder(name);
+}
+
+
+/* ---------- VER DOCUMENTO (privado, requiere sesión con token) ---------- */
+function bs_verDocumento(d) {
+  try {
+    if (!d || !d.id) return { ok: false, message: 'Falta el id del documento.' };
+    var sh = _bsSheetDocs_();
+    var last = sh.getLastRow();
+    if (last < 2) return { ok: false, message: 'No hay documentos.' };
+    var vals = sh.getRange(2, 1, last - 1, 8).getValues();
+    for (var i = 0; i < vals.length; i++) {
+      if (String(vals[i][0]) === String(d.id)) {
+        var url = String(vals[i][4] || '');
+        var m = url.match(/[-\w]{25,}/);
+        if (!m) return { ok: false, message: 'URL de archivo inválida.' };
+        var file = DriveApp.getFileById(m[0]);
+        var blob = file.getBlob();
+        if (blob.getBytes().length > 8 * 1024 * 1024) return { ok: false, message: 'Archivo demasiado grande para visualizar.' };
+        return { ok: true, nombre: vals[i][3], mime: blob.getContentType(), base64: Utilities.base64Encode(blob.getBytes()) };
+      }
+    }
+    return { ok: false, message: 'Documento no encontrado.' };
+  } catch (e) { return { ok: false, message: 'Error al abrir: ' + e.message }; }
+}
+
+/* ---------- UTILIDAD (ejecutar UNA VEZ desde el editor) ----------
+ * Quita el enlace público de TODAS las evidencias ya subidas.
+ * Ejecutar → seleccionar bs_privatizarEvidencias → Ejecutar. */
+function bs_privatizarEvidencias() {
+  var sh = _bsSheetDocs_();
+  var last = sh.getLastRow();
+  if (last < 2) { Logger.log('Sin documentos.'); return; }
+  var vals = sh.getRange(2, 5, last - 1, 1).getValues(); // columna url
+  var ok = 0, err = 0;
+  for (var i = 0; i < vals.length; i++) {
+    try {
+      var m = String(vals[i][0] || '').match(/[-\w]{25,}/);
+      if (!m) { err++; continue; }
+      DriveApp.getFileById(m[0]).setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
+      ok++;
+    } catch (e) { err++; }
+  }
+  Logger.log('Privatizados: ' + ok + ' · Errores: ' + err);
 }

@@ -119,6 +119,11 @@
       </div>
 
       <!-- Tabla -->
+      <div class="bs-flex bs-items-center bs-gap-sm bs-mb" style="justify-content:flex-end;">
+        <input type="checkbox" id="verAnulados" onchange="renderSubsidios()">
+        <label for="verAnulados" class="bs-text-xs bs-text-muted bs-cursor-pointer">🗂 Ver anulados</label>
+      </div>
+
       <div id="tablaContainer">
         <div class="bs-text-center" style="padding: 2rem;">
           <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
@@ -573,7 +578,7 @@
       const fTipo = document.getElementById('filterTipo').value;
       const fAnio = document.getElementById('filterAnio').value;
       const fEst = document.getElementById('filterEstado').value;
-      let items = _CACHE_S.slice().filter(function(x){ return !x.anulado; });
+      let items = (document.getElementById('verAnulados')||{}).checked ? _CACHE_S.slice() : _CACHE_S.slice().filter(function(x){ return !x.anulado; });
       const U = function(v){ return String(v == null ? '' : v).trim().toUpperCase(); };
       if (fEmp)  items = items.filter(function(s){ return U(s.empresa) === U(fEmp); });
       if (fTipo) items = items.filter(function(s){ return U(s.tipo) === U(fTipo); });
@@ -603,7 +608,7 @@
             : eg === 'PENDIENTE' ? 'bs-badge-danger'
             : eg === 'NO RECUPERABLE' ? 'bs-badge-warning'
             : 'bs-badge-info';
-          html += '<tr>' +
+          html += '<tr' + (s.anulado ? ' style="opacity:.6;background:#fdf3f3;"' : '') + '>' +
             '<td><strong>#' + s.id + '</strong></td>' +
             '<td>' + esc(periodo) + '</td>' +
             '<td>' + esc(trabajador) + '</td>' +
@@ -614,7 +619,9 @@
             '<td style="text-align: right;"><strong>' + fmtMoney(_monto) + '</strong></td>' +
             '<td><span class="bs-badge ' + estadoBadge + '">' + esc(s.estado_general || '-') + '</span></td>' +
             '<td style="white-space:nowrap;"><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editarIdx(' + _i + ')">Editar</button> ' +
-            '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + (s.id || 0) + ')">✖</button>' +
+            (s.anulado
+              ? '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Restaurar registro" style="color:#15803d;font-weight:800;" onclick="bsRestaurar(' + (s.id || 0) + ')">↩</button>'
+              : '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + (s.id || 0) + ')">✖</button>') +
             '</td>' +
           '</tr>';
         });
@@ -625,6 +632,15 @@
 
     // ===== MODAL =====
 
+    async function bsRestaurar(id) {
+      if (!id) return;
+      if (!(await appConfirm('¿Restaurar el registro #' + id + '? Volverá a la vista normal.'))) return;
+      try {
+        const res = await api('bs_restaurarRegistro', { usuario: user.usuario, modulo: 'subsidios', id: parseInt(id) });
+        if (res.ok) { appAlert('Registro #' + id + ' restaurado.'); renderSubsidios(); }
+        else appAlert('Error: ' + (res.message || 'No se pudo restaurar.'));
+      } catch (e) { appAlert('Error: ' + e.message); }
+    }
     async function bsAnular(id) {
       if (!id) return appAlert('Este registro no tiene ID; numéralo en la hoja para poder anularlo.');
       if (!(await appConfirm('¿Anular el registro #' + id + '? No se elimina: queda marcado como ANULADO y sale de la vista.'))) return;

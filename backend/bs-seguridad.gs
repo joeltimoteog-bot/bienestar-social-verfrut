@@ -91,7 +91,7 @@ function bs_validarAcceso(params) {
 
     // Permiso por módulo (los admins pasan todo)
     var rol = String(s.rol || '').toLowerCase();
-    if (rol.indexOf('admin') < 0 && action === 'bs_anularRegistro') {
+    if (rol.indexOf('admin') < 0 && (action === 'bs_anularRegistro' || action === 'bs_restaurarRegistro')) {
       var modAnu = String(params.modulo || '').toLowerCase();
       if (BS_SEG.PERMISOS[modAnu] && (!s.permisos || !s.permisos[modAnu])) {
         return { ok: false, code: 403, message: 'No tienes permiso para el módulo "' + modAnu + '".' };

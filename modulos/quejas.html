@@ -90,6 +90,11 @@
       <div id="seguimientoBanner"></div>
 
       <!-- Tabla -->
+      <div class="bs-flex bs-items-center bs-gap-sm bs-mb" style="justify-content:flex-end;">
+        <input type="checkbox" id="verAnulados" onchange="renderQuejas()">
+        <label for="verAnulados" class="bs-text-xs bs-text-muted bs-cursor-pointer">🗂 Ver anulados</label>
+      </div>
+
       <div id="tablaContainer">
         <div class="bs-text-center" style="padding: 2rem;">
           <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
@@ -452,7 +457,7 @@
       const fCla = document.getElementById('filterClasif').value;
       const fEst = document.getElementById('filterEstado').value;
       BSFiltroFecha.refrescar(_CACHE_Q);
-      let items = _CACHE_Q.slice().filter(function(x){ return !x.anulado; });
+      let items = (document.getElementById('verAnulados')||{}).checked ? _CACHE_Q.slice() : _CACHE_Q.slice().filter(function(x){ return !x.anulado; });
       if (fEmp) items = items.filter(function(q){ return q.empresa === fEmp; });
       if (fCla) items = items.filter(function(q){ return q.clasificacion === fCla; });
       if (fEst) items = items.filter(function(q){ return q.resultado === fEst; });
@@ -474,7 +479,7 @@
           const detRaw = (q.detalle || '');
           const detalleCorto = esc(detRaw.substring(0, 80)) + (detRaw.length > 80 ? '...' : '');
           const estadoBadge = q.resultado === 'Resuelto' ? 'bs-badge-success' : q.resultado === 'Cerrado' ? 'bs-badge-info' : 'bs-badge-warning';
-          html += '<tr>' +
+          html += '<tr' + (q.anulado ? ' style="opacity:.6;background:#fdf3f3;"' : '') + '>' +
             '<td><strong>#' + q.id + '</strong></td>' +
             '<td>' + fecha + '</td>' +
             '<td>' + esc(q.clasificacion || '-') + '</td>' +
@@ -485,7 +490,9 @@
             '<td>' + _segBadge(q) + '</td>' +
             '<td style="white-space:nowrap;"><div style="display:flex;gap:.35rem;align-items:center;">' +
               '<button class="bs-btn bs-btn-sm bs-btn-outline" style="min-width:74px;" onclick="editar(' + q.id + ')">✏️ Editar</button>' +
-              '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + q.id + ')">✖</button>' +
+              (q.anulado
+              ? '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Restaurar registro" style="color:#15803d;font-weight:800;" onclick="bsRestaurar(' + q.id + ')">↩</button>'
+              : '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + q.id + ')">✖</button>') +
               '<button class="bs-btn bs-btn-sm" style="min-width:74px;background: var(--bs-mod-quejas); color: white;" onclick="verSeguimientosQ(' + q.id + ')">📋 Seguim.</button>' +
             '</div></td>' +
           '</tr>';
@@ -540,6 +547,15 @@
     }
 
 
+    async function bsRestaurar(id) {
+      if (!id) return;
+      if (!(await appConfirm('¿Restaurar el registro #' + id + '? Volverá a la vista normal.'))) return;
+      try {
+        const res = await api('bs_restaurarRegistro', { usuario: user.usuario, modulo: 'quejas', id: parseInt(id) });
+        if (res.ok) { appAlert('Registro #' + id + ' restaurado.'); renderQuejas(); }
+        else appAlert('Error: ' + (res.message || 'No se pudo restaurar.'));
+      } catch (e) { appAlert('Error: ' + e.message); }
+    }
     async function bsAnular(id) {
       if (!id) return appAlert('Este registro no tiene ID; numéralo en la hoja para poder anularlo.');
       if (!(await appConfirm('¿Anular el registro #' + id + '? No se elimina: queda marcado como ANULADO y sale de la vista.'))) return;

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoría · Bienestar Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-mejoras.js"></script>
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon"><img src="../images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
+          <span>Bienestar Social · <strong>Auditoría</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: #334155;">
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">🕘</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Auditoría</b></div>
+            <h1 style="color: #334155;">Auditoría del Sistema</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Quién hizo qué y cuándo, en todos los módulos. Solo administradores.</p>
+          </div>
+        </div>
+        <button class="bs-btn bs-btn-outline" onclick="cargarAuditoria()">↻ Actualizar</button>
+      </div>
+
+      <div class="bs-card bs-mb">
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Módulo</label>
+            <select class="bs-select" id="fModulo" onchange="renderAuditoria()">
+              <option value="">Todos</option>
+              <option value="queja">Quejas</option>
+              <option value="accidente">Accidentes</option>
+              <option value="hostigamiento">Hostigamiento</option>
+              <option value="subsidio">Subsidios</option>
+              <option value="sugerencia">Sugerencias</option>
+              <option value="rendicion">Rendiciones</option>
+              <option value="seguimiento">Seguimientos</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Acción</label>
+            <select class="bs-select" id="fAccion" onchange="renderAuditoria()">
+              <option value="">Todas</option>
+              <option value="CREAR">Crear</option>
+              <option value="ACTUALIZAR">Actualizar</option>
+              <option value="IMPORTAR">Importar</option>
+              <option value="ANULAR">Anular</option>
+              <option value="RESTAURAR">Restaurar</option>
+              <option value="ELIMINAR">Eliminar</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Usuario</label>
+            <input type="text" class="bs-input" id="fUsuario" placeholder="Filtrar por usuario..." oninput="renderAuditoria()">
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Buscar en detalle</label>
+            <input type="text" class="bs-input" id="fTexto" placeholder="ID, motivo..." oninput="renderAuditoria()">
+          </div>
+        </div>
+      </div>
+
+      <div id="tablaContainer">
+        <div class="bs-text-center" style="padding: 2rem;">
+          <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="bs-footer">
+      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0
+    </footer>
+  </div>
+
+  <script>
+    const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+
+    // ===== AUTH (solo administradores) =====
+    const session = localStorage.getItem('bienestarSocialAuth');
+    if (!session) window.location.href = '../index.html';
+    let user;
+    try {
+      user = JSON.parse(session);
+      if (!user || !user.usuario) throw new Error();
+    } catch(e) { window.location.href = '../index.html'; }
+    const ADMINS = ['jtimoteo','ovilela','jchavez'];
+    const esAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test(user.rol || '');
+    if (!esAdmin) {
+      appAlert('Solo administradores pueden ver la auditoría.');
+      window.location.href = '../portal.html';
+    }
+    document.getElementById('userName').textContent = user.nombre || user.usuario;
+
+    async function api(action, payload) {
+      let res;
+      try {
+        res = await fetch(BS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(Object.assign({ action: action, token: (window.bsToken ? bsToken() : '') }, payload || {}))
+        });
+      } catch (e) { throw new Error('Sin conexión con el servidor.'); }
+      if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '.');
+      let _j;
+      try { _j = await res.json(); } catch (e) { throw new Error('Respuesta inválida del servidor.'); }
+      if (window.bsSesionInvalida && bsSesionInvalida(_j)) throw new Error('Sesión expirada.');
+      return _j;
+    }
+
+    function esc(t) {
+      return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+    }
+
+    let _AUD = [];
+    async function cargarAuditoria() {
+      const cont = document.getElementById('tablaContainer');
+      cont.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div>';
+      try {
+        const res = await api('bs_listarAuditoria', {});
+        if (!res.ok) { cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + esc(res.message || '¿Está instalada la acción bs_listarAuditoria en el Apps Script?') + '</div>'; return; }
+        _AUD = res.items || [];
+        renderAuditoria();
+      } catch(err) {
+        cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + esc(err.message) + '</div>';
+      }
+    }
+
+    function badgeAccion(a) {
+      const m = { CREAR:'bs-badge-success', ACTUALIZAR:'bs-badge-info', IMPORTAR:'bs-badge-primary', ANULAR:'bs-badge-danger', RESTAURAR:'bs-badge-warning', ELIMINAR:'bs-badge-danger' };
+      return m[a] || 'bs-badge';
+    }
+
+    function renderAuditoria() {
+      const cont = document.getElementById('tablaContainer');
+      const fm = document.getElementById('fModulo').value.toLowerCase();
+      const fa = document.getElementById('fAccion').value;
+      const fu = document.getElementById('fUsuario').value.toLowerCase().trim();
+      const ft = document.getElementById('fTexto').value.toLowerCase().trim();
+      let items = _AUD.slice();
+      if (fm) items = items.filter(function(x){ return String(x.modulo||'').toLowerCase().indexOf(fm) >= 0; });
+      if (fa) items = items.filter(function(x){ return String(x.accion||'').toUpperCase() === fa; });
+      if (fu) items = items.filter(function(x){ return String(x.usuario||'').toLowerCase().indexOf(fu) >= 0; });
+      if (ft) items = items.filter(function(x){ return (String(x.registro_id||'') + ' ' + String(x.detalle||'')).toLowerCase().indexOf(ft) >= 0; });
+
+      if (!items.length) { cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay movimientos con esos filtros.</p></div>'; return; }
+
+      window.__BS_EXPORT_DATA__ = items;
+      let html = '<div class="bs-table-wrap"><table class="bs-table">';
+      html += '<thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Módulo</th><th>Registro</th><th>Detalle</th></tr></thead><tbody>';
+      items.forEach(function(x) {
+        html += '<tr>' +
+          '<td style="white-space:nowrap;">' + esc(x.fecha || '-') + '</td>' +
+          '<td><strong>' + esc(x.usuario || '-') + '</strong></td>' +
+          '<td><span class="bs-badge ' + badgeAccion(String(x.accion||'').toUpperCase()) + '">' + esc(x.accion || '-') + '</span></td>' +
+          '<td>' + esc(x.modulo || '-') + '</td>' +
+          '<td>' + (x.registro_id !== '' && x.registro_id !== null && x.registro_id !== undefined ? '<strong>#' + esc(x.registro_id) + '</strong>' : '-') + '</td>' +
+          '<td class="bs-text-sm">' + esc(x.detalle || '') + '</td>' +
+        '</tr>';
+      });
+      html += '</tbody></table></div>';
+      html += '<p class="bs-text-xs bs-text-muted" style="margin-top:.5rem;">Mostrando ' + items.length + ' de ' + _AUD.length + ' movimientos (últimos 500).</p>';
+      cont.innerHTML = html;
+    }
+
+    async function logout() {
+      if (await appConfirm('¿Cerrar sesión?')) {
+        localStorage.removeItem('bienestarSocialAuth');
+        try { Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); } catch(e){}
+        window.location.href = '../index.html';
+      }
+    }
+
+    cargarAuditoria();
+  </script>
+</body>
+</html>
