@@ -17,6 +17,16 @@
     .bs-login-divider { width: 48px; height: 3px; margin: 10px auto 16px; border-radius: 2px; background: linear-gradient(90deg, var(--bs-primary), var(--bs-secondary)); }
     .bs-btn-login { width: 100%; padding: .8rem; font-size: .95rem; letter-spacing: .03em; }
     .bs-caps-hint { display: none; font-size: .75rem; color: var(--bs-warning); font-weight: 600; margin-top: 4px; }
+    .bs-welcome-overlay { position: fixed; inset: 0; z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #fff; background: linear-gradient(135deg, #0033A0 0%, #0a4fd6 55%, #E2231A 160%); animation: bs-fade .35s ease both; }
+    .bs-welcome-overlay.bs-active { display: flex; }
+    .bs-welcome-wave { font-size: 3.2rem; display: inline-block; animation: bs-wave 1.4s ease infinite; transform-origin: 70% 70%; }
+    .bs-welcome-title { font-size: 1.9rem; font-weight: 700; margin: .6rem 0 .2rem; }
+    .bs-welcome-title .nm { color: #ffd8d5; }
+    .bs-welcome-sub { font-size: 1rem; opacity: .92; }
+    .bs-welcome-loading { margin-top: 1.6rem; font-size: .85rem; opacity: .85; display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+    @keyframes bs-wave { 0%,60%,100%{transform:rotate(0)} 10%,30%{transform:rotate(16deg)} 20%,40%{transform:rotate(-8deg)} }
+    @keyframes bs-fade { from{opacity:0} to{opacity:1} }
+    @keyframes bs-rise { from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none} }
   </style>
 
   <div class="bs-login-card">
@@ -95,4 +105,108 @@
     // ===== Saludo personalizado con género (~90%) =====
     function _sinTilde(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
     function generoPorNombre(nombre){
-      var p = _sinTilde(String(no
+      var p = _sinTilde(String(nombre||'').trim().split(/\s+/)[0]);
+      if (!p) return 'n';
+      var fem = ['carol','maria','rosa','ana','luz','flor','carmen','isabel','patricia','sandra','monica','veronica','claudia','gladys','janet','yanet','yesenia','yessenia','katherine','katia','karen','karla','fiorella','milagros','mercedes','esther','ester','ruth','elizabeth','lisbeth','lizbeth','vanessa','paola','pamela','diana','silvia','sonia','susana','teresa','gloria','irma','norma','olga','doris','edith','judith','ingrid','miriam','myriam','nancy','betty','lourdes','pilar','rocio','soledad','victoria','virginia','ximena','zoila'];
+      if (fem.indexOf(p) >= 0) return 'f';
+      if (/[oa]$/.test(p)) return p.charAt(p.length-1) === 'a' ? 'f' : 'm';
+      return 'n';
+    }
+    function mensajeBienvenida(nombre){
+      var g = generoPorNombre(nombre);
+      var sufijo = g === 'f' ? 'Bienvenida' : (g === 'm' ? 'Bienvenido' : 'Te damos la bienvenida');
+      var h = new Date().getHours();
+      var momento = h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
+      return momento + ' · ' + sufijo + ' al sistema de Bienestar Social';
+    }
+    function mostrarBienvenida(nombre){
+      var primer = String(nombre || '').trim().split(/\s+/)[0] || 'usuario';
+      primer = primer.charAt(0).toUpperCase() + primer.slice(1).toLowerCase();
+      document.getElementById('welcomeNombre').textContent = primer;
+      document.getElementById('welcomeMsg').textContent = mensajeBienvenida(nombre);
+      document.getElementById('welcomeOverlay').classList.add('bs-active');
+    }
+
+    // ===== Sesión existente -> redirigir =====
+    const session = localStorage.getItem('bienestarSocialAuth');
+    if (session) {
+      try {
+        const data = JSON.parse(session);
+        if (data && data.usuario) {
+          window.location.href = 'portal.html';
+        }
+      } catch(e) {
+        localStorage.removeItem('bienestarSocialAuth');
+      }
+    }
+
+    // ===== Helpers UI =====
+    function showAlert(msg, tipo) {
+      tipo = tipo || 'danger';
+      alertContainer.innerHTML = '<div class="bs-alert bs-alert-' + tipo + '">' + msg + '</div>';
+    }
+    function clearAlert() { alertContainer.innerHTML = ''; }
+    function setLoading(state) {
+      btnLogin.disabled = state;
+      if (state) {
+        btnText.textContent = 'Ingresando';
+        btnDots.classList.remove('bs-hidden');
+      } else {
+        btnText.textContent = 'Ingresar';
+        btnDots.classList.add('bs-hidden');
+      }
+    }
+
+    // ===== Submit =====
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      clearAlert();
+
+      const usuario = document.getElementById('usuario').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!usuario || !password) {
+        showAlert('Por favor completa todos los campos');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // GAS WebApp: usar text/plain para evitar CORS preflight
+        const res = await fetch(BS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'bs_login',
+            usuario: usuario,
+            password: password
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.ok) {
+          localStorage.setItem('bienestarSocialAuth', JSON.stringify({
+            usuario: data.user.usuario,
+            nombre: data.user.nombre,
+            rol: data.user.rol,
+            permisos: data.user.permisos,
+            token: data.user.token || data.token || '',
+            loginAt: new Date().toISOString()
+          }));
+          mostrarBienvenida(data.user.nombre || data.user.usuario);
+          setTimeout(function() { window.location.href = 'portal.html'; }, 1400);
+        } else {
+          showAlert(data.message || 'Usuario o contraseña incorrectos');
+          setLoading(false);
+        }
+      } catch(err) {
+        console.error(err);
+        showAlert('Error de conexión. Verifica tu internet.');
+        setLoading(false);
+      }
+    });
+  </script>
+
+</body>
+</html>

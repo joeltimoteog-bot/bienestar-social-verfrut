@@ -56,3 +56,6 @@ patch_*.py
 
 # Documentacion interna (no va al sitio)
 SKILL-Bienestar-Social.md
+
+# Carpeta de archivos por eliminar (revision manual)
+_to_delete/

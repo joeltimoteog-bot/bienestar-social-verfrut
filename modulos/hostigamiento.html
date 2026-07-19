@@ -248,17 +248,20 @@
         res = await fetch(BS_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+          body: JSON.stringify(Object.assign({ action: action, token: (window.bsToken ? bsToken() : '') }, payload || {}))
         });
       } catch (e) {
         throw new Error('Sin conexión con el servidor. Verifica tu internet e intenta de nuevo.');
       }
       if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '. Intenta de nuevo.');
+      let _j;
       try {
-        return await res.json();
+        _j = await res.json();
       } catch (e) {
         throw new Error('Respuesta inválida del servidor. Intenta de nuevo en unos segundos.');
       }
+      if (window.bsSesionInvalida && bsSesionInvalida(_j)) throw new Error('Sesión expirada. Vuelve a iniciar sesión.');
+      return _j;
     }
 
     // ===== Helper: enmascarar =====
@@ -295,7 +298,7 @@
       const _fkey = JSON.stringify([filtros, privacyMode]);
       let _pintado = false;
       try {
-        const _c = JSON.parse(localStorage.getItem('bs_cache_hostigamiento_v2') || 'null');
+        const _c = JSON.parse(sessionStorage.getItem('bs_cache_hostigamiento_v2') || 'null');
         if (_c && _c.fkey === _fkey && _c.html) {
           cont.innerHTML = _c.html;
           _CACHE_H = _c.items || [];
@@ -350,7 +353,7 @@
           html += '<p class="bs-text-xs bs-text-muted bs-mt" style="text-align:right;">🔐 Modo discreto activo. Los nombres están parcialmente ocultos.</p>';
         }
         cont.innerHTML = html;
-        try { localStorage.setItem('bs_cache_hostigamiento_v2', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
+        try { sessionStorage.setItem('bs_cache_hostigamiento_v2', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
       } catch(err) {
         cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
       }
@@ -489,7 +492,7 @@
     // ===== LOGOUT =====
     async function logout() {
       if (await appConfirm('¿Cerrar sesión?')) {
-        localStorage.removeItem('bienestarSocialAuth');
+        localStorage.removeItem('bienestarSocialAuth'); try { Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); Object.keys(sessionStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) sessionStorage.removeItem(k); }); } catch(e){}
         window.location.href = '../index.html';
       }
     }

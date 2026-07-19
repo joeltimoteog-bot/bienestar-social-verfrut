@@ -212,22 +212,25 @@
         res = await fetch(BS_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+          body: JSON.stringify(Object.assign({ action: action, token: (window.bsToken ? bsToken() : '') }, payload || {}))
         });
       } catch (e) {
         throw new Error('Sin conexión con el servidor. Verifica tu internet e intenta de nuevo.');
       }
       if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '. Intenta de nuevo.');
+      let _j;
       try {
-        return await res.json();
+        _j = await res.json();
       } catch (e) {
         throw new Error('Respuesta inválida del servidor. Intenta de nuevo en unos segundos.');
       }
+      if (window.bsSesionInvalida && bsSesionInvalida(_j)) throw new Error('Sesión expirada. Vuelve a iniciar sesión.');
+      return _j;
     }
 
     async function logout() {
       if (await appConfirm('¿Cerrar sesión?')) {
-        localStorage.removeItem('bienestarSocialAuth');
+        localStorage.removeItem('bienestarSocialAuth'); try { Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); Object.keys(sessionStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) sessionStorage.removeItem(k); }); } catch(e){}
         window.location.href = '../index.html';
       }
     }

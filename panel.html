@@ -237,12 +237,14 @@ async function cargar(){
   } catch(e) {}
 
   // 2) Refresca las 3 fuentes EN PARALELO y re-pinta al llegar
+  function _bsTok(){ try { var u = JSON.parse(localStorage.getItem('bienestarSocialAuth')||'null'); return (u && u.token) || ''; } catch(e){ return ''; } }
+  function _bs401(j){ if (j && j.code === 401) { try { localStorage.removeItem('bienestarSocialAuth'); Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); } catch(e){} location.href = 'index.html'; return true; } return false; }
   function post(action){
     return fetch(API_URL, {
       method:'POST',
       headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, permisos: permisos })
-    }).then(function(r){ return r.json(); });
+      body: JSON.stringify({ action: action, token: _bsTok(), permisos: permisos })
+    }).then(function(r){ return r.json(); }).then(function(j){ if (_bs401(j)) throw new Error('Sesión expirada'); return j; });
   }
   function guardarCache(parte, data){
     try {
@@ -273,7 +275,7 @@ async function cargarAlertas(permisos){
     const res = await fetch(API_URL, {
       method:'POST',
       headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'bs_alertas', permisos: permisos })
+      body: JSON.stringify({ action:'bs_alertas', token: _bsTok(), permisos: permisos })
     });
     const data = await res.json();
     if (data.ok) renderAlertas(data);
@@ -445,7 +447,7 @@ async function cargarCasosContrato(permisos){
     const res = await fetch(API_URL, {
       method:'POST',
       headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action:'bs_casos_contrato', permisos: permisos })
+      body: JSON.stringify({ action:'bs_casos_contrato', token: _bsTok(), permisos: permisos })
     });
     const d = await res.json();
     if (d.ok) renderCasosContrato(d);

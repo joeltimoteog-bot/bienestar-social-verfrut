@@ -46,6 +46,28 @@
     return p[2] + '/' + p[1] + '/' + p[0];
   };
 
+  /* ---------- SESIÓN CON TOKEN (seguridad backend) ---------- */
+  window.bsToken = function () {
+    try {
+      var u = JSON.parse(localStorage.getItem('bienestarSocialAuth') || 'null');
+      return (u && u.token) || '';
+    } catch (e) { return ''; }
+  };
+  // Si el backend responde code:401 (token inválido/expirado) → volver al login
+  window.bsSesionInvalida = function (res) {
+    if (res && res.code === 401) {
+      try { localStorage.removeItem('bienestarSocialAuth'); } catch (e) {}
+      try {
+        Object.keys(localStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); });
+        Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) sessionStorage.removeItem(k); });
+      } catch (e) {}
+      var enModulo = location.pathname.indexOf('/modulos/') >= 0;
+      location.href = enModulo ? '../index.html' : 'index.html';
+      return true;
+    }
+    return false;
+  };
+
   /* ---------- estilos compartidos ---------- */
   function injectCss() {
     if (document.getElementById('bsMejorasCss')) return;
@@ -191,7 +213,7 @@
     if (!MOD_KEY || !user) return;
     fetch(API_URL, {
       method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'bs_alertas', permisos: user.permisos || {} })
+      body: JSON.stringify({ action: 'bs_alertas', token: window.bsToken(), permisos: user.permisos || {} })
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d || !d.ok) return;
       ATR = (d.alertas || []).filter(function (a) {
@@ -609,7 +631,7 @@
     if (!list) return;
     fetch(API_URL, {
       method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'bs_listarDocumentos', modulo: MOD_KEY, caso_id: casoId })
+      body: JSON.stringify({ action: 'bs_listarDocumentos', token: window.bsToken(), modulo: MOD_KEY, caso_id: casoId })
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (!list.isConnected) return;
       if (!d || !d.ok) { list.innerHTML = '<span class="em2 err">No se pudieron cargar (¿backend de evidencias instalado?).</span>'; return; }
@@ -646,7 +668,7 @@
         fetch(API_URL, {
           method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
-            action: 'bs_subirDocumento', modulo: MOD_KEY, caso_id: casoId,
+            action: 'bs_subirDocumento', token: window.bsToken(), modulo: MOD_KEY, caso_id: casoId,
             nombre: file.name, mime: file.type || 'application/octet-stream',
             base64: b64, usuario: (user && (user.nombre || user.usuario)) || ''
           })

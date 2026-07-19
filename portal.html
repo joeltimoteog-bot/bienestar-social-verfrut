@@ -202,11 +202,13 @@
   <script>
     // ===== ENDPOINT BIENESTAR =====
     var BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+    function _bsTok(){ try { var u = JSON.parse(localStorage.getItem('bienestarSocialAuth')||'null'); return (u && u.token) || ''; } catch(e){ return ''; } }
+    function _bs401(j){ if (j && j.code === 401) { try { localStorage.removeItem('bienestarSocialAuth'); Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); } catch(e){} location.href = 'index.html'; return true; } return false; }
     function bsApi(action, payload){
       return fetch(BS_API_URL, {
         method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify(Object.assign({action:action}, payload||{}))
-      }).then(function(r){ return r.json(); });
+        body: JSON.stringify(Object.assign({action:action, token:_bsTok()}, payload||{}))
+      }).then(function(r){ return r.json(); }).then(function(j){ if (_bs401(j)) throw new Error('Sesión expirada'); return j; });
     }
 
     // ===== AUTH CHECK =====
@@ -220,7 +222,7 @@
       user = JSON.parse(session);
       if (!user || !user.usuario) throw new Error('Sesion invalida');
     } catch (e) {
-      localStorage.removeItem('bienestarSocialAuth');
+      localStorage.removeItem('bienestarSocialAuth'); try { Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); Object.keys(sessionStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) sessionStorage.removeItem(k); }); } catch(e){}
       window.location.href = 'index.html';
     }
 
@@ -578,7 +580,7 @@
     // ===== LOGOUT =====
     async function logout() {
       if (await appConfirm('¿Cerrar sesión?')) {
-        localStorage.removeItem('bienestarSocialAuth');
+        localStorage.removeItem('bienestarSocialAuth'); try { Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); Object.keys(sessionStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) sessionStorage.removeItem(k); }); } catch(e){}
         window.location.href = 'index.html';
       }
     }
