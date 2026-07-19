@@ -51,6 +51,8 @@
         </div>
       </div>
 
+      <div id="kpiQuejas" style="display:none"></div>
+
       <!-- Filtros -->
       <div class="bs-card bs-mb">
         <div class="bs-grid bs-grid-3 bs-gap">
@@ -463,6 +465,7 @@
       if (fEst) items = items.filter(function(q){ return q.resultado === fEst; });
       items = items.filter(BSFiltroFecha.pasa);
 
+      pintarKpisQuejas(items);
       if (items.length === 0) {
         cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay hallazgos registrados con esos filtros.</p></div>';
         _renderSegBanner(items);
@@ -569,6 +572,35 @@
     }
 
     window.__BS_EXPORT_ORDER = ['id','fecha_recepcion','clasificacion','canal','categoria','sector','detalle','accion_correctiva','accion_mejora','coordinacion','fecha_levantamiento_ac','frecuencia_seguimiento_ac','fecha_seguimiento_am','observaciones','resultado','documentos','empresa','created_by','created_at','updated_at','anulado'];
+
+    function pintarKpisQuejas(items) {
+      items = items || [];
+      var proc = 0, res_ = 0, cerr = 0, otros = 0;
+      items.forEach(function(q) {
+        var e = String(q.resultado || '').toLowerCase();
+        if (e.indexOf('resuel') >= 0) res_++;
+        else if (e.indexOf('cerrad') >= 0) cerr++;
+        else if (!e || e.indexOf('proceso') >= 0 || e.indexOf('monitoreo') >= 0 || e.indexOf('pendiente') >= 0) proc++;
+        else otros++;
+      });
+      var T = items.length;
+      var pct = function(n){ return T ? Math.round(n*100/T) + '% del total' : ''; };
+      bsKpisPro('kpiQuejas', {
+        total: T,
+        cards: [
+          { ico:'📋', val:T, lbl:'Hallazgos (según filtros)', color:'var(--bs-mod-quejas)', sub: proc + ' en proceso' },
+          { ico:'⏳', val:proc, lbl:'En proceso / Monitoreo', color:'#f59e0b', sub: pct(proc) },
+          { ico:'✅', val:res_, lbl:'Resueltos', color:'#16a34a', sub: pct(res_) },
+          { ico:'📦', val:cerr, lbl:'Cerrados', color:'#2563eb', sub: pct(cerr) }
+        ],
+        dist: { label: 'Composición por resultado', segs: [
+          { lbl:'En proceso / Monitoreo', v:proc, color:'#f59e0b' },
+          { lbl:'Resuelto', v:res_, color:'#16a34a' },
+          { lbl:'Cerrado', v:cerr, color:'#2563eb' },
+          { lbl:'Otros', v:otros, color:'#64748b' }
+        ]}
+      });
+    }
 
     // ===== SEGUIMIENTO =====
     function _fechaInput(v) {

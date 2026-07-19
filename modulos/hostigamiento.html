@@ -52,6 +52,8 @@
         <button class="bs-btn" style="background: var(--bs-mod-hostigamiento); color: white;" onclick="openModal()">+ Nueva Denuncia</button>
       </div>
 
+      <div id="kpiHostigamiento" style="display:none"></div>
+
       <!-- Filtros -->
       <div class="bs-card bs-mb">
         <div class="bs-grid bs-grid-3 bs-gap">
@@ -330,6 +332,7 @@
         BSFiltroFecha.refrescar(_CACHE_H);
         res.items = (res.items || []).filter(BSFiltroFecha.pasa);
         if (!(document.getElementById('verAnulados')||{}).checked) res.items = res.items.filter(function(x){ return !x.anulado; });
+        pintarKpisHost(res.items);
         _CACHE_H = res.items;
         var _sameH = _pintado && _cn(_CACHE_H) === _cn(_prevH);
         if (_sameH) return;
@@ -398,6 +401,36 @@
       } catch (e) { appAlert('Error: ' + e.message); }
     }
 
+    function pintarKpisHost(items) {
+      items = items || [];
+      var inv = 0, med = 0, res_ = 0, arch = 0, otros = 0;
+      items.forEach(function(d) {
+        var e = String(d.status || '').toLowerCase();
+        if (e.indexOf('investig') >= 0) inv++;
+        else if (e.indexOf('medida') >= 0) med++;
+        else if (e.indexOf('resuel') >= 0) res_++;
+        else if (e.indexOf('archiv') >= 0 || e.indexOf('sin lugar') >= 0) arch++;
+        else otros++;
+      });
+      var T = items.length;
+      var pct = function(n){ return T ? Math.round(n*100/T) + '% del total' : ''; };
+      bsKpisPro('kpiHostigamiento', {
+        total: T,
+        cards: [
+          { ico:'🔒', val:T, lbl:'Denuncias (según filtros)', color:'var(--bs-mod-hostigamiento)', sub: inv + ' en investigación' },
+          { ico:'🕵️', val:inv, lbl:'En investigación', color:'#dc2626', sub: pct(inv) },
+          { ico:'🛡️', val:med, lbl:'Medidas dictadas', color:'#f59e0b', sub: pct(med) },
+          { ico:'✅', val:res_, lbl:'Resueltas', color:'#16a34a', sub: pct(res_) }
+        ],
+        dist: { label: 'Composición por estado de la denuncia', segs: [
+          { lbl:'En investigación', v:inv, color:'#dc2626' },
+          { lbl:'Medidas dictadas', v:med, color:'#f59e0b' },
+          { lbl:'Resuelto', v:res_, color:'#16a34a' },
+          { lbl:'Archivado / Sin lugar', v:arch, color:'#2563eb' },
+          { lbl:'Otros', v:otros, color:'#64748b' }
+        ]}
+      });
+    }
     const ALL_FIELDS = ['fecha_denuncia','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','fundo','decision','status','observaciones','empresa'];
     window.__BS_EXPORT_ORDER = ['id'].concat(ALL_FIELDS).concat(['created_by','created_at','updated_at','anulado']);
     const DATE_FIELDS = ['fecha_denuncia'];

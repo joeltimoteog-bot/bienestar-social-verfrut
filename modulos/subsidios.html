@@ -52,7 +52,10 @@
       <!-- Resumen de recuperación por año -->
       <style>
         .rec-grid{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
-        .rec-kpi{flex:1;min-width:150px;background:var(--bs-surface-alt);border-radius:10px;padding:10px 14px;}
+        .rec-kpi{flex:1;min-width:160px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:12px 16px;box-shadow:0 4px 14px rgba(0,27,85,.07);position:relative;overflow:hidden;transition:transform .18s, box-shadow .2s;}
+        .rec-kpi:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(0,27,85,.13);}
+        .rec-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;}
+        .rec-kpi.verde::before{background:#16a34a;}.rec-kpi.azul::before{background:#2563eb;}.rec-kpi.ambar::before{background:#f59e0b;}.rec-kpi.gris::before{background:#64748b;}
         .rec-kpi .v{font-size:1.15rem;font-weight:800;line-height:1.2;}
         .rec-kpi .l{font-size:.68rem;font-weight:700;color:var(--bs-text-subtle);text-transform:uppercase;letter-spacing:.03em;}
         .rec-kpi.verde .v{color:#15803d;}.rec-kpi.azul .v{color:#1e3a8a;}.rec-kpi.ambar .v{color:#b45309;}.rec-kpi.gris .v{color:#334155;}

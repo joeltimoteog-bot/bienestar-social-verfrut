@@ -704,23 +704,36 @@
 
     let casosCache = [];
     function pintarKpisAcc(items) {
-      var el = document.getElementById('kpiAccidentes');
-      if (!el) return;
       items = items || [];
-      if (!items.length) { el.style.display = 'none'; return; }
-      var act = 0, restr = 0, reinc = 0;
+      var act = 0, trat = 0, restr = 0, reinc = 0, cerr = 0, otros = 0;
       items.forEach(function(c) {
         var e = String(c.estado_caso || '').toLowerCase();
         if (e.indexOf('restric') >= 0) restr++;
         else if (e.indexOf('reincorp') >= 0) reinc++;
-        else if (e.indexOf('activo') >= 0 || e.indexOf('tratamiento') >= 0) act++;
+        else if (e.indexOf('cerrad') >= 0) cerr++;
+        else if (e.indexOf('tratamiento') >= 0) trat++;
+        else if (e.indexOf('activo') >= 0) act++;
+        else otros++;
       });
-      el.innerHTML =
-        '<div class="bs-kpi" style="--kc:#0a2463"><span class="t">📋</span><div class="v">' + items.length + '</div><div class="l">Casos (según filtros)</div></div>' +
-        '<div class="bs-kpi" style="--kc:#dc2626"><span class="t">🔴</span><div class="v">' + act + '</div><div class="l">Activos</div></div>' +
-        '<div class="bs-kpi" style="--kc:#b45309"><span class="t">⚠️</span><div class="v">' + restr + '</div><div class="l">Con restricción</div></div>' +
-        '<div class="bs-kpi" style="--kc:#15803d"><span class="t">✅</span><div class="v">' + reinc + '</div><div class="l">Reincorporados</div></div>';
-      el.style.display = 'grid';
+      var T = items.length;
+      var pct = function(n){ return T ? Math.round(n*100/T) + '% del total' : ''; };
+      bsKpisPro('kpiAccidentes', {
+        total: T,
+        cards: [
+          { ico:'🩺', val:T, lbl:'Casos (según filtros)', color:'var(--bs-mod-accidentes)', sub: (act+trat) + ' en curso' },
+          { ico:'🔴', val:act+trat, lbl:'Activos / En tratamiento', color:'#dc2626', sub: pct(act+trat) },
+          { ico:'⚠️', val:restr, lbl:'Con restricción', color:'#f59e0b', sub: pct(restr) },
+          { ico:'✅', val:reinc, lbl:'Reincorporados', color:'#16a34a', sub: pct(reinc) }
+        ],
+        dist: { label: 'Composición por estado del caso', segs: [
+          { lbl:'Activo', v:act, color:'#dc2626' },
+          { lbl:'En tratamiento', v:trat, color:'#f59e0b' },
+          { lbl:'Con restricción', v:restr, color:'#d97706' },
+          { lbl:'Reincorporado', v:reinc, color:'#16a34a' },
+          { lbl:'Cerrado', v:cerr, color:'#2563eb' },
+          { lbl:'Otros', v:otros, color:'#64748b' }
+        ]}
+      });
     }
     async function cargar() {
       const filtros = {

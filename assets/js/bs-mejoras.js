@@ -68,6 +68,65 @@
     return false;
   };
 
+  /* ---------- KPIs PRO (tarjetas de indicadores + barra de composición) ----------
+   * Paleta de estados validada (daltonismo): rojo #dc2626, ámbar #f59e0b,
+   * verde #16a34a, azul #2563eb (+ gris neutro para "Otros"). Los segmentos
+   * llevan etiqueta y conteo en la leyenda y separadores de 2px (nunca color solo). */
+  function _bskpCss() {
+    if (document.getElementById('bskpCss')) return;
+    var st = document.createElement('style');
+    st.id = 'bskpCss';
+    st.textContent =
+      '.bskp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:.9rem;margin-bottom:.9rem;}' +
+      '.bskp-card{position:relative;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:.9rem 1rem;box-shadow:0 4px 14px rgba(0,27,85,.07);display:flex;align-items:center;gap:.75rem;transition:transform .18s, box-shadow .2s;overflow:hidden;}' +
+      '.bskp-card::after{content:"";position:absolute;right:-34px;top:-34px;width:100px;height:100px;border-radius:50%;background:radial-gradient(circle, color-mix(in srgb, var(--kc) 10%, transparent), transparent 70%);pointer-events:none;}' +
+      '.bskp-card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(0,27,85,.13);}' +
+      '.bskp-ico{width:44px;height:44px;border-radius:12px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:1.25rem;color:#fff;background:linear-gradient(135deg,var(--kc),color-mix(in srgb,var(--kc) 65%, #000 12%));box-shadow:0 5px 12px color-mix(in srgb,var(--kc) 35%, transparent);}' +
+      '.bskp-val{font-size:1.5rem;font-weight:800;color:#0f172a;line-height:1.1;letter-spacing:-.02em;}' +
+      '.bskp-lbl{font-size:.64rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-top:1px;}' +
+      '.bskp-sub{font-size:.68rem;color:var(--kc);font-weight:700;}' +
+      '.bskp-dist{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:.8rem 1.05rem;box-shadow:0 4px 14px rgba(0,27,85,.07);margin-bottom:1rem;}' +
+      '.bskp-dist .t{font-size:.66rem;font-weight:800;color:#0a2463;text-transform:uppercase;letter-spacing:.05em;}' +
+      '.bskp-bar{display:flex;gap:2px;height:12px;margin:.5rem 0 .55rem;}' +
+      '.bskp-bar i{display:block;height:100%;border-radius:4px;min-width:6px;transition:filter .15s;}' +
+      '.bskp-bar i:hover{filter:brightness(1.12);}' +
+      '.bskp-leg{display:flex;gap:.4rem .95rem;flex-wrap:wrap;font-size:.72rem;color:#475569;font-weight:600;}' +
+      '.bskp-leg b{color:#0f172a;}' +
+      '.bskp-leg .d{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px;}';
+    document.head.appendChild(st);
+  }
+  window.bsKpisPro = function (elId, cfg) {
+    var el = document.getElementById(elId);
+    if (!el) return;
+    if (!cfg || !cfg.cards || !cfg.cards.length || !cfg.total) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    _bskpCss();
+    var h = '<div class="bskp-grid">';
+    cfg.cards.forEach(function (c) {
+      h += '<div class="bskp-card" style="--kc:' + c.color + '" title="' + esc(c.lbl) + '">' +
+        '<div class="bskp-ico">' + c.ico + '</div>' +
+        '<div><div class="bskp-val">' + esc(c.val) + '</div>' +
+        '<div class="bskp-lbl">' + esc(c.lbl) + '</div>' +
+        (c.sub ? '<div class="bskp-sub">' + esc(c.sub) + '</div>' : '') +
+        '</div></div>';
+    });
+    h += '</div>';
+    if (cfg.dist && cfg.dist.segs) {
+      var segs = cfg.dist.segs.filter(function (x) { return x.v > 0; });
+      var tot = segs.reduce(function (a, x) { return a + x.v; }, 0);
+      if (tot > 0) {
+        h += '<div class="bskp-dist"><span class="t">' + esc(cfg.dist.label || 'Composición') + '</span>' +
+          '<div class="bskp-bar">' + segs.map(function (x) {
+            return '<i style="width:' + (x.v * 100 / tot) + '%;background:' + x.color + '" title="' + esc(x.lbl) + ': ' + x.v + '"></i>';
+          }).join('') + '</div>' +
+          '<div class="bskp-leg">' + segs.map(function (x) {
+            return '<span><span class="d" style="background:' + x.color + '"></span>' + esc(x.lbl) + ' <b>' + x.v + '</b> · ' + Math.round(x.v * 100 / tot) + '%</span>';
+          }).join('') + '</div></div>';
+      }
+    }
+    el.innerHTML = h;
+    el.style.display = 'block';
+  };
+
   /* ---------- ABRIR EVIDENCIA PRIVADA (vía backend, sin enlace público) ---------- */
   window.bsmVerEvid = function (id, a) {
     try { if (a) a.textContent = 'Abriendo…'; } catch (e) {}
