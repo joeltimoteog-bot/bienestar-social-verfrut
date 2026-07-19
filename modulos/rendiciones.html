@@ -55,6 +55,8 @@
         <button class="bs-btn" style="background: var(--bs-mod-rend); color: white;" onclick="openModal()">+ Nueva Rendición</button>
       </div>
 
+      <div id="kpiRendiciones" style="display:none"></div>
+
       <!-- Filtros -->
       <div class="bs-card bs-mb">
         <div class="bs-grid bs-gap" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
@@ -343,6 +345,32 @@
     }
 
     // ===== RENDER (filtros locales: categoría / búsqueda / rango fechas) =====
+    function pintarKpisRend(items) {
+      items = items || [];
+      var dep = 0, pen = 0, mDep = 0, mPen = 0, mTot = 0;
+      items.forEach(function(r) {
+        var mt = parseFloat(r.monto_total) || 0;
+        mTot += mt;
+        if (String(r.estado).toUpperCase() === 'DEPOSITADO') { dep++; mDep += mt; }
+        else { pen++; mPen += mt; }
+      });
+      var T = items.length;
+      var F = function(n){ return 'S/ ' + (n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+      bsKpisPro('kpiRendiciones', {
+        total: T,
+        cards: [
+          { ico:'📑', val:T, lbl:'Rendiciones (según filtros)', color:'var(--bs-mod-rend, #0f766e)', sub: F(mTot) + ' en total' },
+          { ico:'🏦', val:dep, lbl:'Depositadas', color:'#16a34a', sub: F(mDep) },
+          { ico:'⏳', val:pen, lbl:'Pendientes de depósito', color:'#f59e0b', sub: F(mPen) },
+          { ico:'💵', val:F(mTot), lbl:'Monto total', color:'#2563eb', sub: T ? F(mTot / T) + ' promedio' : '' }
+        ],
+        dist: { label: 'Monto por estado de depósito', segs: [
+          { lbl:'Depositado', v: Math.round(mDep), color:'#16a34a' },
+          { lbl:'Pendiente', v: Math.round(mPen), color:'#f59e0b' }
+        ]}
+      });
+    }
+
     function render() {
       const cont = document.getElementById('tablaContainer');
       const catField = document.getElementById('filterCategoria').value;
@@ -375,6 +403,7 @@
       window.__BS_EXPORT_DATA__ = items;
       renderReporte(items);
 
+      pintarKpisRend(items);
       if (items.length === 0) {
         cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay rendiciones con esos filtros.</p></div>';
         return;
