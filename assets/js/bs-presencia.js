@@ -61,6 +61,27 @@
     }
   } catch (e) {}
 
+  /* ── Notificaciones del navegador (pestaña en segundo plano) ── */
+  try {
+    if ('Notification' in window && Notification.permission === 'default') {
+      var _bsPedir = function () {
+        try { Notification.requestPermission().then(function(){})['catch'](function () {}); }
+        catch (e) { try { Notification.requestPermission(function () {}); } catch (e2) {} }
+        document.removeEventListener('click', _bsPedir, true);
+      };
+      document.addEventListener('click', _bsPedir, true);
+    }
+  } catch (e) {}
+  function notifNav(titulo, cuerpo) {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      if (!document.hidden) return;
+      var n = new Notification(titulo, { body: String(cuerpo || '').slice(0, 180) });
+      n.onclick = function () { try { window.focus(); n.close(); } catch (e) {} };
+      setTimeout(function () { try { n.close(); } catch (e) {} }, 12000);
+    } catch (e) {}
+  }
+
   /* ── Mensajes del admin: tarjetas con respuesta ── */
   var _vistos = {};
   function wrap() {
@@ -82,6 +103,7 @@
     } catch (e) { cb(false); }
   }
   function tarjetaMsg(id, m) {
+    notifNav('📌 Mensaje de ' + ((m && m.de) || 'Coordinación RR.LL.'), (m && m.texto) || '');
     var card = document.createElement('div');
     card.style.cssText = 'background:#0f172a;color:#f1f5f9;border-left:4px solid #38bdf8;border-radius:12px;padding:14px 16px;box-shadow:0 12px 34px rgba(0,0,0,.35);font-size:13.5px;line-height:1.5;';
     card.innerHTML =
