@@ -587,5 +587,42 @@
     }
   </script>
 <script src="assets/js/bs-presencia.js"></script>
+<script>
+// ── Saludo de bienvenida al entrar (una vez por sesión) ──
+(function () {
+  try {
+    var u = JSON.parse(localStorage.getItem('bienestarSocialAuth') || 'null');
+    if (!u || !u.usuario) return;
+    if (sessionStorage.getItem('_bsSaludoSSO')) return;
+    sessionStorage.setItem('_bsSaludoSSO', '1');
+    var esAdmin = ['jtimoteo','ovilela','jchavez'].indexOf(String(u.usuario).toLowerCase()) >= 0 || /admin|geren/i.test(u.rol || '');
+    var primer = String(u.nombre || u.usuario).trim().split(/\s+/)[0] || 'colega';
+    primer = primer.charAt(0).toUpperCase() + primer.slice(1).toLowerCase();
+    var h = new Date().getHours();
+    var momento = h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
+    var titulo, cuerpo;
+    if (esAdmin) {
+      titulo = '¡Hola, ' + primer + '! 👨‍💻';
+      cuerpo = momento + ' — Administrador del sistema. Bienvenido a Bienestar Social. ¿En qué trabajamos hoy? 🚀';
+    } else {
+      titulo = '¡Hola, ' + primer + '! 👋';
+      cuerpo = momento + ' — Bienestar Social te da la bienvenida. Ante cualquier duda o consulta, comunícate con el creador del sistema: Joel Timoteo.';
+    }
+    var esc = function (s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    var card = document.createElement('div');
+    card.style.cssText = 'position:fixed;top:70px;right:16px;z-index:2147483600;max-width:340px;' +
+      'background:linear-gradient(120deg,#0a2463,#1e3a8a);color:#fff;border-radius:14px;padding:16px 18px;' +
+      'box-shadow:0 14px 40px rgba(0,0,0,.35);font-size:13.5px;line-height:1.55;font-family:inherit;' +
+      'border-left:4px solid #38bdf8;';
+    card.innerHTML = '<div style="font-weight:800;font-size:15px;margin-bottom:4px;">' + esc(titulo) + '</div>' +
+      '<div style="opacity:.92;">' + esc(cuerpo) + '</div>';
+    document.body.appendChild(card);
+    setTimeout(function () {
+      card.style.transition = 'opacity .5s'; card.style.opacity = '0';
+      setTimeout(function () { if (card.parentNode) card.parentNode.removeChild(card); }, 500);
+    }, 9000);
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>
