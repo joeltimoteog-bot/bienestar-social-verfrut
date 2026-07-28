@@ -22,6 +22,111 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function debounce(fn, ms) { var t; return function () { clearTimeout(t); var a = arguments, s = this; t = setTimeout(function () { fn.apply(s, a); }, ms); }; }
 
+  /* ══════════ 0a) GUARDIÁN DE PERMISOS POR MÓDULO (seguridad) ══════════
+   * Antes solo Estadísticas verificaba el permiso en pantalla; ahora TODOS
+   * los módulos bloquean la entrada a quien no tiene el permiso mod_*.
+   * (El servidor ya lo exigía para guardar; esto evita ver la pantalla.) */
+  (function () {
+    var MAPA_PERMISO = { 'quejas.html': 'quejas', 'accidentes.html': 'accidentes',
+      'hostigamiento.html': 'hostigamiento', 'subsidios.html': 'subsidios',
+      'rendiciones.html': 'rendiciones', 'estadisticas.html': 'estadisticas',
+      'auditoria.html': 'auditoria' };  // sugerencias es libre para todas
+    var pagina = (location.pathname.split('/').pop() || '').toLowerCase();
+    var permiso = MAPA_PERMISO[pagina];
+    if (!permiso || !user) return;
+    var ADMINS = ['jtimoteo', 'ovilela', 'jchavez'];
+    var esAdmin = ADMINS.indexOf(String(user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test(user.rol || '');
+    if (esAdmin) return;
+    function tiene() { return !!(user.permisos && (user.permisos[permiso] === true || user.permisos['mod_' + permiso] === true)); }
+    function bloquear() {
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,36,64,.97);z-index:2147483647;' +
+        'display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit;';
+      ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:420px;text-align:center;padding:30px 26px;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+        '<div style="font-size:44px">🔐</div>' +
+        '<div style="font-size:17px;font-weight:800;color:#0a2463;margin-top:8px">No tienes acceso a este módulo</div>' +
+        '<div style="font-size:13px;color:#475569;margin-top:8px;line-height:1.5">Tu cuenta no tiene habilitado el permiso de <b>' + esc(permiso.toUpperCase()) + '</b>. ' +
+        'Si lo necesitas para tu trabajo, comunícate con el creador del sistema: <b>Joel Timoteo</b>.</div>' +
+        '<button style="margin-top:16px;background:#0a2463;color:#fff;border:none;border-radius:10px;padding:11px 22px;font-weight:800;font-size:13px;cursor:pointer" ' +
+        'onclick="window.location.href=\'../portal.html\'">← Volver al portal</button></div>';
+      var poner = function () { document.body.appendChild(ov); };
+      if (document.body) poner(); else document.addEventListener('DOMContentLoaded', poner);
+      setTimeout(function () { window.location.href = '../portal.html'; }, 8000);
+    }
+    if (user.permisos) {
+      if (!tiene()) bloquear();
+    } else {
+      // El objeto guardado no trae permisos: consultarlos sin frenar la página
+      fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'bs_permisosUsuario', usuario: user.usuario, token: user.token || '' }) })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (res && res.ok && res.permisos) {
+            user.permisos = res.permisos;
+            try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch (e) {}
+            if (!tiene()) bloquear();
+          }
+        })['catch'](function () {});
+    }
+  })();
+
+  /* ══════════ 0b) CARGA RÁPIDA (velocidad) ══════════
+   * Guarda en el navegador la última respuesta de las consultas de LECTURA
+   * (bs_listar*, dashboards, alertas...) y la sirve al instante en la
+   * siguiente visita, mientras en segundo plano trae los datos frescos.
+   * Si llegan datos distintos, aparece la pastilla "Hay información nueva".
+   * Las acciones de ESCRITURA (crear/actualizar/eliminar...) nunca se tocan. */
+  (function () {
+    var LECTURAS = /"action":"bs_(listar|lista|dashboard|alertas|permisos|estadisticas|reporte|clasificacion|casos)/;
+    var TAM_MAX = 700 * 1024;   // no cachear respuestas gigantes
+    var _pill = null;
+    function avisarFrescos() {
+      if (_pill) return;
+      _pill = document.createElement('button');
+      _pill.textContent = '🔄 Hay información nueva — toca para actualizar';
+      _pill.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:2147483000;' +
+        'background:#0a2463;color:#fff;border:none;border-radius:999px;padding:9px 18px;font-size:12.5px;' +
+        'font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.28);font-family:inherit;';
+      _pill.onclick = function () { location.reload(); };
+      var poner = function () { document.body.appendChild(_pill); };
+      if (document.body) poner(); else document.addEventListener('DOMContentLoaded', poner);
+    }
+    var _origFetch = window.fetch;
+    window.fetch = function (u, o) {
+      try {
+        var url = (typeof u === 'string') ? u : (u && u.url) || '';
+        var metodo = ((o && o.method) || 'GET').toUpperCase();
+        var cuerpo = (o && typeof o.body === 'string') ? o.body : '';
+        if (url.indexOf('script.google.com/macros') < 0 || metodo !== 'POST' || !LECTURAS.test(cuerpo)) {
+          return _origFetch.apply(this, arguments);
+        }
+        var clave = 'bs_cache_' + cuerpo.replace(/"token":"[^"]*"/, '').length + '_' +
+          (cuerpo.replace(/"token":"[^"]*"/, '').split('').reduce(function (a, c) { return ((a << 5) - a + c.charCodeAt(0)) | 0; }, 0));
+        var cacheado = null;
+        try { cacheado = sessionStorage.getItem(clave); } catch (e) {}
+        var red = _origFetch.apply(this, arguments).then(function (r) {
+          try {
+            var c = r.clone();
+            c.text().then(function (t) {
+              try {
+                if (t && t.length < TAM_MAX && t.charAt(0) === '{') {
+                  if (cacheado !== null && t !== cacheado) avisarFrescos();
+                  sessionStorage.setItem(clave, t);
+                }
+              } catch (e) {}
+            });
+          } catch (e) {}
+          return r;
+        });
+        if (cacheado !== null) {
+          red['catch'](function () {});   // la red sigue en fondo solo para refrescar
+          return Promise.resolve(new Response(cacheado, { status: 200, headers: { 'Content-Type': 'application/json' } }));
+        }
+        return red;
+      } catch (e) { return _origFetch.apply(this, arguments); }
+    };
+  })();
+
   /* ---------- FECHAS SEGURAS (fix zona horaria Perú UTC-5) ----------
    * new Date('2024-11-04') se interpreta como medianoche UTC; al mostrarla
    * con toLocaleDateString en Lima retrocede un día (03/11/2024).

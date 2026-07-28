@@ -226,6 +226,43 @@
       window.location.href = 'index.html';
     }
 
+    // ===== CONFIRMACIÓN DE IDENTIDAD (computadoras compartidas) =====
+    // Si hay una sesión guardada de otro día/u otra persona, preguntar una vez
+    // por sesión de navegador: "¿Eres tú?". "No soy yo" limpia todo y va al login.
+    (function () {
+      try {
+        if (sessionStorage.getItem('_bsIdentOk') === '1') return;
+        var ov = document.createElement('div');
+        ov.id = '_bsIdentOv';
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,36,64,.92);z-index:2147483647;' +
+          'display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit;';
+        var nom = (user.nombre || user.usuario || '').replace(/[<>"&]/g, '');
+        ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:400px;width:100%;text-align:center;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+          '<div style="font-size:42px">👤</div>' +
+          '<div style="font-size:16.5px;font-weight:800;color:#0a2463;margin-top:8px">Hay una sesión activa de<br>' + nom + '</div>' +
+          '<div style="font-size:13px;color:#475569;margin-top:6px">Si esta computadora es compartida, confírmanos que eres tú.</div>' +
+          '<div style="display:flex;gap:10px;margin-top:18px">' +
+          '<button id="_bsIdentSi" style="flex:1;background:#16a34a;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:13.5px;cursor:pointer">✅ Sí, soy yo</button>' +
+          '<button id="_bsIdentNo" style="flex:1;background:#dc2626;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:13.5px;cursor:pointer">No soy yo</button>' +
+          '</div></div>';
+        var poner = function () { document.body.appendChild(ov);
+          document.getElementById('_bsIdentSi').onclick = function () {
+            try { sessionStorage.setItem('_bsIdentOk', '1'); } catch (e) {}
+            if (ov.parentNode) ov.parentNode.removeChild(ov);
+          };
+          document.getElementById('_bsIdentNo').onclick = function () {
+            try {
+              localStorage.removeItem('bienestarSocialAuth');
+              Object.keys(localStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); });
+              sessionStorage.clear();
+            } catch (e) {}
+            window.location.href = 'index.html';
+          };
+        };
+        if (document.body) poner(); else document.addEventListener('DOMContentLoaded', poner);
+      } catch (e) {}
+    })();
+
     // ===== UI: Header con datos del user =====
     document.getElementById('userName').textContent = user.nombre || user.usuario;
 
@@ -586,43 +623,5 @@
       }
     }
   </script>
-<script src="assets/js/bs-presencia.js"></script>
-<script>
-// ── Saludo de bienvenida al entrar (una vez por sesión) ──
-(function () {
-  try {
-    var u = JSON.parse(localStorage.getItem('bienestarSocialAuth') || 'null');
-    if (!u || !u.usuario) return;
-    if (sessionStorage.getItem('_bsSaludoSSO')) return;
-    sessionStorage.setItem('_bsSaludoSSO', '1');
-    var esAdmin = ['jtimoteo','ovilela','jchavez'].indexOf(String(u.usuario).toLowerCase()) >= 0 || /admin|geren/i.test(u.rol || '');
-    var primer = String(u.nombre || u.usuario).trim().split(/\s+/)[0] || 'colega';
-    primer = primer.charAt(0).toUpperCase() + primer.slice(1).toLowerCase();
-    var h = new Date().getHours();
-    var momento = h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
-    var titulo, cuerpo;
-    if (esAdmin) {
-      titulo = '¡Hola, ' + primer + '! 👨‍💻';
-      cuerpo = momento + ' — Administrador del sistema. Bienvenido a Bienestar Social. ¿En qué trabajamos hoy? 🚀';
-    } else {
-      titulo = '¡Hola, ' + primer + '! 👋';
-      cuerpo = momento + ' — Bienestar Social te da la bienvenida. Ante cualquier duda o consulta, comunícate con el creador del sistema: Joel Timoteo.';
-    }
-    var esc = function (s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-    var card = document.createElement('div');
-    card.style.cssText = 'position:fixed;top:70px;right:16px;z-index:2147483600;max-width:340px;' +
-      'background:linear-gradient(120deg,#0a2463,#1e3a8a);color:#fff;border-radius:14px;padding:16px 18px;' +
-      'box-shadow:0 14px 40px rgba(0,0,0,.35);font-size:13.5px;line-height:1.55;font-family:inherit;' +
-      'border-left:4px solid #38bdf8;';
-    card.innerHTML = '<div style="font-weight:800;font-size:15px;margin-bottom:4px;">' + esc(titulo) + '</div>' +
-      '<div style="opacity:.92;">' + esc(cuerpo) + '</div>';
-    document.body.appendChild(card);
-    setTimeout(function () {
-      card.style.transition = 'opacity .5s'; card.style.opacity = '0';
-      setTimeout(function () { if (card.parentNode) card.parentNode.removeChild(card); }, 500);
-    }, 9000);
-  } catch (e) {}
-})();
-</script>
 </body>
 </html>
