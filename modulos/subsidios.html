@@ -595,7 +595,16 @@
 
       {
         const res = { items: items };
-        let html = '<div class="bs-table-wrap"><table class="bs-table">';
+        // ── SEMÁFORO DE PLAZOS: subsidios PENDIENTES por antigüedad del período ──
+        var _semC = { rojo: 0, ambar: 0, verde: 0 };
+        res.items.forEach(function(s){ var x=_semaforoSub(s); if(x.n) _semC[x.n]++; });
+        var _semStrip = (_semC.rojo||_semC.ambar||_semC.verde) ?
+          '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 10px;font-size:12.5px;font-weight:800">' +
+          (_semC.rojo ? '<span style="background:#fee2e2;color:#b91c1c;padding:4px 12px;border-radius:999px">🔴 '+_semC.rojo+' pendiente(s) hace &gt;2 meses</span>' : '') +
+          (_semC.ambar ? '<span style="background:#fef3c7;color:#b45309;padding:4px 12px;border-radius:999px">🟡 '+_semC.ambar+' de 1–2 meses</span>' : '') +
+          (_semC.verde ? '<span style="background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:999px">🟢 '+_semC.verde+' del mes actual</span>' : '') +
+          '</div>' : '';
+        let html = _semStrip + '<div class="bs-table-wrap"><table class="bs-table">';
         html += '<thead><tr><th>ID</th><th>Año-Mes</th><th>Trabajador</th><th>DNI</th><th>Empresa</th><th>Tipo</th><th>Días</th><th>Monto Total</th><th>Estado</th><th></th></tr></thead><tbody>';
         window.__BS_EXPORT_DATA__ = res.items || [];
         window.__VIS_SUBS = res.items || [];
@@ -620,7 +629,7 @@
             '<td>' + esc(/^\d+$/.test(String(s.tipo)) ? (s.descripcion || s.tipo) : (s.tipo || '-')) + '</td>' +
             '<td style="text-align: right;">' + (s.dias || 0) + '</td>' +
             '<td style="text-align: right;"><strong>' + fmtMoney(_monto) + '</strong></td>' +
-            '<td><span class="bs-badge ' + estadoBadge + '">' + esc(s.estado_general || '-') + '</span></td>' +
+            '<td><span class="bs-badge ' + estadoBadge + '">' + esc(s.estado_general || '-') + '</span>' + (_semaforoSub(s).chip || '') + '</td>' +
             '<td style="white-space:nowrap;"><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editarIdx(' + _i + ')">Editar</button> ' +
             (s.anulado
               ? '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Restaurar registro" style="color:#15803d;font-weight:800;" onclick="bsRestaurar(' + (s.id || 0) + ')">↩</button>'
@@ -631,6 +640,31 @@
         html += '</tbody></table></div>';
         cont.innerHTML = html;
       }
+    }
+
+    // ===== SEMÁFORO DE PLAZOS (subsidios PENDIENTES por antigüedad del período) =====
+    function _semMesNum(m) {
+      m = String(m || '').toLowerCase().trim();
+      var map = { enero:1, febrero:2, marzo:3, abril:4, mayo:5, junio:6, julio:7,
+                  agosto:8, septiembre:9, setiembre:9, octubre:10, noviembre:11, diciembre:12 };
+      if (map[m]) return map[m];
+      var n = parseInt(m, 10);
+      return (n >= 1 && n <= 12) ? n : null;
+    }
+    function _semSubChip(bg, col, txt) {
+      return '<br><span style="display:inline-block;margin-top:3px;background:'+bg+';color:'+col+';font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap">'+txt+'</span>';
+    }
+    function _semaforoSub(s) {
+      if (s.anulado) return {};
+      var eg = String(s.estado_general || '').trim().toUpperCase();
+      if (eg !== 'PENDIENTE') return {};
+      var a = parseInt(s.anio, 10), m = _semMesNum(s.mes);
+      if (!a || !m) return {};
+      var h = new Date();
+      var meses = (h.getFullYear() - a) * 12 + (h.getMonth() + 1 - m);
+      if (meses <= 0) return { n:'verde', chip:_semSubChip('#dcfce7','#15803d','🟢 del mes') };
+      if (meses <= 2) return { n:'ambar', chip:_semSubChip('#fef3c7','#b45309','🟡 hace '+meses+' mes'+(meses>1?'es':'')) };
+      return { n:'rojo', chip:_semSubChip('#fee2e2','#b91c1c','🔴 hace '+meses+' meses') };
     }
 
     // ===== MODAL =====
@@ -1185,6 +1219,5 @@
     } catch(e) { /* si Firebase no carga, el auto-refresh de 60s sigue activo */ }
   })();
   </script>
-<script src="../assets/js/bs-presencia.js"></script>
 </body>
 </html>

@@ -474,11 +474,20 @@
 
       {
         const res = { items: items };
-        let html = '<div class="bs-table-wrap"><table class="bs-table">';
+        // ── SEMÁFORO DE PLAZOS: resumen de la vista actual ──
+        var _semC = { rojo: 0, ambar: 0, verde: 0 };
+        res.items.forEach(function(q){ var s=_semaforoQueja(q); if(s.n) _semC[s.n]++; });
+        var _semStrip = (_semC.rojo||_semC.ambar||_semC.verde) ?
+          '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 10px;font-size:12.5px;font-weight:800">' +
+          (_semC.rojo ? '<span style="background:#fee2e2;color:#b91c1c;padding:4px 12px;border-radius:999px">🔴 '+_semC.rojo+' atrasada(s) &gt;14 días</span>' : '') +
+          (_semC.ambar ? '<span style="background:#fef3c7;color:#b45309;padding:4px 12px;border-radius:999px">🟡 '+_semC.ambar+' por vencer (8–14 días)</span>' : '') +
+          (_semC.verde ? '<span style="background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:999px">🟢 '+_semC.verde+' en plazo</span>' : '') +
+          '</div>' : '';
+        let html = _semStrip + '<div class="bs-table-wrap"><table class="bs-table">';
         html += '<thead><tr><th>ID</th><th>Fecha</th><th>Clasif.</th><th>Empresa</th><th>Sector</th><th>Detalle</th><th>Estado</th><th>Seguimiento</th><th></th></tr></thead><tbody>';
         window.__BS_EXPORT_DATA__ = res.items || [];
         res.items.forEach(function(q) {
-          const fecha = bsFechaDMY(q.fecha_recepcion);
+          const fecha = bsFechaDMY(q.fecha_recepcion) + (_semaforoQueja(q).chip || '');
           const detRaw = (q.detalle || '');
           const detalleCorto = esc(detRaw.substring(0, 80)) + (detRaw.length > 80 ? '...' : '');
           const estadoBadge = q.resultado === 'Resuelto' ? 'bs-badge-success' : q.resultado === 'Cerrado' ? 'bs-badge-info' : 'bs-badge-warning';
@@ -504,6 +513,28 @@
         cont.innerHTML = html;
         _renderSegBanner(res.items);
       }
+    }
+
+    // ===== SEMÁFORO DE PLAZOS (quejas sin resolver, por días desde la recepción) =====
+    function _semDiasDesde(ymd) {
+      if (!ymd) return null;
+      var h = new Date();
+      var hs = h.getFullYear() + '-' + ('0'+(h.getMonth()+1)).slice(-2) + '-' + ('0'+h.getDate()).slice(-2);
+      var d = Math.round((new Date(hs+'T12:00:00') - new Date(ymd+'T12:00:00')) / 86400000);
+      return isNaN(d) ? null : d;
+    }
+    function _semChip(bg, col, txt) {
+      return '<br><span style="display:inline-block;margin-top:3px;background:'+bg+';color:'+col+';font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap">'+txt+'</span>';
+    }
+    function _semaforoQueja(q) {
+      var r = String(q.resultado || '').toLowerCase();
+      if (q.anulado || r === 'resuelto' || r === 'cerrado') return {};
+      var ymd = window.bsFechaYMD ? bsFechaYMD(q.fecha_recepcion) : '';
+      var d = _semDiasDesde(ymd);
+      if (d === null || d < 0) return {};
+      if (d <= 7)  return { n:'verde', chip:_semChip('#dcfce7','#15803d','🟢 en plazo · '+d+' d') };
+      if (d <= 14) return { n:'ambar', chip:_semChip('#fef3c7','#b45309','🟡 por vencer · '+d+' d') };
+      return { n:'rojo', chip:_semChip('#fee2e2','#b91c1c','🔴 atrasada · '+d+' días') };
     }
 
     // ===== MODAL =====
@@ -1083,6 +1114,5 @@
     } catch(e) { /* si Firebase no carga, el auto-refresh de 60s sigue activo */ }
   })();
   </script>
-<script src="../assets/js/bs-presencia.js"></script>
 </body>
 </html>
