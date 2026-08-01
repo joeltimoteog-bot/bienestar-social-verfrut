@@ -445,6 +445,27 @@
     }
     fetchKPIs();
 
+    // ── REFRESCO AUTOMÁTICO DE TARJETAS ──
+    // Antes los números se cargaban UNA sola vez al abrir el portal; si se
+    // registraba algo en un módulo y se volvía (o el portal quedaba abierto),
+    // las tarjetas quedaban desactualizadas. Ahora se refrescan:
+    //   1) cada 3 minutos mientras el portal esté visible,
+    //   2) al volver a la pestaña del portal desde otra pestaña o programa,
+    //   3) al regresar con la flecha "atrás" del navegador (página restaurada).
+    var _kpiUltimo = Date.now();
+    function refrescarKPIs(){
+      _kpiUltimo = Date.now();
+      try { fetchKPIs(); } catch(e) {}
+      try { cargarAtrasos(); } catch(e) {}
+    }
+    setInterval(function(){ if(!document.hidden) refrescarKPIs(); }, 3*60*1000);
+    document.addEventListener('visibilitychange', function(){
+      if(!document.hidden && (Date.now()-_kpiUltimo) > 20*1000) refrescarKPIs();
+    });
+    window.addEventListener('pageshow', function(e){
+      if(e && e.persisted) refrescarKPIs();
+    });
+
     // ===== SINCRONIZAR PERMISOS DESDE LA HOJA USUARIOS (fuente única de verdad) =====
     (function(){
       bsApi('bs_permisosUsuario', { usuario: user.usuario })
