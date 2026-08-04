@@ -14,6 +14,78 @@
   <script src="../assets/js/bs-filtro-fecha.js"></script>
   <script src="../assets/js/bs-saludo.js"></script>
   <script src="../assets/js/bs-mejoras.js"></script>
+  <!-- ══ Estilo único del módulo Hallazgos y Sugerencias (solo visual, no toca lógica) ══ -->
+  <style id="qxEstilo">
+    :root{ --qx:var(--bs-mod-quejas,#7c3aed); --qx-oscuro:#0a1c4d; }
+    body{ background:
+      radial-gradient(900px 420px at 110% -10%, color-mix(in srgb, var(--qx) 14%, transparent), transparent 60%),
+      radial-gradient(700px 380px at -10% 30%, rgba(10,28,77,.07), transparent 60%),
+      #f4f6fb; }
+
+    /* ── Portada del módulo ── */
+    .qx-hero{ position:relative; overflow:hidden; border-radius:22px; padding:26px 26px 24px;
+      background:linear-gradient(120deg, var(--qx-oscuro) 0%, color-mix(in srgb, var(--qx) 72%, #0a1c4d) 55%, var(--qx) 100%);
+      color:#fff; box-shadow:0 18px 40px -18px color-mix(in srgb, var(--qx) 55%, #0a1c4d); }
+    .qx-hero::after{ content:""; position:absolute; inset:0; pointer-events:none;
+      background:radial-gradient(420px 200px at 85% 0%, rgba(255,255,255,.16), transparent 70%); }
+    .qx-deco{ position:absolute; border-radius:50%; background:rgba(255,255,255,.08); pointer-events:none; }
+    .qx-deco.d1{ width:190px; height:190px; right:-55px; top:-70px; }
+    .qx-deco.d2{ width:110px; height:110px; right:120px; bottom:-55px; background:rgba(255,255,255,.05); }
+    .qx-hero-in{ position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; }
+    .qx-hero-lead{ display:flex; gap:16px; align-items:center; }
+    .qx-hero-ico{ width:64px; height:64px; border-radius:18px; display:grid; place-items:center; font-size:30px;
+      background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); backdrop-filter:blur(4px);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.25); }
+    .qx-crumbs{ font-size:.74rem; letter-spacing:.12em; text-transform:uppercase; font-weight:700; opacity:.75; margin-bottom:2px; }
+    .qx-hero h1{ margin:0; color:#fff !important; font-size:1.55rem; letter-spacing:-.01em; }
+    .qx-hero p{ margin:4px 0 0; color:rgba(255,255,255,.82); font-size:.9rem; max-width:520px; }
+    .qx-btn-ghost{ background:rgba(255,255,255,.13) !important; color:#fff !important; border:1px solid rgba(255,255,255,.35) !important;
+      backdrop-filter:blur(4px); font-weight:700; }
+    .qx-btn-ghost:hover{ background:rgba(255,255,255,.24) !important; }
+    .qx-btn-cta{ background:#fff !important; color:var(--qx-oscuro) !important; font-weight:800; border:none !important;
+      box-shadow:0 8px 20px -6px rgba(0,0,0,.45); }
+    .qx-btn-cta:hover{ transform:translateY(-1px); box-shadow:0 12px 24px -6px rgba(0,0,0,.5); }
+
+    /* ── KPIs (tarjetas de bsKpisPro, solo en esta página) ── */
+    #kpiQuejas .bskp-card{ border-radius:16px; border:1px solid #e8ebf3; position:relative; overflow:hidden;
+      transition:transform .18s, box-shadow .18s; }
+    #kpiQuejas .bskp-card::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--kc); }
+    #kpiQuejas .bskp-card:hover{ transform:translateY(-3px); box-shadow:0 14px 28px -14px color-mix(in srgb, var(--kc) 50%, transparent); }
+
+    /* ── Filtros como barra de mando ── */
+    .qx-filtros{ border-radius:16px; border:1px solid #e8ebf3;
+      background:linear-gradient(180deg,#ffffff, #fafbff); box-shadow:0 6px 18px -12px rgba(15,23,42,.25); }
+    .qx-filtros .bs-label{ font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; font-weight:800; color:#64748b; }
+    .qx-filtros .bs-select{ border-radius:12px; border:1.5px solid #dbe1ee; font-weight:600; transition:border-color .15s, box-shadow .15s; }
+    .qx-filtros .bs-select:focus{ border-color:var(--qx); box-shadow:0 0 0 3px color-mix(in srgb, var(--qx) 18%, transparent); outline:none; }
+    #bsFiltroFecha{ border-radius:16px; border:1px solid #e8ebf3; }
+
+    /* ── Tabla ── */
+    #tablaContainer .bs-table-wrap{ border-radius:18px; overflow:auto; border:1px solid #e8ebf3;
+      box-shadow:0 12px 30px -18px rgba(15,23,42,.35); background:#fff; }
+    #tablaContainer table.bs-table thead th{ position:sticky; top:0; z-index:2;
+      background:linear-gradient(180deg, var(--qx-oscuro), #12275e); color:#fff !important;
+      font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; border-bottom:none; }
+    #tablaContainer table.bs-table tbody tr{ transition:background .12s; }
+    #tablaContainer table.bs-table tbody tr:nth-child(even){ background:#fafbff; }
+    #tablaContainer table.bs-table tbody tr:hover{ background:color-mix(in srgb, var(--qx) 7%, #fff); }
+    #tablaContainer table.bs-table tbody td:first-child{ border-left:4px solid var(--qxsem, transparent); }
+    .qx-clasif{ display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:999px;
+      font-size:.76rem; font-weight:800; white-space:nowrap; border:1px solid transparent; }
+    .qx-cl-queja{ background:#fef2f2; color:#b91c1c; border-color:#fecaca; }
+    .qx-cl-reclamo{ background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+    .qx-cl-sugerencia{ background:#ecfeff; color:#0e7490; border-color:#a5f3fc; }
+    .qx-cl-otro{ background:#f1f5f9; color:#475569; border-color:#e2e8f0; }
+
+    /* ── Aviso de seguimientos ── */
+    #seguimientoBanner .bs-card{ border-radius:16px; box-shadow:0 8px 20px -14px #d97706; }
+
+    /* ── Estado vacío ── */
+    .qx-vacio{ border-radius:18px; border:1.5px dashed #cbd5e1; background:#fff; padding:2.6rem 1rem; text-align:center; }
+    .qx-vacio .e{ font-size:44px; display:block; margin-bottom:8px; }
+
+    @media (max-width:640px){ .qx-hero{ padding:20px 16px; } .qx-hero h1{ font-size:1.25rem; } }
+  </style>
 </head>
 <body>
   <div class="bs-appshell">
@@ -35,26 +107,29 @@
 
     <main class="bs-main">
 
-      <!-- Header -->
-      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: var(--bs-mod-quejas);">
-        <div class="bs-hero-lead">
-          <div class="bs-hero-ico">📋</div>
-          <div>
-            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Hallazgos y Sugerencias</b></div>
-            <h1 style="color: var(--bs-mod-quejas);">Hallazgos y Sugerencias</h1>
-            <p class="bs-text-subtle" style="margin: 0;">Registro y seguimiento de hallazgos, reclamos y sugerencias del personal.</p>
+      <!-- Portada del módulo -->
+      <div class="qx-hero bs-mb-lg">
+        <div class="qx-deco d1"></div><div class="qx-deco d2"></div>
+        <div class="qx-hero-in">
+          <div class="qx-hero-lead">
+            <div class="qx-hero-ico">📋</div>
+            <div>
+              <div class="qx-crumbs">Portal &rsaquo; Hallazgos y Sugerencias</div>
+              <h1>Hallazgos y Sugerencias</h1>
+              <p>Registro y seguimiento de hallazgos, reclamos y sugerencias del personal, con semáforo de plazos y seguimientos programados.</p>
+            </div>
           </div>
-        </div>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-          <button class="bs-btn" style="background:#0a1c4d;color:#fff;" onclick="BSDashQuejas.abrir()">📊 Estadísticas</button>
-          <button class="bs-btn" style="background: var(--bs-mod-quejas); color: white;" onclick="openModal()">+ Nuevo Hallazgo</button>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <button class="bs-btn qx-btn-ghost" onclick="BSDashQuejas.abrir()">📊 Estadísticas</button>
+            <button class="bs-btn qx-btn-cta" onclick="openModal()">+ Nuevo Hallazgo</button>
+          </div>
         </div>
       </div>
 
       <div id="kpiQuejas" style="display:none"></div>
 
       <!-- Filtros -->
-      <div class="bs-card bs-mb">
+      <div class="bs-card bs-mb qx-filtros">
         <div class="bs-grid bs-grid-3 bs-gap">
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Empresa</label>
@@ -403,6 +478,16 @@
       if (dias <= alerta) return { tipo:"porvencer", label:"⏰ Vence en "+dias+"d", color:"#d97706", dias:dias };
       return { tipo:"encurso", label:"En curso ("+dias+"d)", color:"#0891b2", dias:dias };
     }
+    // Chip de clasificación con color propio (solo visual)
+    function _qxClasif(c) {
+      var t = String(c || '').trim();
+      if (!t) return '<span class="qx-clasif qx-cl-otro">—</span>';
+      var low = t.toLowerCase(), cls = 'qx-cl-otro', ico = '📌';
+      if (low.indexOf('queja') >= 0) { cls = 'qx-cl-queja'; ico = '😠'; }
+      else if (low.indexOf('reclamo') >= 0) { cls = 'qx-cl-reclamo'; ico = '📮'; }
+      else if (low.indexOf('sugerencia') >= 0) { cls = 'qx-cl-sugerencia'; ico = '💡'; }
+      return '<span class="qx-clasif ' + cls + '">' + ico + ' ' + esc(t) + '</span>';
+    }
     function _segBadge(q) {
       const e = _segEstado(q);
       return '<span style="background:'+e.color+'20;color:'+e.color+';border:1px solid '+e.color+'55;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:600;white-space:nowrap;">'+e.label+'</span>';
@@ -467,7 +552,7 @@
 
       pintarKpisQuejas(items);
       if (items.length === 0) {
-        cont.innerHTML = '<div class="bs-card bs-text-center"><p class="bs-text-muted">No hay hallazgos registrados con esos filtros.</p></div>';
+        cont.innerHTML = '<div class="qx-vacio"><span class="e">🗂️</span><b style="color:#334155;">Sin hallazgos en esta vista</b><br><span class="bs-text-muted" style="font-size:.85rem;">Ajusta los filtros o registra uno nuevo con el botón <b>+ Nuevo Hallazgo</b>.</span></div>';
         _renderSegBanner(items);
         return;
       }
@@ -487,14 +572,16 @@
         html += '<thead><tr><th>ID</th><th>Fecha</th><th>Clasif.</th><th>Empresa</th><th>Sector</th><th>Detalle</th><th>Estado</th><th>Seguimiento</th><th></th></tr></thead><tbody>';
         window.__BS_EXPORT_DATA__ = res.items || [];
         res.items.forEach(function(q) {
-          const fecha = bsFechaDMY(q.fecha_recepcion) + (_semaforoQueja(q).chip || '');
+          const _sem = _semaforoQueja(q);
+          const fecha = bsFechaDMY(q.fecha_recepcion) + (_sem.chip || '');
           const detRaw = (q.detalle || '');
           const detalleCorto = esc(detRaw.substring(0, 80)) + (detRaw.length > 80 ? '...' : '');
           const estadoBadge = q.resultado === 'Resuelto' ? 'bs-badge-success' : q.resultado === 'Cerrado' ? 'bs-badge-info' : 'bs-badge-warning';
-          html += '<tr' + (q.anulado ? ' style="opacity:.6;background:#fdf3f3;"' : '') + '>' +
+          const _semCol = _sem.n === 'rojo' ? '#dc2626' : _sem.n === 'ambar' ? '#f59e0b' : _sem.n === 'verde' ? '#16a34a' : 'transparent';
+          html += '<tr style="--qxsem:' + _semCol + ';' + (q.anulado ? 'opacity:.6;background:#fdf3f3;' : '') + '">' +
             '<td><strong>#' + q.id + '</strong></td>' +
             '<td>' + fecha + '</td>' +
-            '<td>' + esc(q.clasificacion || '-') + '</td>' +
+            '<td>' + _qxClasif(q.clasificacion) + '</td>' +
             '<td>' + esc(q.empresa || '-') + '</td>' +
             '<td>' + esc(q.sector || '-') + '</td>' +
             '<td style="max-width: 280px;">' + detalleCorto + '</td>' +
