@@ -13,6 +13,7 @@
   <script src="../assets/js/bs-filtro-fecha.js"></script>
   <script src="../assets/js/bs-saludo.js"></script>
   <script src="../assets/js/bs-mejoras.js"></script>
+  <script src="../assets/js/bs-dash-hostigamiento.js"></script>
 </head>
 <body>
   <div class="bs-appshell">
@@ -49,7 +50,10 @@
             <p class="bs-text-subtle" style="margin: 0;">Denuncias formales bajo el marco de la Ley N° 27942 y el Código de Conducta Unifrutti.</p>
           </div>
         </div>
-        <button class="bs-btn" style="background: var(--bs-mod-hostigamiento); color: white;" onclick="openModal()">+ Nueva Denuncia</button>
+        <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+          <button class="bs-btn bs-btn-outline" style="border:1.5px solid var(--bs-mod-hostigamiento); color: var(--bs-mod-hostigamiento); background:#fff;" onclick="BSDashHostigamiento.abrir()">📊 Dashboard</button>
+          <button class="bs-btn" style="background: var(--bs-mod-hostigamiento); color: white;" onclick="openModal()">+ Nueva Denuncia</button>
+        </div>
       </div>
 
       <div id="kpiHostigamiento" style="display:none"></div>
