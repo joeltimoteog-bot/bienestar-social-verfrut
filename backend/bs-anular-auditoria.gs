@@ -41,6 +41,7 @@ function bs_anularRegistro(d) {
     if (!motivo) return { ok: false, message: 'Indica el motivo de la anulación.' };
 
     var nombreHoja = BS_AUD_HOJAS[String(d.modulo).toLowerCase()];
+    if (String(d.modulo).toLowerCase() === 'hostigamiento' && bs_hostigSede_(d.sede) === 'OLMOS') nombreHoja = BS_HOSTIG_HOJAS.OLMOS;
     if (!nombreHoja) return { ok: false, message: 'Módulo desconocido: ' + d.modulo };
 
     var lock = LockService.getScriptLock();
@@ -94,6 +95,7 @@ function bs_restaurarRegistro(d) {
   try {
     if (!d || !d.modulo || !d.id) return { ok: false, message: 'Faltan datos (modulo, id).' };
     var nombreHoja = BS_AUD_HOJAS[String(d.modulo).toLowerCase()];
+    if (String(d.modulo).toLowerCase() === 'hostigamiento' && bs_hostigSede_(d.sede) === 'OLMOS') nombreHoja = BS_HOSTIG_HOJAS.OLMOS;
     if (!nombreHoja) return { ok: false, message: 'Módulo desconocido: ' + d.modulo };
     var lock = LockService.getScriptLock();
     lock.waitLock(20000);
@@ -128,7 +130,7 @@ function bs_listarAuditoria(d) {
   try {
     var rol = String((d && d._sesion && d._sesion.rol) || '').toLowerCase();
     var usr = String((d && d._sesion && d._sesion.usuario) || '').toLowerCase();
-    var ADMINS = ['jtimoteo', 'ovilela', 'jchavez'];
+    var ADMINS = ['jtimoteo', 'ovilela'];
     if (rol.indexOf('admin') < 0 && ADMINS.indexOf(usr) < 0) {
       return { ok: false, code: 403, message: 'Solo administradores pueden ver la auditoría.' };
     }

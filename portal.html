@@ -330,7 +330,7 @@
 
     function renderModules() {
       const grid = document.getElementById('moduleGrid');
-      const ADMINS = ['jtimoteo','ovilela','jchavez'];
+      const ADMINS = ['jtimoteo','ovilela'];
       const isAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test((user && user.rol) || '');
       const html = MODULOS.filter(function(m) { return !m.adminOnly || isAdmin || (m.permiso && user.permisos && user.permisos[m.permiso]); }).map(function(m) {
         const tienePermiso = m.adminOnly ? true : (m.siempre === true || isAdmin || (user.permisos && user.permisos[m.permiso]));

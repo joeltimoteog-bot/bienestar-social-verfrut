@@ -115,7 +115,7 @@
       user = JSON.parse(session);
       if (!user || !user.usuario) throw new Error();
     } catch(e) { window.location.href = '../index.html'; }
-    const ADMINS = ['jtimoteo','ovilela','jchavez'];
+    const ADMINS = ['jtimoteo','ovilela'];
     const esAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test(user.rol || '');
     if (!esAdmin) {
       appAlert('Solo administradores pueden ver la auditoría.');

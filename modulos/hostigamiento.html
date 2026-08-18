@@ -51,7 +51,7 @@
           </div>
         </div>
         <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
-          <button class="bs-btn bs-btn-outline" style="border:1.5px solid var(--bs-mod-hostigamiento); color: var(--bs-mod-hostigamiento); background:#fff;" onclick="BSDashHostigamiento.abrir()">📊 Dashboard</button>
+          <button class="bs-btn bs-btn-outline" style="border:1.5px solid var(--bs-mod-hostigamiento); color: var(--bs-mod-hostigamiento); background:#fff;" onclick="BSDashHostigamiento.abrir()">📊 Indicadores Piura vs Olmos</button>
           <button class="bs-btn" style="background: var(--bs-mod-hostigamiento); color: white;" onclick="openModal()">+ Nueva Denuncia</button>
         </div>
       </div>
@@ -60,7 +60,15 @@
 
       <!-- Filtros -->
       <div class="bs-card bs-mb">
-        <div class="bs-grid bs-grid-3 bs-gap">
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Sede</label>
+            <select class="bs-select" id="filterSede" onchange="cargar()">
+              <option value="">Piura + Olmos</option>
+              <option value="PIURA">PIURA</option>
+              <option value="OLMOS">OLMOS</option>
+            </select>
+          </div>
           <div class="bs-form-group" style="margin: 0;">
             <label class="bs-label">Empresa</label>
             <select class="bs-select" id="filterEmpresa" onchange="cargar()">
@@ -129,7 +137,16 @@
         </div>
 
         <h4 style="color: var(--bs-mod-hostigamiento); margin-bottom: 0.5rem;">📋 Información general</h4>
-        <div class="bs-grid bs-grid-3 bs-gap">
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Sede <span class="bs-required">*</span></label>
+            <select id="sede" class="bs-select" required>
+              <option value="">Seleccionar...</option>
+              <option value="PIURA">PIURA</option>
+              <option value="OLMOS">OLMOS</option>
+            </select>
+            <p class="bs-helptext" id="sedeHelp" style="margin:.35rem 0 0;line-height:1.35;">Define en qué expediente se registra. Cada sede lleva su propio correlativo y no se puede cambiar después.</p>
+          </div>
           <div class="bs-form-group">
             <label class="bs-label">Fecha de denuncia <span class="bs-required">*</span></label>
             <input type="date" id="fecha_denuncia" class="bs-input" required>
@@ -303,6 +320,7 @@
 
     async function cargar() {
       const filtros = {
+        sede: document.getElementById('filterSede').value,
         empresa: document.getElementById('filterEmpresa').value,
         status: document.getElementById('filterStatus').value,
         fundo: document.getElementById('filterFundo').value
@@ -315,7 +333,7 @@
       const _fkey = JSON.stringify([filtros, privacyMode]);
       let _pintado = false;
       try {
-        const _c = JSON.parse(sessionStorage.getItem('bs_cache_hostigamiento_v4') || 'null');
+        const _c = JSON.parse(sessionStorage.getItem('bs_cache_hostigamiento_v5') || 'null');
         if (_c && _c.fkey === _fkey && _c.html) {
           cont.innerHTML = _c.html;
           _CACHE_H = _c.items || [];
@@ -346,10 +364,11 @@
         }
 
         let html = '<div class="bs-table-wrap"><table class="bs-table">';
-        html += '<thead><tr><th>ID</th><th>Fecha</th><th>Denunciante</th><th>Denunciado</th><th>Fundo</th><th>Empresa</th><th>Estado</th><th></th></tr></thead><tbody>';
+        html += '<thead><tr><th>Código</th><th>Sede</th><th>Fecha</th><th>Denunciante</th><th>Denunciado</th><th>Fundo</th><th>Empresa</th><th>Estado</th><th></th></tr></thead><tbody>';
         window.__BS_EXPORT_DATA__ = res.items || [];
-        res.items.forEach(function(d) {
+        res.items.forEach(function(d, _i) {
           const fecha = bsFechaDMY(d.fecha_denuncia);
+          const _sede = String(d.sede || 'PIURA').toUpperCase();
           const denunciante = mask(d.denunciante_nombre, privacyMode);
           const denunciado = mask(d.denunciado_nombre, privacyMode);
           const statusBadge = d.status === 'Resuelto' ? 'bs-badge-success'
@@ -357,17 +376,18 @@
             : d.status === 'Medidas dictadas' ? 'bs-badge-primary'
             : 'bs-badge-warning';
           html += '<tr' + (d.anulado ? ' style="opacity:.6;background:#fdf3f3;"' : '') + '>' +
-            '<td><strong>#' + d.id + '</strong></td>' +
+            '<td><strong>' + esc(d.codigo || ('#' + d.id)) + '</strong></td>' +
+            '<td><span class="bs-badge ' + (_sede === 'OLMOS' ? 'bs-badge-warning' : 'bs-badge-primary') + '">' + esc(_sede) + '</span></td>' +
             '<td>' + fecha + '</td>' +
             '<td>' + esc(denunciante) + '</td>' +
             '<td>' + esc(denunciado) + '</td>' +
             '<td>' + esc(d.fundo || '-') + '</td>' +
             '<td>' + esc(d.empresa || '-') + '</td>' +
             '<td><span class="bs-badge ' + statusBadge + '">' + esc(d.status || '-') + '</span></td>' +
-            '<td style="white-space:nowrap;"><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editar(' + d.id + ')">Ver / Editar</button> ' +
+            '<td style="white-space:nowrap;"><button class="bs-btn bs-btn-sm bs-btn-outline" onclick="editarIdx(' + _i + ')">Ver / Editar</button> ' +
             (d.anulado
-              ? '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Restaurar registro" style="color:#15803d;font-weight:800;" onclick="bsRestaurar(' + d.id + ')">↩</button>'
-              : '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + d.id + ')">✖</button>') +
+              ? '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Restaurar registro" style="color:#15803d;font-weight:800;" onclick="bsRestaurar(' + d.id + ',\'' + _sede + '\')">↩</button>'
+              : '<button class="bs-btn bs-btn-sm bs-btn-ghost" title="Anular registro" style="color:#991b1b;font-weight:800;" onclick="bsAnular(' + d.id + ',\'' + _sede + '\')">✖</button>') +
             '</td>' +
           '</tr>';
         });
@@ -376,7 +396,7 @@
           html += '<p class="bs-text-xs bs-text-muted bs-mt" style="text-align:right;">🔐 Modo discreto activo. Los nombres están parcialmente ocultos.</p>';
         }
         cont.innerHTML = html;
-        try { sessionStorage.setItem('bs_cache_hostigamiento_v4', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
+        try { sessionStorage.setItem('bs_cache_hostigamiento_v5', JSON.stringify({ fkey: _fkey, html: html, items: res.items, t: Date.now() })); } catch(e) {}
       } catch(err) {
         cont.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + err.message + '</div>';
       }
@@ -384,22 +404,24 @@
 
     // ===== MODAL =====
 
-    async function bsRestaurar(id) {
+    async function bsRestaurar(id, sede) {
       if (!id) return;
-      if (!(await appConfirm('¿Restaurar el registro #' + id + '? Volverá a la vista normal.'))) return;
+      sede = String(sede || 'PIURA').toUpperCase();
+      if (!(await appConfirm('¿Restaurar el registro #' + id + ' de ' + sede + '? Volverá a la vista normal.'))) return;
       try {
-        const res = await api('bs_restaurarRegistro', { usuario: user.usuario, modulo: 'hostigamiento', id: parseInt(id) });
+        const res = await api('bs_restaurarRegistro', { usuario: user.usuario, modulo: 'hostigamiento', sede: sede, id: parseInt(id) });
         if (res.ok) { appAlert('Registro #' + id + ' restaurado.'); cargar(); }
         else appAlert('Error: ' + (res.message || 'No se pudo restaurar.'));
       } catch (e) { appAlert('Error: ' + e.message); }
     }
-    async function bsAnular(id) {
+    async function bsAnular(id, sede) {
       if (!id) return appAlert('Este registro no tiene ID; numéralo en la hoja para poder anularlo.');
-      if (!(await appConfirm('¿Anular el registro #' + id + '? No se elimina: queda marcado como ANULADO y sale de la vista.'))) return;
+      sede = String(sede || 'PIURA').toUpperCase();
+      if (!(await appConfirm('¿Anular el registro #' + id + ' de ' + sede + '? No se elimina: queda marcado como ANULADO y sale de la vista.'))) return;
       var motivo = window.prompt('Motivo de la anulación (obligatorio):') || '';
       if (!motivo.trim()) return appAlert('Debes indicar un motivo para anular.');
       try {
-        const res = await api('bs_anularRegistro', { usuario: user.usuario, modulo: 'hostigamiento', id: parseInt(id), motivo: motivo.trim() });
+        const res = await api('bs_anularRegistro', { usuario: user.usuario, modulo: 'hostigamiento', sede: sede, id: parseInt(id), motivo: motivo.trim() });
         if (res.ok) { appAlert('Registro #' + id + ' anulado.'); cargar(); }
         else appAlert('Error: ' + (res.message || 'No se pudo anular.'));
       } catch (e) { appAlert('Error: ' + e.message); }
@@ -417,13 +439,17 @@
         else otros++;
       });
       var T = items.length;
+      var nPiura = 0, nOlmos = 0;
+      items.forEach(function(d) {
+        if (String(d.sede || 'PIURA').toUpperCase() === 'OLMOS') nOlmos++; else nPiura++;
+      });
       var pct = function(n){ return T ? Math.round(n*100/T) + '% del total' : ''; };
       bsKpisPro('kpiHostigamiento', {
         total: T,
         cards: [
           { ico:'🔒', val:T, lbl:'Denuncias (según filtros)', color:'var(--bs-mod-hostigamiento)', sub: inv + ' en investigación' },
-          { ico:'🕵️', val:inv, lbl:'En investigación', color:'#dc2626', sub: pct(inv) },
-          { ico:'🛡️', val:med, lbl:'Medidas dictadas', color:'#f59e0b', sub: pct(med) },
+          { ico:'🌴', val:nPiura, lbl:'Sede Piura', color:'#1e3a8a', sub: pct(nPiura) },
+          { ico:'🌵', val:nOlmos, lbl:'Sede Olmos', color:'#d97706', sub: pct(nOlmos) },
           { ico:'✅', val:res_, lbl:'Resueltas', color:'#16a34a', sub: pct(res_) }
         ],
         dist: { label: 'Composición por estado de la denuncia', segs: [
@@ -435,12 +461,12 @@
         ]}
       });
     }
-    const ALL_FIELDS = ['fecha_denuncia','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','fundo','decision','status','observaciones','empresa'];
-    window.__BS_EXPORT_ORDER = ['id'].concat(ALL_FIELDS).concat(['created_by','created_at','updated_at','anulado']);
+    const ALL_FIELDS = ['sede','fecha_denuncia','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','fundo','decision','status','observaciones','empresa'];
+    window.__BS_EXPORT_ORDER = ['codigo','id'].concat(ALL_FIELDS).concat(['created_by','created_at','updated_at','anulado']);
     const DATE_FIELDS = ['fecha_denuncia'];
 
     // ===== NAVEGACION INTELIGENTE =====
-    const FORM_ORDER = ['fecha_denuncia','empresa','fundo','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','status','decision','observaciones'];
+    const FORM_ORDER = ['sede','fecha_denuncia','empresa','fundo','denunciante_dni','denunciante_nombre','denunciante_puesto','medida_proteccion','denunciado_dni','denunciado_nombre','denunciado_puesto','status','decision','observaciones'];
 
     // Salta al PROXIMO campo vacio + editable + visible + habilitado. Omite llenos/readonly/disabled/ocultos.
     function focusNext(currentId) {
@@ -463,7 +489,7 @@
 
     function setupAutoTab() {
       // Selects: auto-avance al cambiar
-      ['empresa','status'].forEach(function(id){
+      ['sede','empresa','status'].forEach(function(id){
         const el = document.getElementById(id);
         if (el && el.tagName === 'SELECT') el.addEventListener('change', function(){ if (el.value) focusNext(id); });
       });
@@ -490,24 +516,42 @@
       const hoy = new Date().toISOString().split('T')[0];
       document.getElementById('fecha_denuncia').value = hoy;
       document.getElementById('status').value = 'En investigación';
+      var _s = document.getElementById('sede');
+      _s.disabled = false;
+      _s.value = document.getElementById('filterSede').value || '';
+      document.getElementById('sedeHelp').textContent = 'Define en qué expediente se registra. Cada sede lleva su propio correlativo y no se puede cambiar después.';
       document.getElementById('formAlert').innerHTML = '';
       document.getElementById('formModal').classList.add('bs-active');
+      if (!_s.value) { try { _s.focus(); } catch(e) {} }
     }
 
     function closeModal() {
       document.getElementById('formModal').classList.remove('bs-active');
     }
 
-    async function editar(id) {
-      let d = _CACHE_H.find(function(x) { return parseInt(x.id) === parseInt(id); });
+    // Edita por POSICION en la tabla: los ids se repiten entre Piura y Olmos
+    function editarIdx(i) {
+      const d = _CACHE_H[i];
+      if (!d) return appAlert('No encontrado');
+      abrirEdicionHost(d);
+    }
+    async function editar(id, sede) {
+      const S = String(sede || '').toUpperCase();
+      let d = _CACHE_H.find(function(x) {
+        return parseInt(x.id) === parseInt(id) && (!S || String(x.sede || 'PIURA').toUpperCase() === S);
+      });
       if (!d) {
         const res = await api('bs_listarHostigamiento', {});
         if (!res.ok) return appAlert('Error: ' + res.message);
-        d = (res.items || []).find(function(x) { return parseInt(x.id) === parseInt(id); });
+        d = (res.items || []).find(function(x) {
+          return parseInt(x.id) === parseInt(id) && (!S || String(x.sede || 'PIURA').toUpperCase() === S);
+        });
       }
       if (!d) return appAlert('No encontrado');
-
-      document.getElementById('formTitle').textContent = 'Denuncia #' + d.id;
+      abrirEdicionHost(d);
+    }
+    function abrirEdicionHost(d) {
+      document.getElementById('formTitle').textContent = 'Denuncia ' + (d.codigo || ('#' + d.id));
       document.getElementById('denunciaId').value = d.id;
       ALL_FIELDS.forEach(function(f) {
         const el = document.getElementById(f);
@@ -520,6 +564,11 @@
           el.value = v;
         }
       });
+      // La sede identifica la hoja donde vive el registro: no se puede mover
+      const _s = document.getElementById('sede');
+      _s.value = String(d.sede || 'PIURA').toUpperCase();
+      _s.disabled = true;
+      document.getElementById('sedeHelp').textContent = 'La sede no se puede cambiar: el expediente ya está numerado en ' + _s.value + '.';
       document.getElementById('formAlert').innerHTML = '';
       document.getElementById('formModal').classList.add('bs-active');
     }
@@ -529,8 +578,10 @@
       ALL_FIELDS.forEach(function(f) {
         datos[f] = document.getElementById(f).value;
       });
+      // La sede identifica la hoja destino: siempre viaja, aunque el select esté bloqueado
+      datos.sede = String(document.getElementById('sede').value || 'PIURA').toUpperCase();
 
-      const REQUIRED_FIELDS = ['fecha_denuncia','empresa','denunciante_nombre'];
+      const REQUIRED_FIELDS = ['sede','fecha_denuncia','empresa','denunciante_nombre'];
       const _req = bsValidarRequeridos(REQUIRED_FIELDS);
       if (!_req.ok) {
         document.getElementById('formAlert').innerHTML = '<div class="bs-alert bs-alert-danger">Falta completar: <strong>' + _req.label + '</strong></div>';
