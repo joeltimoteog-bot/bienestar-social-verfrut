@@ -50,12 +50,11 @@ body::before {
   background: radial-gradient(700px 120px at 12% 0%, rgba(255,255,255,.10), transparent 70%);
 }
 .bs-topbar::after { height: 3px; background: linear-gradient(90deg, #dc2626 0%, #f05252 14%, rgba(220,38,38,0) 62%); }
-.bs-topbar-brand-icon {
-  width: 36px; height: 36px; border-radius: 10px; overflow: hidden;
-  background: #fff; color: var(--bs-primary); font-weight: 800;
-  box-shadow: 0 4px 14px rgba(0,0,0,.28);
-}
-.bs-topbar-brand-icon img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+/* OJO: styles.css fija el tamaño del logo con !important (bloque
+   "LOGO UNIFRUTTI OVERRIDE"). Aquí solo se aporta relieve, nunca medidas:
+   si se toca width/height del <img> el logo se dispara a tamaño natural. */
+.bs-topbar-brand-icon { color: var(--bs-primary); font-weight: 800; box-shadow: 0 4px 14px rgba(0,0,0,.28); }
+.bs-topbar-brand-icon img { height: 32px; width: auto; object-fit: contain; }
 .bs-topbar-logout { transition: transform .18s var(--bsp-ease), background .18s; }
 .bs-topbar-logout:hover { transform: translateY(-1px); }
 
