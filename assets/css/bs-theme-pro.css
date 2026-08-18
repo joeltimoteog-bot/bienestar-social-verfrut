@@ -1,0 +1,237 @@
+/* ============================================================
+   BS-THEME-PRO · Capa visual "Ejecutivo con profundidad"
+   Bienestar Social · Unifrutti Group
+   ------------------------------------------------------------
+   Se carga DESPUÉS de styles.css y bs-form-v2.css. No reemplaza
+   nada: solo refina superficies, profundidad, jerarquía y
+   movimiento. Para revertir, basta con quitar el <link>.
+   ============================================================ */
+
+:root {
+  /* Escala de elevación en dos capas (ambiental + direccional) */
+  --bsp-e1: 0 1px 2px rgba(10,25,60,.05), 0 2px 8px -2px rgba(10,25,60,.07);
+  --bsp-e2: 0 2px 4px rgba(10,25,60,.05), 0 8px 20px -6px rgba(10,25,60,.12);
+  --bsp-e3: 0 4px 8px rgba(10,25,60,.06), 0 18px 40px -12px rgba(10,25,60,.20);
+  --bsp-e4: 0 8px 16px rgba(10,25,60,.08), 0 32px 64px -16px rgba(10,25,60,.28);
+  --bsp-ring: 0 0 0 1px rgba(10,36,99,.06);
+  --bsp-brand: linear-gradient(135deg, #0a2463 0%, #14357f 45%, #1e3a8a 100%);
+  --bsp-accent: linear-gradient(90deg, #dc2626, #f05252);
+  --bsp-ease: cubic-bezier(.22,.61,.36,1);
+}
+
+/* ---------- Fondo: malla de color + textura fina ---------- */
+body {
+  background:
+    radial-gradient(1100px 620px at 88% -12%, rgba(220,38,38,.075), transparent 62%),
+    radial-gradient(900px 560px at -8% 108%, rgba(37,99,235,.085), transparent 60%),
+    radial-gradient(700px 500px at 50% 40%, rgba(255,255,255,.55), transparent 70%),
+    linear-gradient(165deg, #f4f7fd 0%, #eaeff9 55%, #e6ecf7 100%);
+  background-attachment: fixed;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  opacity: .5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+}
+.bs-appshell, .bs-login-bg { position: relative; z-index: 1; }
+
+/* ---------- Topbar con vidrio y brillo ---------- */
+.bs-topbar {
+  background:
+    linear-gradient(120deg, rgba(10,36,99,.97) 0%, rgba(10,28,77,.97) 55%, rgba(7,18,51,.97) 100%);
+  backdrop-filter: saturate(160%) blur(10px);
+  -webkit-backdrop-filter: saturate(160%) blur(10px);
+  box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 10px 30px -12px rgba(7,18,51,.55);
+  padding: .95rem var(--bs-space-md);
+}
+.bs-topbar::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(700px 120px at 12% 0%, rgba(255,255,255,.10), transparent 70%);
+}
+.bs-topbar::after { height: 3px; background: linear-gradient(90deg, #dc2626 0%, #f05252 14%, rgba(220,38,38,0) 62%); }
+.bs-topbar-brand-icon {
+  width: 36px; height: 36px; border-radius: 10px; overflow: hidden;
+  background: #fff; color: var(--bs-primary); font-weight: 800;
+  box-shadow: 0 4px 14px rgba(0,0,0,.28);
+}
+.bs-topbar-brand-icon img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+.bs-topbar-logout { transition: transform .18s var(--bsp-ease), background .18s; }
+.bs-topbar-logout:hover { transform: translateY(-1px); }
+
+/* ---------- Tarjetas: superficie viva ---------- */
+.bs-card, .bs-table-wrap, .bs-kpi, .bs-hero, .bs-module-card {
+  box-shadow: var(--bsp-e2), var(--bsp-ring);
+  border-color: rgba(226,232,240,.9);
+  transition: transform .28s var(--bsp-ease), box-shadow .28s var(--bsp-ease), border-color .2s;
+}
+.bs-card { background: linear-gradient(180deg, #ffffff 0%, #fdfeff 100%); }
+.bs-card:hover { box-shadow: var(--bsp-e3), var(--bsp-ring); transform: translateY(-2px); }
+.bs-card-title { letter-spacing: -.01em; font-weight: 700; }
+.bs-card-header { border-bottom-color: rgba(226,232,240,.8); }
+
+/* ---------- Hero del módulo: más presencia ---------- */
+.bs-hero {
+  padding: 1.35rem 1.5rem 1.35rem 1.75rem;
+  background:
+    radial-gradient(520px 180px at 100% 0%, color-mix(in srgb, var(--mod, var(--bs-primary)) 9%, transparent), transparent 70%),
+    linear-gradient(180deg, #ffffff, #fbfcff);
+  box-shadow: var(--bsp-e3), var(--bsp-ring);
+}
+.bs-hero::before { width: 7px; background: linear-gradient(180deg, var(--mod, var(--bs-primary)), color-mix(in srgb, var(--mod, var(--bs-primary)) 55%, #fff 20%)); }
+.bs-hero::after {
+  right: -90px; top: -110px; width: 300px; height: 300px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--mod, var(--bs-primary)) 12%, transparent) 0%, transparent 68%);
+}
+.bs-hero h1 { font-size: 1.62rem; letter-spacing: -.025em; }
+.bs-hero-ico {
+  width: 60px; height: 60px; border-radius: 17px; font-size: 1.8rem;
+  box-shadow:
+    0 10px 24px color-mix(in srgb, var(--mod, var(--bs-primary)) 42%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.32);
+  position: relative;
+}
+.bs-hero-ico::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(160deg, rgba(255,255,255,.28), transparent 55%);
+}
+.bs-hero-crumbs { letter-spacing: .1em; }
+
+/* ---------- KPIs: número protagonista ---------- */
+.bs-kpis { gap: 1rem; }
+.bs-kpi {
+  padding: 1.05rem 1.15rem 1rem;
+  background: linear-gradient(180deg, #ffffff, #fcfdff);
+  border-radius: 16px;
+}
+.bs-kpi::before { width: 100%; height: 4px; bottom: auto; background: linear-gradient(90deg, var(--kc, var(--bs-primary)), color-mix(in srgb, var(--kc, var(--bs-primary)) 45%, #fff)); }
+.bs-kpi::after {
+  content: ''; position: absolute; right: -30px; bottom: -40px; width: 130px; height: 130px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--kc, var(--bs-primary)) 10%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.bs-kpi:hover { transform: translateY(-3px); box-shadow: var(--bsp-e3), var(--bsp-ring); }
+.bs-kpi .v { font-size: 1.72rem; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+.bs-kpi .l { letter-spacing: .07em; }
+
+/* ---------- Tarjetas de módulo del portal ---------- */
+.bs-module-card {
+  border-radius: 18px; padding: 1.35rem;
+  background: linear-gradient(180deg, #ffffff, #fbfcff);
+  border-width: 1px;
+}
+/* La barra superior existente pasa de bloque plano a acento degradado */
+.bs-module-card::before { background: linear-gradient(90deg, rgba(10,36,99,.9) 0%, rgba(10,36,99,.35) 45%, rgba(10,36,99,.08) 100%); }
+.bs-module-card::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px;
+  background: var(--bsp-accent); transform: scaleX(0); transform-origin: left;
+  transition: transform .32s var(--bsp-ease);
+}
+.bs-module-card:hover { transform: translateY(-5px); box-shadow: var(--bsp-e4), var(--bsp-ring); border-color: rgba(220,38,38,.28); }
+.bs-module-card:hover::after { transform: scaleX(1); }
+.bs-module-icon {
+  width: 58px; height: 58px; border-radius: 17px; font-size: 1.75rem; position: relative;
+  box-shadow: 0 10px 22px -6px currentColor, inset 0 1px 0 rgba(255,255,255,.3);
+  transition: transform .32s var(--bsp-ease);
+}
+.bs-module-card:hover .bs-module-icon { transform: scale(1.06) rotate(-3deg); }
+.bs-module-title { font-size: 1.1rem; font-weight: 700; letter-spacing: -.015em; }
+
+/* ---------- Botones ---------- */
+.bs-btn { border-radius: 11px; letter-spacing: .005em; transition: transform .18s var(--bsp-ease), box-shadow .18s, background .18s, color .18s; }
+.bs-btn:not(:disabled):hover { transform: translateY(-2px); }
+.bs-btn:not(:disabled):active { transform: translateY(0); }
+.bs-btn-primary { box-shadow: 0 8px 20px -6px rgba(10,36,99,.5); }
+.bs-btn-primary:hover:not(:disabled) { box-shadow: 0 12px 26px -6px rgba(10,36,99,.55); }
+.bs-hero .bs-btn { padding: .72rem 1.35rem; }
+.bs-btn:focus-visible, .bs-input:focus-visible, .bs-select:focus-visible, .bs-textarea:focus-visible {
+  outline: 3px solid rgba(37,99,235,.35); outline-offset: 2px;
+}
+
+/* ---------- Formularios ---------- */
+.bs-input, .bs-select, .bs-textarea { border-radius: 11px; background: #fdfefe; }
+.bs-input:hover, .bs-select:hover, .bs-textarea:hover { border-color: var(--bs-border-strong); }
+.bs-input:focus, .bs-select:focus, .bs-textarea:focus { background: #fff; box-shadow: 0 0 0 4px rgba(37,99,235,.14); }
+.bs-label { font-size: .78rem; letter-spacing: .06em; color: var(--bs-text-muted); }
+
+/* ---------- Tablas ---------- */
+.bs-table-wrap { border-radius: 16px; }
+.bs-table th {
+  position: sticky; top: 0; z-index: 2;
+  background: linear-gradient(180deg, #f7f9fe, #eef3fb);
+  box-shadow: inset 0 -2px 0 #dbe5f5;
+  border-bottom: none;
+}
+.bs-table tbody tr:nth-child(even) { background: rgba(241,245,251,.5); }
+.bs-table tbody tr:hover { background: rgba(37,99,235,.07); }
+.bs-table td { padding: .8rem 1rem; }
+.bs-badge { padding: .24rem .7rem; box-shadow: inset 0 0 0 1px rgba(0,0,0,.04); }
+
+/* ---------- Alertas ---------- */
+.bs-alert { border-radius: 12px; border-left-width: 5px; box-shadow: var(--bsp-e1); }
+
+/* ---------- Modales ---------- */
+.bs-modal-overlay { background: rgba(8,20,45,.62); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.bs-modal { border-radius: 20px; box-shadow: 0 40px 90px -20px rgba(5,15,40,.6); transform: translateY(26px) scale(.985); }
+.bs-modal-overlay.bs-active .bs-modal { transform: translateY(0) scale(1); transition: transform .34s var(--bsp-ease); }
+.bs-modal-header { background: linear-gradient(180deg, #fbfcff, #ffffff); border-bottom-color: rgba(226,232,240,.85); }
+.bs-modal-title { font-weight: 700; letter-spacing: -.01em; }
+
+/* ---------- Login ---------- */
+.bs-login-bg {
+  background:
+    radial-gradient(1100px 560px at 85% -12%, rgba(220,38,38,.38), transparent 58%),
+    radial-gradient(900px 520px at -5% 108%, rgba(37,99,235,.35), transparent 62%),
+    linear-gradient(125deg, #071233 0%, #0a2463 38%, #14357f 70%, #2a1552 120%);
+  position: relative; overflow: hidden;
+}
+.bs-login-bg::before,
+.bs-login-bg::after {
+  content: ''; position: absolute; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255,255,255,.07), transparent 65%);
+  animation: bsp-flotar 18s ease-in-out infinite;
+}
+.bs-login-bg::before { width: 620px; height: 620px; top: -220px; right: -160px; }
+.bs-login-bg::after { width: 460px; height: 460px; bottom: -180px; left: -120px; animation-delay: -9s; }
+@keyframes bsp-flotar {
+  0%, 100% { transform: translate3d(0,0,0) scale(1); }
+  50% { transform: translate3d(0,26px,0) scale(1.06); }
+}
+.bs-login-card {
+  border-radius: 24px;
+  box-shadow: 0 40px 90px -20px rgba(0,10,40,.65), 0 0 0 1px rgba(255,255,255,.12);
+  animation: bsp-entrar .55s var(--bsp-ease) both;
+}
+.bs-login-card::before { height: 5px; background: linear-gradient(90deg, #0a2463, #dc2626 60%, #f05252); }
+.bs-login-logo { border-radius: 18px; box-shadow: 0 12px 28px -8px rgba(10,36,99,.55); }
+.bs-login-title { font-weight: 800; letter-spacing: -.02em; }
+
+/* ---------- Footer ---------- */
+.bs-footer { padding: 1.15rem var(--bs-space-md); letter-spacing: .01em; }
+.bs-footer::before { background: linear-gradient(90deg, #dc2626, #f05252 18%, rgba(220,38,38,0) 62%); }
+
+/* ---------- Entrada escalonada (la aplica bs-ui.js) ---------- */
+@keyframes bsp-entrar { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.bsp-anim { animation: bsp-entrar .5s var(--bsp-ease) both; }
+
+/* ---------- Accesibilidad y compatibilidad ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  .bsp-anim { animation: none !important; opacity: 1 !important; transform: none !important; }
+}
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  .bs-hero-ico { background: var(--mod, var(--bs-primary)); }
+  .bs-kpi::before { background: var(--kc, var(--bs-primary)); }
+}
+@media (max-width: 768px) {
+  .bs-hero { padding: 1.1rem 1.1rem 1.1rem 1.35rem; }
+  .bs-hero h1 { font-size: 1.35rem; }
+  .bs-kpi .v { font-size: 1.5rem; }
+  body::before { display: none; }
+}
+@media print {
+  body { background: #fff; }
+  body::before { display: none; }
+  .bs-topbar, .bs-footer, .bs-btn { display: none !important; }
+  .bs-card, .bs-kpi, .bs-hero, .bs-table-wrap { box-shadow: none; border: 1px solid #cbd5e1; break-inside: avoid; }
+}
