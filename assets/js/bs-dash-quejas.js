@@ -16,6 +16,7 @@ window.BSDashQuejas = (function () {
 
   var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   var RED = '#E2001A', NAVY = '#1e3a8a', BLUE = '#3b5bdb';
+  var C_EMPRESA = { RAPEL: '#e2001a', VERFRUT: '#1d4ed8', BOMAREA: '#0d9488', OTRO: '#94a3b8' };
   var PAL = [RED, NAVY, BLUE, '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#db2777'];
 
   var DATA = { casos: [], personal: { total: 0, RAPEL: 0, VERFRUT: 0 } };
@@ -34,7 +35,7 @@ window.BSDashQuejas = (function () {
     return { anio: p[0], mes: ('0' + parseInt(p[1], 10)).slice(-2), dia: parseInt(p[2] || '1', 10) };
   }
   function esCerrado(r) { return /cerrad|resuelt/i.test(String(r || '')); }
-  function emp(v) { var s = String(v || '').toUpperCase(); return s.indexOf('VERFRUT') >= 0 ? 'VERFRUT' : (s.indexOf('RAPEL') >= 0 ? 'RAPEL' : 'OTRO'); }
+  function emp(v) { var s = String(v || '').toUpperCase(); return s.indexOf('VERFRUT') >= 0 ? 'VERFRUT' : (s.indexOf('RAPEL') >= 0 ? 'RAPEL' : (s.indexOf('BOMAREA') >= 0 ? 'BOMAREA' : 'OTRO')); }
   function txt(v) { return String(v == null ? '' : v).trim(); }
 
   function aplicar() {
@@ -217,7 +218,7 @@ window.BSDashQuejas = (function () {
 
     // empresa
     var byEmp = {}; items.forEach(function (q) { var e = emp(q.empresa); byEmp[e] = (byEmp[e] || 0) + 1; });
-    doughnut('chEmpresa', Object.keys(byEmp), Object.values(byEmp), Object.keys(byEmp).map(function (e) { return e === 'RAPEL' ? NAVY : (e === 'VERFRUT' ? RED : '#94a3b8'); }));
+    doughnut('chEmpresa', Object.keys(byEmp), Object.values(byEmp), Object.keys(byEmp).map(function (e) { return C_EMPRESA[e] || C_EMPRESA.OTRO; }));
 
     // canal
     var byCanal = {}; items.forEach(function (q) { var c = txt(q.canal) || '(s/d)'; byCanal[c] = (byCanal[c] || 0) + 1; });
@@ -262,7 +263,7 @@ window.BSDashQuejas = (function () {
   function opt(label, on, fn) { var b = document.createElement('button'); b.className = 'bsdq-opt' + (on ? ' on' : ''); b.textContent = label; b.onclick = fn; return b; }
   function sidebar() {
     var e = document.getElementById('bsdqEmp'); e.innerHTML = '';
-    ['', 'RAPEL', 'VERFRUT'].forEach(function (v) { e.appendChild(opt(v || 'Todas', F.empresa === v, function () { F.empresa = v; sidebar(); render(); })); });
+    ['', 'RAPEL', 'VERFRUT', 'BOMAREA'].forEach(function (v) { e.appendChild(opt(v || 'Todas', F.empresa === v, function () { F.empresa = v; sidebar(); render(); })); });
     var a = document.getElementById('bsdqAnio'); a.innerHTML = '';
     var anios = [''].concat(aniosUnicos());
     anios.forEach(function (v) { a.appendChild(opt(v || 'Todos', F.anio === v, function () { F.anio = v; sidebar(); render(); })); });

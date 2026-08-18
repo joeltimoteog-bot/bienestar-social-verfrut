@@ -22,6 +22,7 @@ window.BSDashSubsidios = (function () {
   var VERDE = '#16a34a', AMBAR = '#d97706', GRIS = '#94a3b8';
   var PAL = [NAVY, RED, BLUE, VERDE, AMBAR, '#7c3aed', '#0891b2', '#db2777'];
   var C_EST = { rec: VERDE, pen: NAVY, nor: AMBAR };
+  var C_EMPRESA = { RAPEL: '#e2001a', VERFRUT: '#1d4ed8', BOMAREA: '#0d9488', OTRO: '#94a3b8' };
   var L_EST = { rec: 'Cobrado', pen: 'Por cobrar', nor: 'No recuperable' };
 
   var DATA = { subs: [] };
@@ -32,7 +33,7 @@ window.BSDashSubsidios = (function () {
   /* ---------- utilidades ---------- */
   function txt(v) { return String(v == null ? '' : v).trim(); }
   function up(v) { return txt(v).toUpperCase(); }
-  function emp(v) { var s = up(v); return s.indexOf('VERFRUT') >= 0 ? 'VERFRUT' : (s.indexOf('RAPEL') >= 0 ? 'RAPEL' : 'OTRO'); }
+  function emp(v) { var s = up(v); return s.indexOf('VERFRUT') >= 0 ? 'VERFRUT' : (s.indexOf('RAPEL') >= 0 ? 'RAPEL' : (s.indexOf('BOMAREA') >= 0 ? 'BOMAREA' : 'OTRO')); }
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
   function numMoney(v) {
@@ -313,7 +314,7 @@ window.BSDashSubsidios = (function () {
     var byEmp = {}; items.forEach(function (s) { var e = emp(s.empresa); byEmp[e] = (byEmp[e] || 0) + 1; });
     var empO = Object.keys(byEmp);
     doughnut('sChEmpresa', empO, empO.map(function (k) { return byEmp[k]; }),
-      empO.map(function (e) { return e === 'RAPEL' ? RED : (e === 'VERFRUT' ? NAVY : GRIS); }));
+      empO.map(function (e) { return C_EMPRESA[e] || C_EMPRESA.OTRO; }));
 
     /* --- 4. por contingencia (dona, cantidad) --- */
     var byCon = {}; items.forEach(function (s) { var c = conting(s); byCon[c] = (byCon[c] || 0) + 1; });
@@ -343,7 +344,7 @@ window.BSDashSubsidios = (function () {
     });
 
     /* --- 5. empresa x contingencia (cantidad) --- */
-    var empLabels = empO.length ? empO : ['RAPEL', 'VERFRUT'];
+    var empLabels = empO.length ? empO : ['RAPEL', 'VERFRUT', 'BOMAREA'];
     barras('sChEmpConting', empLabels, CONT.map(function (c) {
       return {
         label: c, backgroundColor: colorConting(c), borderRadius: 4,
@@ -355,7 +356,7 @@ window.BSDashSubsidios = (function () {
     var estKeys = ['rec', 'pen', 'nor'];
     barras('sChMontoEstado', estKeys.map(function (k) { return L_EST[k]; }), empLabels.map(function (e) {
       return {
-        label: e, backgroundColor: e === 'RAPEL' ? RED : (e === 'VERFRUT' ? NAVY : GRIS), borderRadius: 4,
+        label: e, backgroundColor: C_EMPRESA[e] || C_EMPRESA.OTRO, borderRadius: 4,
         data: estKeys.map(function (k) {
           var v = 0; items.forEach(function (s) { if (emp(s.empresa) === e && catEstadoSub(s) === k) v += montoSub(s); });
           return Math.round(v);
@@ -475,7 +476,7 @@ window.BSDashSubsidios = (function () {
   function opt(label, on, fn) { var b = document.createElement('button'); b.className = 'bsds-opt' + (on ? ' on' : ''); b.textContent = label; b.onclick = fn; return b; }
   function sidebar() {
     var e = document.getElementById('bsdsEmp'); e.innerHTML = '';
-    ['', 'RAPEL', 'VERFRUT'].forEach(function (v) { e.appendChild(opt(v || 'Todas', F.empresa === v, function () { F.empresa = v; sidebar(); render(); })); });
+    ['', 'RAPEL', 'VERFRUT', 'BOMAREA'].forEach(function (v) { e.appendChild(opt(v || 'Todas', F.empresa === v, function () { F.empresa = v; sidebar(); render(); })); });
 
     var t = document.getElementById('bsdsTipo'); t.innerHTML = '';
     [''].concat(contingUnicas()).forEach(function (v) { t.appendChild(opt(v || 'Todas', F.tipo === v, function () { F.tipo = v; sidebar(); render(); })); });
