@@ -135,6 +135,7 @@
     @media(max-width:560px){.atr-toast{left:16px;right:16px;bottom:16px;max-width:none;}}
   </style>
   <link rel="stylesheet" href="assets/css/bs-theme-pro.css">
+  <link rel="stylesheet" href="assets/css/bs-theme-2026.css">
   <script src="assets/js/bs-ui.js"></script>
 </head>
 <body>
@@ -527,7 +528,7 @@
                              : (dr===0 ? 'vence HOY' : 'vence en '+dr+' día'+(dr===1?'':'s'));
         return '<div class="atr-item">'+
           '<span class="st '+a.estado+'"></span>'+
-          '<span style="flex:1;"><b>'+escHtml(a.modulo)+'</b> — '+escHtml(a.descripcion)+
+          '<span style="flex:1;"><b>'+escHtml(a.modulo)+'</b> — '+escHtml(String(a.descripcion||'').replace(/\s*·\s*_+\s*$/,'').trim()+(a.id!=null&&String(a.id).trim()!==''?' #'+String(a.id).trim():''))+
           (a.empresa ? ' <span style="color:#94a3b8;">('+escHtml(a.empresa)+')</span>' : '')+
           (a.fechaLimite ? ' · límite: '+escHtml(a.fechaLimite) : '')+'</span>'+
           '<span class="dias '+a.estado+'">'+diasTxt+'</span>'+

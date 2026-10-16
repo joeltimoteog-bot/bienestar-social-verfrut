@@ -1,0 +1,217 @@
+/* ============================================================
+   BS-THEME-2026 · Capa visual "Campo & Vidrio"
+   Bienestar Social · Unifrutti Group
+   ------------------------------------------------------------
+   Se carga DESPUÉS de bs-theme-pro.css en portal, panel y los 8
+   módulos. Es puramente aditiva: no cambia IDs, clases, lógica ni
+   llamadas al backend. Para revertir, basta con quitar el <link>.
+
+   Qué unifica:
+     1. Tipografía de titulares (Barlow Condensed, igual que el login).
+     2. Hero oscuro por módulo (el estilo de Hallazgos) en los 8 módulos,
+        tomando el color de --mod que cada página ya define.
+     3. Topbar más limpio, saludo en vidrio, KPIs, filtros, tablas,
+        badges, botones y modales con un solo lenguaje.
+     4. Responsive real a 390 px (celular en campo).
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&display=swap');
+
+:root {
+  /* --b26-mod se declara en cada componente (no en :root) para que
+     tome el --mod que cada página define inline en su hero. */
+  --b26-ink: #050d24;
+  --b26-navy: #0a1c4d;
+  --b26-display: 'Barlow Condensed', 'Inter', system-ui, sans-serif;
+  --b26-radius: 18px;
+  --b26-radius-sm: 12px;
+  --b26-border: rgba(15, 23, 42, .08);
+}
+
+/* ---------- Fondo general: más limpio, con tinte del módulo ---------- */
+body {
+  background:
+    radial-gradient(900px 420px at 110% -10%, color-mix(in srgb, var(--bs-primary) 10%, transparent), transparent 60%),
+    radial-gradient(700px 380px at -10% 30%, rgba(10, 28, 77, .06), transparent 60%),
+    #f4f6fb;
+  background-attachment: fixed;
+}
+body::before { opacity: .35; }
+
+/* ---------- Topbar ---------- */
+.bs-topbar { padding: .7rem var(--bs-space-md); }
+.bs-topbar-brand { font-weight: 700; letter-spacing: -.01em; }
+.bs-topbar-brand span strong {
+  background: rgba(255, 255, 255, .10);
+  border-color: rgba(255, 255, 255, .18);
+  font-size: .7rem; letter-spacing: .12em;
+}
+.bs-topbar-user { gap: .55rem; }
+.bs-topbar-user-name {
+  font-size: .8rem; letter-spacing: .02em;
+  padding: .32rem .7rem; border-radius: 999px;
+  background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .12);
+}
+.bs-topbar-logout { border-radius: 10px; font-weight: 600; padding: .45rem .85rem; }
+.bs-topbar-logout[style*="1e40af"] { background: rgba(255, 255, 255, .14) !important; border-color: rgba(255, 255, 255, .28) !important; }
+.bs-topbar-logout[style*="1e40af"]:hover { background: rgba(255, 255, 255, .24) !important; }
+
+/* ---------- Saludo (bs-saludo.js) en vidrio ---------- */
+#bsSaludoBar {
+  background: linear-gradient(120deg, rgba(10, 28, 77, .96), rgba(29, 95, 196, .92)) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 14px 30px -16px rgba(10, 28, 77, .6), inset 0 1px 0 rgba(255, 255, 255, .14) !important;
+  border: 1px solid rgba(255, 255, 255, .12) !important;
+}
+
+/* ---------- Titulares ---------- */
+.bs-hero h1, .qx-hero h1, .bs-card-title, .bs-section-title, .bs-portal-title, h1.bs-title, .bs-welcome-title {
+  font-family: var(--b26-display);
+  letter-spacing: .01em;
+}
+.bs-hero h1, .qx-hero h1 { font-size: 2rem !important; font-weight: 800; line-height: 1.02; text-transform: uppercase; }
+
+/* ---------- Hero oscuro unificado (estilo Hallazgos) ---------- */
+.bs-hero {
+  --b26-mod: var(--mod, var(--bs-primary));
+  border: none;
+  border-radius: 22px;
+  padding: 1.5rem 1.6rem 1.45rem;
+  color: #fff;
+  background:
+    radial-gradient(420px 200px at 85% 0%, rgba(255, 255, 255, .16), transparent 70%),
+    linear-gradient(120deg, var(--b26-navy) 0%, color-mix(in srgb, var(--b26-mod) 72%, var(--b26-navy)) 55%, var(--b26-mod) 100%);
+  box-shadow: 0 18px 40px -18px color-mix(in srgb, var(--b26-mod) 55%, var(--b26-navy)), inset 0 1px 0 rgba(255, 255, 255, .14);
+}
+.bs-hero::before { display: none; }
+.bs-hero::after {
+  right: -55px; top: -70px; width: 190px; height: 190px;
+  background: rgba(255, 255, 255, .08);
+}
+.bs-hero h1 { color: #fff !important; margin: 0; }
+.bs-hero p, .bs-hero .bs-text-subtle { color: rgba(255, 255, 255, .82) !important; font-size: .9rem; max-width: 560px; }
+.bs-hero-crumbs { color: rgba(255, 255, 255, .72) !important; font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.bs-hero-crumbs b, .bs-hero-crumbs span { color: #fff !important; }
+.bs-hero-ico {
+  width: 64px; height: 64px; border-radius: 18px; font-size: 1.85rem;
+  background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .25);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25);
+  color: #fff;
+}
+.bs-hero-ico::after { display: none; }
+/* Botones dentro del hero: los que llevan color inline pasan a "fantasma" y CTA */
+.bs-hero .bs-btn {
+  border-radius: 12px; padding: .7rem 1.2rem; font-weight: 700; box-shadow: none;
+}
+.bs-hero .bs-btn-outline, .bs-hero .bs-btn[style*="border"] {
+  background: rgba(255, 255, 255, .13) !important; color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, .35) !important;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.bs-hero .bs-btn-outline:hover, .bs-hero .bs-btn[style*="border"]:hover { background: rgba(255, 255, 255, .24) !important; }
+.bs-hero .bs-btn:not(.bs-btn-outline):not([style*="border"]) {
+  background: #fff !important; color: var(--b26-navy) !important; font-weight: 800;
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, .45);
+}
+.bs-hero .bs-btn:not(.bs-btn-outline):not([style*="border"]):hover { transform: translateY(-1px); box-shadow: 0 12px 24px -6px rgba(0, 0, 0, .5); }
+/* Aviso de confidencialidad (hostigamiento) y alertas sobre el hero */
+.bs-alert { border-radius: 14px; }
+
+/* ---------- KPIs ---------- */
+.bs-kpi, .bskp-card {
+  border-radius: 16px !important; border: 1px solid var(--b26-border) !important;
+  background: #fff !important;
+  box-shadow: 0 10px 24px -16px rgba(15, 23, 42, .35) !important;
+}
+.bs-kpi::before { height: 4px; }
+.bs-kpi .v, .bskp-card .v, .bskp-v { font-family: var(--b26-display); font-size: 2rem !important; font-weight: 800; letter-spacing: 0; }
+.bs-kpi .l, .bskp-card .l { font-size: .68rem; letter-spacing: .1em; }
+
+/* ---------- Tarjetas, filtros ---------- */
+.bs-card, .bs-table-wrap, .qx-filtros {
+  border-radius: var(--b26-radius) !important;
+  border: 1px solid var(--b26-border) !important;
+  box-shadow: 0 10px 28px -18px rgba(15, 23, 42, .35) !important;
+}
+.bs-card:hover { transform: none; box-shadow: 0 14px 32px -18px rgba(15, 23, 42, .45) !important; }
+.bs-label { font-size: .68rem !important; text-transform: uppercase; letter-spacing: .1em; font-weight: 800; color: #64748b !important; }
+.bs-input, .bs-select, .bs-textarea {
+  border-radius: var(--b26-radius-sm) !important; border: 1.5px solid #e4e8f1 !important;
+  background: #fbfcfe !important; padding: .62rem .85rem;
+}
+.bs-card, .bs-table-wrap, .bs-input, .bs-select, .bs-textarea, .qx-filtros { --b26-mod: var(--mod, var(--bs-primary)); }
+.bs-input:focus, .bs-select:focus, .bs-textarea:focus {
+  border-color: color-mix(in srgb, var(--b26-mod) 70%, #fff) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--b26-mod) 14%, transparent) !important; background: #fff !important;
+}
+/* Chips de periodo (bs-filtro-fecha.js) */
+.bsff-chip, .bs-chip, [class*="chip"] button, .ff-chip { border-radius: 999px !important; }
+
+/* ---------- Botones ---------- */
+.bs-btn { border-radius: var(--b26-radius-sm); font-weight: 700; letter-spacing: .01em; }
+.bs-btn-primary { background: linear-gradient(135deg, var(--bs-primary), #1e3a8a); box-shadow: 0 10px 22px -10px rgba(10, 36, 99, .6); }
+.bs-btn-outline { border-width: 1.5px; }
+
+/* ---------- Tablas ---------- */
+.bs-table th { font-size: .7rem; letter-spacing: .08em; padding: .8rem 1rem; background: #f6f8fc; box-shadow: inset 0 -1px 0 #e4e8f1; }
+.bs-table td { padding: .78rem 1rem; }
+.bs-table tbody tr:nth-child(even) { background: transparent; }
+.bs-table tbody tr:hover { background: rgba(37, 99, 235, .06); }
+
+/* ---------- Badges / semáforos ---------- */
+.bs-badge { border-radius: 999px; font-size: .68rem; padding: .26rem .7rem; letter-spacing: .06em; box-shadow: none; }
+
+/* ---------- Estados vacíos ---------- */
+.bs-empty, .bs-table-empty, .qx-vacio { border-radius: var(--b26-radius); }
+
+/* ---------- Portal ---------- */
+.bs-module-card { border-radius: 20px; border: 1px solid var(--b26-border); box-shadow: 0 10px 28px -18px rgba(15, 23, 42, .35); }
+.bs-module-card::before { height: 5px; background: linear-gradient(90deg, var(--mod, var(--bs-primary)), color-mix(in srgb, var(--mod, var(--bs-primary)) 35%, #fff)); }
+.bs-module-card:hover { box-shadow: 0 24px 48px -20px color-mix(in srgb, var(--mod, var(--bs-primary)) 45%, transparent), var(--bsp-ring); border-color: color-mix(in srgb, var(--mod, var(--bs-primary)) 40%, #fff); }
+.bs-module-icon { border-radius: 18px; }
+.bs-module-title { font-family: var(--b26-display); font-size: 1.3rem; letter-spacing: .01em; text-transform: uppercase; }
+.bs-module-card.bs-disabled { opacity: .55; filter: grayscale(.5); }
+.bs-module-card.bs-disabled .bs-module-title { font-size: 1.1rem; }
+
+/* ---------- Modales ---------- */
+.bs-modal { border-radius: 22px; }
+.bs-modal-header { border-radius: 22px 22px 0 0; }
+.bs-modal-title { font-family: var(--b26-display); font-size: 1.45rem; letter-spacing: .01em; text-transform: uppercase; }
+
+/* ---------- Footer ---------- */
+.bs-footer { font-size: .78rem; }
+
+/* ---------- Botones flotantes (bs-mejoras / bs-presencia): no se pisan ---------- */
+#bsmLeyBtn { bottom: 18px !important; }
+#bsmWspBtn { bottom: 70px !important; }
+
+/* ---------- Responsive: celular en campo ---------- */
+@media (max-width: 768px) {
+  .bs-topbar { padding: .55rem .9rem; }
+  .bs-topbar-inner { flex-wrap: wrap; gap: .5rem; }
+  .bs-topbar-user { flex-wrap: wrap; width: 100%; justify-content: flex-end; }
+  .bs-hero { padding: 1.15rem 1.1rem 1.1rem; border-radius: 18px; }
+  .bs-hero h1, .qx-hero h1 { font-size: 1.5rem !important; }
+  .bs-hero-ico { width: 52px; height: 52px; font-size: 1.5rem; border-radius: 14px; }
+  .bs-hero > div:last-child, .qx-hero-in > div:last-child { width: 100%; }
+  .bs-hero .bs-btn { flex: 1 1 auto; justify-content: center; }
+  .bs-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+  .bs-kpi .v { font-size: 1.5rem !important; }
+  .bs-card { padding: 1rem; }
+  .bs-table { font-size: .82rem; }
+  .bs-table th, .bs-table td { padding: .6rem .7rem; }
+  .bs-footer { font-size: .72rem; padding: .9rem; text-align: center; }
+}
+@media (max-width: 480px) {
+  .bs-topbar-brand span { font-size: .85rem; }
+  .bs-topbar-brand span strong { font-size: .58rem; padding: .12rem .45rem; margin-left: .1rem; }
+  .bs-topbar-user-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bs-hero-lead { align-items: flex-start; }
+  .bs-kpis { grid-template-columns: 1fr 1fr; }
+}
+
+/* ---------- Compatibilidad: navegadores sin color-mix ---------- */
+@supports not (background: color-mix(in srgb, red 50%, blue)) {
+  .bs-hero { background: linear-gradient(120deg, var(--b26-navy), var(--b26-mod)); }
+  .bs-input:focus, .bs-select:focus, .bs-textarea:focus { border-color: var(--b26-mod) !important; box-shadow: 0 0 0 4px rgba(10, 36, 99, .14) !important; }
+}

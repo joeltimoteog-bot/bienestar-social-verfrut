@@ -61,3 +61,10 @@ SKILL-Bienestar-Social.md
 _to_delete/
 # Vista previa de tema (no publicar)
 theme-preview.html
+
+# Exportacion completa del GAS (source of truth esta en Apps Script editor)
+GS - BIENESTAR.txt
+
+# Copias locales del codigo GAS (source of truth: editor de Apps Script)
+/codigo.gs
+backend/codigo-produccion-olmos.gs

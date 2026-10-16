@@ -4,116 +4,267 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login · Bienestar Social - RR.LL.</title>
+  <link rel="icon" href="images/favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css">
   <link rel="stylesheet" href="assets/css/bs-theme-pro.css">
   <script src="assets/js/bs-ui.js"></script>
+  <style>
+    /* ============================================================
+       LOGIN · Bienestar Social — mismo lenguaje visual que el login
+       del Sistema RR.LL. (foto de campo, panel de vidrio, Barlow).
+       Todos los IDs que usa el script se conservan sin cambios.
+       ============================================================ */
+    :root { --lg-rojo: #dc2626; --lg-azul: #0a2463; --lg-ink: #050d24; }
+    html, body { height: 100%; }
+    body.bs-login-bg {
+      margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
+      font-family: 'Barlow', 'Inter', system-ui, sans-serif;
+      background: var(--lg-ink) !important;
+      display: block !important;
+    }
+    body.bs-login-bg::before, body.bs-login-bg::after { display: none; }
+
+    /* ── Fondo: foto + velo ── */
+    .lg-fondo { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+    .lg-fondo img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      transform: scale(1.06); filter: saturate(1.1);
+      animation: lg-ken 28s ease-in-out infinite alternate;
+    }
+    @keyframes lg-ken { from { transform: scale(1.06) translateY(0); } to { transform: scale(1.13) translateY(-16px); } }
+    .lg-velo {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 110% 90% at 50% 40%, rgba(5,13,36,.38) 0%, rgba(5,13,36,.74) 60%, rgba(5,13,36,.93) 100%),
+        linear-gradient(90deg, rgba(5,13,36,.55) 0%, rgba(5,13,36,.15) 45%, rgba(5,13,36,.55) 100%);
+    }
+    #bsCanvas { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .55; }
+    .bs-halo { display: none; }
+
+    /* ── Marca (izquierda) ── */
+    .lg-marca {
+      position: fixed; z-index: 2; left: clamp(22px, 5vw, 84px); bottom: clamp(30px, 8vh, 80px);
+      max-width: 560px; color: #fff; animation: lg-in 1s .2s ease backwards;
+    }
+    .lg-kicker {
+      display: flex; align-items: center; gap: 12px; font-size: 11.5px; font-weight: 800;
+      letter-spacing: 2.6px; text-transform: uppercase; color: #dfe7f7; margin-bottom: 10px;
+    }
+    .lg-kicker::before { content: ''; width: 28px; height: 2px; background: var(--lg-rojo); box-shadow: 0 0 12px rgba(220,38,38,.8); }
+    .lg-titulo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; line-height: .92; text-transform: uppercase; letter-spacing: -.5px; }
+    .lg-titulo .l1 { display: block; font-family: 'Barlow', sans-serif; font-weight: 600; font-size: clamp(16px, 1.6vw, 21px); letter-spacing: .4px; text-transform: none; color: #c9d6f0; margin-bottom: 4px; }
+    .lg-titulo .l2 {
+      display: block; font-size: clamp(50px, 6.6vw, 92px);
+      background: linear-gradient(115deg, #fff 55%, #93b4e8);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      filter: drop-shadow(0 4px 24px rgba(0,0,0,.45));
+    }
+    .lg-tag {
+      display: inline-flex; align-items: center; gap: 9px; margin-top: 18px;
+      font-size: 13px; font-weight: 700; color: #fff; padding: 8px 16px 8px 14px; border-radius: 999px;
+      background: rgba(220,38,38,.24); border: 1px solid rgba(220,38,38,.55); letter-spacing: .4px;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .lg-tag .pt { width: 7px; height: 7px; border-radius: 50%; background: var(--lg-rojo); box-shadow: 0 0 10px 2px rgba(220,38,38,.8); animation: lg-pulse 2.2s ease-in-out infinite; }
+    @keyframes lg-pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: .75; } }
+    .lg-mods { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+    .lg-mods span {
+      font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: #b9c8e6;
+      padding: 6px 11px; border-radius: 8px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    }
+
+    /* ── Panel de acceso (derecha) ── */
+    .lg-panelbox {
+      position: fixed; z-index: 3; top: 0; bottom: 0; right: clamp(16px, 6vw, 110px);
+      display: flex; align-items: center; animation: lg-in 1s .45s ease backwards;
+    }
+    @keyframes lg-in { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: translateY(0); } }
+    .lg-glow {
+      position: relative; border-radius: 28px; padding: 1.5px;
+      background: conic-gradient(from var(--lga, 0deg), rgba(220,38,38,.65), rgba(59,130,246,.5), rgba(255,255,255,.14), rgba(220,38,38,.65));
+      animation: lg-spin 7s linear infinite;
+    }
+    @property --lga { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+    @keyframes lg-spin { to { --lga: 360deg; } }
+
+    .bs-login-card, .bs-login-card.lg-panel {
+      width: min(410px, 92vw); max-height: 94vh; overflow-y: auto;
+      margin: 0; padding: clamp(24px, 3vh, 38px) clamp(24px, 2.4vw, 36px);
+      border-radius: 27px !important; text-align: center;
+      background: linear-gradient(160deg, rgba(13,27,58,.74), rgba(8,18,42,.80)) !important;
+      backdrop-filter: blur(22px) saturate(1.35); -webkit-backdrop-filter: blur(22px) saturate(1.35);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 40px 90px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14) !important;
+      animation: none; color: #fff;
+    }
+    .bs-login-card::before { display: none; }
+    .lg-logo { display: flex; justify-content: center; margin-bottom: 14px; }
+    .lg-logo img { height: 58px; width: auto; border-radius: 12px; background: #fff; padding: 6px 12px; box-shadow: 0 8px 26px rgba(0,0,0,.4); }
+    .lg-saludo {
+      font-size: 12px; font-weight: 700; letter-spacing: 2.2px; text-transform: uppercase; color: #f0a9a9;
+      display: flex; align-items: center; justify-content: center; gap: 9px; margin-bottom: 6px;
+    }
+    .lg-saludo::before, .lg-saludo::after { content: ''; width: 22px; height: 1.5px; background: linear-gradient(90deg, transparent, rgba(220,38,38,.7)); }
+    .lg-saludo::after { background: linear-gradient(90deg, rgba(220,38,38,.7), transparent); }
+    .bs-login-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: clamp(28px, 3vw, 36px); color: #fff; letter-spacing: .5px; text-transform: uppercase; margin: 0 0 2px; }
+    .bs-login-subtitle { font-size: 12.5px; color: #8fa3c7; margin: 0 0 20px; }
+    .bs-login-subtitle b { color: #c9d6f0; font-weight: 600; }
+
+    /* Alertas y bloqueo dentro del panel */
+    #alertContainer .bs-alert {
+      background: rgba(220,38,38,.16); border: 1px solid rgba(220,38,38,.45); border-left: 4px solid var(--lg-rojo);
+      color: #ffb9b9; font-size: 13px; padding: 11px 14px; border-radius: 10px; margin-bottom: 14px; text-align: left; box-shadow: none;
+    }
+    #alertContainer .bs-alert-success { background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.45); border-left-color: #22c55e; color: #bbf7d0; }
+    .bs-lock-box { display: none; background: rgba(220,38,38,.16); border: 1px solid rgba(220,38,38,.45); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #ffb9b9; font-weight: 700; margin-bottom: 14px; }
+
+    /* Campos */
+    .bs-form-group { margin-bottom: 15px; text-align: left; }
+    .bs-label { display: block; font-size: 10px; font-weight: 800; letter-spacing: 1.6px; color: #9db4dd; text-transform: uppercase; margin-bottom: 7px; }
+    .lg-wrap, .bs-input-wrap { position: relative; }
+    .lg-wrap .ic { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: #7d93bd; pointer-events: none; transition: color .25s; }
+    .lg-wrap:focus-within .ic { color: #f08c8c; }
+    .bs-input, .lg-wrap input {
+      width: 100%; background: rgba(255,255,255,.07) !important; border: 1.5px solid rgba(255,255,255,.14) !important;
+      border-radius: 12px !important; padding: 13px 42px 13px 42px; font-size: 14.5px; font-family: 'Barlow', sans-serif; color: #fff !important;
+      transition: border-color .25s, box-shadow .25s, background .25s; outline: none;
+    }
+    .bs-input::placeholder { color: #6e82a8; }
+    .bs-input:focus-visible, .bs-btn-login:focus-visible, .lg-volver:focus-visible { outline: none; }
+    .bs-input:focus { background: rgba(255,255,255,.11) !important; border-color: rgba(220,38,38,.75) !important; box-shadow: 0 0 0 4px rgba(220,38,38,.16) !important; }
+    .bs-input:-webkit-autofill, .bs-input:-webkit-autofill:focus { -webkit-text-fill-color: #fff; -webkit-box-shadow: 0 0 0 1000px #152a5a inset !important; transition: background-color 9999s ease-in-out 0s; }
+    .bs-eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; padding: 7px; opacity: .75; transition: opacity .2s; color: #fff; }
+    .bs-eye:hover { opacity: 1; }
+    .bs-caps-hint { display: none; font-size: 11.5px; color: #fbbf24; font-weight: 600; margin-top: 6px; }
+
+    /* Botón principal */
+    .bs-btn-login, .bs-btn.bs-btn-primary.bs-btn-login {
+      width: 100%; border: none; cursor: pointer; position: relative; overflow: hidden;
+      background: linear-gradient(135deg, #e23c3c, #b91c1c 55%, #9a1515) !important; color: #fff;
+      font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 800; letter-spacing: 2.4px; text-transform: uppercase;
+      padding: 15px; border-radius: 12px !important; margin-top: 6px;
+      box-shadow: 0 14px 34px rgba(220,38,38,.36), inset 0 1px 0 rgba(255,255,255,.25) !important;
+      transition: transform .18s, box-shadow .25s, filter .2s;
+    }
+    .bs-btn-login::after { content: ''; position: absolute; top: 0; left: -80%; width: 45%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.38), transparent); transform: skewX(-22deg); animation: lg-shine 3.4s ease-in-out infinite; }
+    @keyframes lg-shine { 0%,55% { left: -80%; } 85%,100% { left: 130%; } }
+    .bs-btn-login:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 20px 44px rgba(220,38,38,.5) !important; filter: brightness(1.07); }
+    .bs-btn-login:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* Volver a RR.LL. */
+    .lg-volver {
+      display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 11px;
+      border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: #9db4dd;
+      font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 700; padding: 11px; border-radius: 12px;
+      text-decoration: none; transition: background .2s, color .2s, transform .18s;
+    }
+    .lg-volver:hover { background: rgba(255,255,255,.12); color: #fff; transform: translateY(-1px); }
+
+    .bs-footer-text { margin-top: 18px; display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 11px; color: #7f92b5; line-height: 1.5; }
+    .bs-footer-text .esc { flex: none; width: 19px; height: 19px; border-radius: 6px; background: var(--lg-rojo); display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: #fff; box-shadow: 0 4px 12px rgba(220,38,38,.45); }
+    .bs-footer-text strong { color: #c9d6f0; font-weight: 600; }
+
+    .bs-shake { animation: bs-shake .45s ease; }
+    @keyframes bs-shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-9px); } 40%,80% { transform: translateX(9px); } }
+
+    /* ── Bienvenida (overlay) — mismo vidrio ── */
+    .bs-welcome-overlay {
+      position: fixed; inset: 0; z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; color: #fff; padding: 24px;
+      background: radial-gradient(ellipse 110% 90% at 50% 40%, rgba(18,36,82,.6) 0%, rgba(10,26,63,.9) 60%, var(--lg-ink) 100%), linear-gradient(140deg, #0a2463, #050d24);
+      animation: bs-fade .35s ease both;
+    }
+    .bs-welcome-overlay.bs-active { display: flex; }
+    .bs-welcome-wave { font-size: 3.2rem; display: inline-block; animation: bs-wave 1.4s ease infinite; transform-origin: 70% 70%; }
+    .bs-welcome-title { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(32px, 4vw, 46px); font-weight: 900; margin: .5rem 0 .2rem; letter-spacing: -.3px; }
+    .bs-welcome-title .nm { background: linear-gradient(115deg, #fff 55%, #f0a9a9); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .bs-welcome-sub { font-size: 1rem; color: #c9d6f0; }
+    .bs-welcome-loading { margin-top: 1.6rem; font-size: .85rem; color: #8fa3c7; display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+    @keyframes bs-wave { 0%,60%,100% { transform: rotate(0); } 10%,30% { transform: rotate(16deg); } 20%,40% { transform: rotate(-8deg); } }
+    @keyframes bs-fade { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .lg-marca { display: none; }
+      .lg-panelbox { right: 0; left: 0; justify-content: center; padding: 0 14px; }
+    }
+    @media (max-height: 640px) { .lg-logo img { height: 44px; } .bs-login-subtitle { margin-bottom: 12px; } }
+    @media (prefers-reduced-motion: reduce) {
+      .lg-fondo img, .lg-glow, .lg-tag .pt { animation: none; }
+      .bs-btn-login::after { display: none; }
+    }
+  </style>
 </head>
 <body class="bs-login-bg">
 
-  <style>
-    /* ── Fondo animado estilo portal RR.LL ── */
-    body.bs-login-bg {
-      position: relative; overflow: hidden; margin: 0; padding: 24px;
-      min-height: 100vh;
-      display: flex !important; align-items: center !important; justify-content: center !important;
-      background: linear-gradient(135deg, #0a2463 0%, #122f7a 40%, #1e3a8a 68%, #3a1a5e 100%) !important;
-    }
-
-    /* ── Centrado del logo y contenido de la tarjeta ── */
-    .bs-login-card { width: 100%; max-width: 400px; margin: 0 auto; padding: 2.1rem 1.9rem 1.6rem; text-align: center !important; }
-    .bs-login-logo-img { display: block !important; margin: 0 auto 12px !important; }
-    .bs-login-title, .bs-login-subtitle, .bs-footer-text { text-align: center !important; }
-    .bs-login-divider { margin-left: auto !important; margin-right: auto !important; }
-    /* El formulario mantiene etiquetas a la izquierda para fácil lectura */
-    .bs-login-card form, .bs-form-group, .bs-label { text-align: left; }
-    #alertContainer, .bs-lock-box { text-align: center; }
-    #bsCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-    .bs-halo { position: fixed; border-radius: 50%; filter: blur(90px); opacity: .35; pointer-events: none; z-index: 0; }
-    .bs-halo.h1 { width: 420px; height: 420px; background: #dc2626; top: -120px; left: -100px; }
-    .bs-halo.h2 { width: 480px; height: 480px; background: #0ea5e9; bottom: -160px; right: -120px; }
-
-    /* ── Tarjeta con efecto vidrio ── */
-    .bs-login-card {
-      position: relative; z-index: 2;
-      animation: bs-rise .5s ease both;
-      background: rgba(255,255,255,.94) !important;
-      backdrop-filter: blur(14px);
-      border: 1px solid rgba(255,255,255,.55);
-      border-radius: 18px !important;
-      box-shadow: 0 24px 70px rgba(0,0,0,.45) !important;
-      overflow: hidden;
-    }
-    .bs-login-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px;
-      background: linear-gradient(90deg, #C8102E 0%, #C8102E 45%, #003DA5 55%, #003DA5 100%);
-    }
-    .bs-login-title { letter-spacing: -.02em; }
-    .bs-input:focus { border-color: #003DA5 !important; box-shadow: 0 0 0 3px rgba(0,61,165,.15) !important; }
-    .bs-btn-login { background: linear-gradient(120deg, #003DA5, #0050C8) !important; transition: transform .15s ease, box-shadow .15s ease; }
-    .bs-btn-login:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(0,61,165,.4); }
-    .bs-shake { animation: bs-shake .45s ease; }
-    @keyframes bs-shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-9px)} 40%,80%{transform:translateX(9px)} }
-    .bs-lock-box { background: rgba(200,16,46,.08); border: 1px solid rgba(200,16,46,.3); border-radius: 10px; padding: .6rem .8rem; font-size: .8rem; color: #C8102E; font-weight: 700; text-align: center; margin-bottom: .8rem; display: none; }
-
-    .bs-login-card { animation: bs-rise .45s ease both; }
-    .bs-login-logo-img { display: block; margin: 0 auto 12px; height: 58px; width: auto; background: #fff; border-radius: 12px; padding: 6px 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
-    .bs-login-divider { width: 48px; height: 3px; margin: 10px auto 16px; border-radius: 2px; background: linear-gradient(90deg, var(--bs-primary), var(--bs-secondary)); }
-    .bs-btn-login { width: 100%; padding: .8rem; font-size: .95rem; letter-spacing: .03em; }
-    .bs-caps-hint { display: none; font-size: .75rem; color: var(--bs-warning); font-weight: 600; margin-top: 4px; }
-    .bs-welcome-overlay { position: fixed; inset: 0; z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #fff; background: linear-gradient(120deg, #0a2463 0%, #122f7a 45%, #1e3a8a 70%, #3a1a5e 100%); animation: bs-fade .35s ease both; }
-    .bs-welcome-overlay.bs-active { display: flex; }
-    .bs-welcome-wave { font-size: 3.2rem; display: inline-block; animation: bs-wave 1.4s ease infinite; transform-origin: 70% 70%; }
-    .bs-welcome-title { font-size: 1.9rem; font-weight: 700; margin: .6rem 0 .2rem; }
-    .bs-welcome-title .nm { color: #ffd8d5; }
-    .bs-welcome-sub { font-size: 1rem; opacity: .92; }
-    .bs-welcome-loading { margin-top: 1.6rem; font-size: .85rem; opacity: .85; display: flex; flex-direction: column; align-items: center; gap: .5rem; }
-    @keyframes bs-wave { 0%,60%,100%{transform:rotate(0)} 10%,30%{transform:rotate(16deg)} 20%,40%{transform:rotate(-8deg)} }
-    @keyframes bs-fade { from{opacity:0} to{opacity:1} }
-    @keyframes bs-rise { from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none} }
-  </style>
-
+  <div class="lg-fondo" aria-hidden="true">
+    <img src="images/login-campo.jpg" alt="" decoding="async">
+    <div class="lg-velo"></div>
+  </div>
   <canvas id="bsCanvas"></canvas>
   <div class="bs-halo h1"></div>
   <div class="bs-halo h2"></div>
 
-  <div class="bs-login-card">
-    <img src="images/logo-unifrutti-hd.png" alt="Unifrutti" class="bs-login-logo-img" onerror="this.outerHTML='&lt;div class=&quot;bs-login-logo&quot;&gt;BS&lt;/div&gt;'">
-    <h1 class="bs-login-title">Bienestar Social</h1>
-    <p class="bs-login-subtitle">Equipo Relaciones Laborales · Unifrutti</p>
-    <div class="bs-login-divider"></div>
+  <section class="lg-marca" aria-label="Bienestar Social">
+    <div class="lg-kicker">Verfrut S.A.C. · Rapel S.A.C. — Unifrutti Group</div>
+    <h2 class="lg-titulo"><span class="l1">Sistema de</span><span class="l2">Bienestar<br>Social</span></h2>
+    <div class="lg-tag"><span class="pt"></span> Equipo de Relaciones Laborales</div>
+    <div class="lg-mods">
+      <span>Hallazgos</span><span>Accidentes</span><span>Hostigamiento</span><span>Subsidios</span><span>Rendiciones</span><span>Sugerencias</span>
+    </div>
+  </section>
 
-    <div id="alertContainer"></div>
-    <div class="bs-lock-box" id="lockBox">🔒 Demasiados intentos fallidos.<br>Espera <span id="lockSeg">60</span> s para volver a intentar.</div>
-
-    <form id="loginForm" autocomplete="off">
-      <div class="bs-form-group">
-        <label class="bs-label" for="usuario">Usuario</label>
-        <input type="text" id="usuario" name="usuario" class="bs-input" required autofocus autocomplete="off" placeholder="Ingresa tu usuario">
-      </div>
-
-      <div class="bs-form-group">
-        <label class="bs-label" for="password">Contraseña</label>
-        <div class="bs-input-wrap">
-          <input type="password" id="password" name="password" class="bs-input" required autocomplete="off" placeholder="Ingresa tu contraseña">
-          <button type="button" class="bs-eye" id="btnEye" title="Mostrar contraseña" aria-label="Mostrar contraseña">👁</button>
+  <div class="lg-panelbox">
+    <div class="lg-glow">
+      <div class="bs-login-card lg-panel">
+        <div class="lg-logo">
+          <img src="images/logo-unifrutti-hd.png" alt="Unifrutti" class="bs-login-logo-img" onerror="this.outerHTML='&lt;div class=&quot;bs-login-logo&quot;&gt;BS&lt;/div&gt;'">
         </div>
-        <div class="bs-caps-hint" id="capsHint">⚠ Mayúsculas activadas (Bloq Mayús)</div>
+        <div class="lg-saludo" id="lgSaludo">Bienvenido</div>
+        <h1 class="bs-login-title">Iniciar sesión</h1>
+        <p class="bs-login-subtitle"><b>Bienestar Social</b> · <span id="lgFecha"></span></p>
+
+        <div id="alertContainer"></div>
+        <div class="bs-lock-box" id="lockBox">🔒 Demasiados intentos fallidos.<br>Espera <span id="lockSeg">60</span> s para volver a intentar.</div>
+
+        <form id="loginForm" autocomplete="off">
+          <div class="bs-form-group">
+            <label class="bs-label" for="usuario">Usuario</label>
+            <div class="lg-wrap">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input type="text" id="usuario" name="usuario" class="bs-input" required autofocus autocomplete="off" placeholder="Ingresa tu usuario">
+            </div>
+          </div>
+
+          <div class="bs-form-group">
+            <label class="bs-label" for="password">Contraseña</label>
+            <div class="bs-input-wrap lg-wrap">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="password" name="password" class="bs-input" required autocomplete="off" placeholder="Ingresa tu contraseña">
+              <button type="button" class="bs-eye" id="btnEye" title="Mostrar contraseña" aria-label="Mostrar contraseña">👁</button>
+            </div>
+            <div class="bs-caps-hint" id="capsHint">⚠ Mayúsculas activadas (Bloq Mayús)</div>
+          </div>
+
+          <button type="submit" id="btnLogin" class="bs-btn bs-btn-primary bs-btn-login">
+            <span id="btnText">Ingresar</span>
+            <div id="btnDots" class="bs-dots bs-dots-light bs-hidden"><span></span><span></span><span></span></div>
+          </button>
+        </form>
+
+        <a class="lg-volver" href="https://joeltimoteog-bot.github.io/sistema-rl-verfrut/">← Volver al Sistema RR.LL.</a>
+
+        <p class="bs-footer-text">
+          <span class="esc">RL</span>
+          <span>Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · <span id="lgVersion">v1.1.0</span></span>
+        </p>
       </div>
-
-      <button type="submit" id="btnLogin" class="bs-btn bs-btn-primary bs-btn-login">
-        <span id="btnText">Ingresar</span>
-        <div id="btnDots" class="bs-dots bs-dots-light bs-hidden"><span></span><span></span><span></span></div>
-      </button>
-    </form>
-
-    <p class="bs-footer-text">
-      Creado por <strong>Joel Angel Timoteo Gonza</strong><br>
-      Unifrutti Group · RAPEL S.A.C. / VERFRUT S.A.C.<br>
-      v1.1.0
-    </p>
+    </div>
   </div>
 
   <!-- Overlay de bienvenida personalizada -->
@@ -126,6 +277,19 @@
       Preparando tus módulos...
     </div>
   </div>
+
+  <script>
+    // ===== Saludo por hora y fecha (solo presentación) =====
+    (function(){
+      try {
+        var h = new Date().getHours();
+        document.getElementById('lgSaludo').textContent = h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
+        var f = new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        document.getElementById('lgFecha').textContent = f.charAt(0).toUpperCase() + f.slice(1);
+        if (window.BS_VERSION) document.getElementById('lgVersion').textContent = window.BS_VERSION;
+      } catch(e) {}
+    })();
+  </script>
 
   <script>
     // ===== CONFIGURACIÓN =====

@@ -409,6 +409,13 @@
     }).catch(function () {});
   }
 
+  /* Descripción legible: quita el sufijo vacío " · __" que llega cuando la
+     categoría está en blanco en la hoja, y antepone el ID del caso. */
+  window.bsDescAlerta = function (a) {
+    var d = String((a && a.descripcion) || '').replace(/\s*·\s*_+\s*$/, '').trim();
+    var id = a && a.id != null && String(a.id).trim() !== '' ? ' #' + String(a.id).trim() : '';
+    return d + id;
+  };
   function renderAtrasos() {
     if (!ATR.length) return;
     var rojos = ATR.filter(function (a) { return a.estado === 'rojo'; }).length;
@@ -418,7 +425,7 @@
     var items = ATR.slice(0, 6).map(function (a) {
       var dr = Number(a.diasRestantes || 0);
       var txt = dr < 0 ? Math.abs(dr) + 'd de atraso' : (dr === 0 ? 'vence HOY' : 'vence en ' + dr + 'd');
-      return '<div class="it"><span>' + esc(a.descripcion) +
+      return '<div class="it"><span>' + esc(window.bsDescAlerta(a)) +
         (a.fechaLimite ? ' · límite: ' + esc(a.fechaLimite) : '') + '</span>' +
         '<span class="d ' + a.estado + '">' + txt + '</span></div>';
     }).join('');

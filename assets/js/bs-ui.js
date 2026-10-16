@@ -154,3 +154,24 @@
 
   window.BSUi = { animar: prepararEntrada, contar: contarEn };
 })();
+
+/* ---------------- 4. Versión única del sistema ----------------
+ * Cambiar SOLO aquí. Reemplaza el "vX.Y.Z" del pie de página, del login
+ * y de cualquier elemento con data-bs-version. */
+window.BS_VERSION = 'v1.2.0';
+(function () {
+  function pintar() {
+    try {
+      var re = /v\d+\.\d+\.\d+/;
+      var nodos = document.querySelectorAll('.bs-footer, .bs-footer-text, [data-bs-version]');
+      Array.prototype.forEach.call(nodos, function (el) {
+        Array.prototype.forEach.call(el.childNodes, function (n) {
+          if (n.nodeType === 3 && re.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(re, window.BS_VERSION);
+        });
+        if (el.hasAttribute('data-bs-version')) el.textContent = window.BS_VERSION;
+      });
+      var lg = document.getElementById('lgVersion'); if (lg) lg.textContent = window.BS_VERSION;
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pintar); else pintar();
+})();
