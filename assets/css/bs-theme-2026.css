@@ -215,3 +215,96 @@ body::before { opacity: .35; }
   .bs-hero { background: linear-gradient(120deg, var(--b26-navy), var(--b26-mod)); }
   .bs-input:focus, .bs-select:focus, .bs-textarea:focus { border-color: var(--b26-mod) !important; box-shadow: 0 0 0 4px rgba(10, 36, 99, .14) !important; }
 }
+
+/* ============================================================
+   PORTAL · Tarjetas de módulo (pro-card) — versión 2026
+   Solo CSS: el markup y los KPIs los sigue pintando portal.html.
+   ============================================================ */
+.pro-grid { gap: 22px; }
+.pro-card {
+  --mc-soft: color-mix(in srgb, var(--mc) 10%, #fff);
+  --mc-mid: color-mix(in srgb, var(--mc) 22%, #fff);
+  padding: 22px 20px 18px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--mc) 14%, #e6ebf2);
+  background:
+    radial-gradient(260px 120px at 100% 0%, color-mix(in srgb, var(--mc) 16%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--mc-soft) 0%, #fff 42%);
+  box-shadow: 0 10px 28px -18px rgba(15, 23, 42, .35);
+  overflow: hidden;
+  transition: transform .28s var(--bsp-ease, ease), box-shadow .28s, border-color .2s;
+}
+.pro-card::after {
+  /* Flecha "abrir" que aparece al pasar el mouse (arriba a la derecha) */
+  content: '→';
+  position: absolute; right: 14px; top: 14px;
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1rem; color: #fff;
+  background: var(--mc);
+  box-shadow: 0 8px 18px -6px color-mix(in srgb, var(--mc) 70%, transparent);
+  opacity: 0; transform: translate(6px, 6px) scale(.9);
+  transition: opacity .22s, transform .28s var(--bsp-ease, ease);
+}
+.pro-card:hover { transform: translateY(-6px); box-shadow: 0 26px 48px -22px color-mix(in srgb, var(--mc) 55%, rgba(7, 18, 51, .3)); border-color: color-mix(in srgb, var(--mc) 40%, #fff); }
+.pro-card:hover::after { opacity: 1; transform: translate(0, 0) scale(1); }
+.pro-card:hover .pro-badge { transform: translateX(-44px); }
+.pro-badge { transition: transform .28s var(--bsp-ease, ease); }
+.pro-card .strip {
+  height: 5px;
+  background: linear-gradient(90deg, var(--mc) 0%, color-mix(in srgb, var(--mc) 45%, #fff) 70%, transparent 100%);
+}
+.pro-ic {
+  width: 56px; height: 56px; border-radius: 17px; margin: 4px 0 16px;
+  position: relative;
+  box-shadow: 0 12px 24px -8px color-mix(in srgb, var(--mc) 65%, transparent), inset 0 1px 0 rgba(255, 255, 255, .35);
+  transition: transform .3s var(--bsp-ease, ease);
+}
+.pro-ic::before {
+  content: ''; position: absolute; inset: -8px; border-radius: 24px; z-index: -1;
+  background: color-mix(in srgb, var(--mc) 12%, transparent);
+}
+.pro-ic svg { width: 28px; height: 28px; }
+.pro-card:hover .pro-ic { transform: scale(1.06) rotate(-4deg); }
+.pro-card h3 {
+  font-family: var(--b26-display);
+  font-size: 1.42rem; font-weight: 800; letter-spacing: .01em; text-transform: uppercase; line-height: 1;
+  color: var(--b26-navy); margin: 0 0 7px;
+}
+.pro-card p { font-size: .8rem; line-height: 1.5; color: #5b6b85; }
+.pro-kpis {
+  margin-top: 16px; padding-top: 0; border-top: none;
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.pro-kpi {
+  /* Dos fichas por fila; si el valor es largo (montos), la ficha toma la fila completa */
+  flex: 1 1 calc(50% - 4px); min-width: fit-content; padding: 10px 12px; border-radius: 13px;
+  background: color-mix(in srgb, var(--mc) 7%, #fff);
+  border: 1px solid color-mix(in srgb, var(--mc) 14%, #fff);
+}
+.pro-kpi .kn { font-family: var(--b26-display); font-size: 1.45rem; font-weight: 800; letter-spacing: 0; white-space: nowrap; }
+.pro-kpi .kl { font-size: .6rem; letter-spacing: .08em; font-weight: 700; margin-top: 2px; }
+.pro-open {
+  margin-top: 16px; padding: 0; border-top: none;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  padding: 7px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--mc) 9%, #fff); border: 1px solid color-mix(in srgb, var(--mc) 18%, #fff);
+}
+.pro-badge { top: 14px; right: 14px; font-size: .62rem; letter-spacing: .04em; padding: 4px 9px; backdrop-filter: blur(4px); }
+.pro-badge.conf { background: rgba(254, 243, 199, .9); }
+/* Sin acceso: compacta y en gris, sin flecha */
+.pro-card.pro-off { opacity: .62; filter: grayscale(.6); background: #fff; }
+.pro-card.pro-off::after { display: none; }
+.pro-card.pro-off h3 { font-size: 1.2rem; }
+.pro-card.pro-off .pro-ic { box-shadow: none; }
+/* Chips de resumen sobre la grilla */
+.pro-chip { border-radius: 999px; padding: 9px 16px; box-shadow: 0 6px 16px -12px rgba(15, 23, 42, .4); }
+.pro-chip b { font-family: var(--b26-display); font-size: 1.15rem; }
+/* Título de sección */
+.pro-title, .pro-section h2 { font-family: var(--b26-display); text-transform: uppercase; letter-spacing: .01em; font-size: 1.7rem; }
+@media (max-width: 560px) {
+  .pro-card { padding: 18px 16px 16px; }
+  .pro-card h3 { font-size: 1.3rem; }
+  .pro-kpi .kn { font-size: 1.25rem; }
+}
