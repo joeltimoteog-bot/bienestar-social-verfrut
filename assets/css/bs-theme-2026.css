@@ -308,3 +308,93 @@ body::before { opacity: .35; }
   .pro-card h3 { font-size: 1.3rem; }
   .pro-kpi .kn { font-size: 1.25rem; }
 }
+
+/* ============================================================
+   PORTAL · Bienvenida, alertas de atraso y encabezado de sección
+   ============================================================ */
+/* Bienvenida: foto de campo + velo navy (misma identidad que el login) */
+.pro-welcome {
+  border-radius: 24px; padding: 28px 30px 24px;
+  background:
+    linear-gradient(100deg, rgba(5, 13, 36, .92) 0%, rgba(10, 36, 99, .82) 45%, rgba(10, 36, 99, .35) 100%),
+    url('../../images/login-campo.jpg') center 35% / cover no-repeat;
+  box-shadow: 0 24px 50px -24px rgba(5, 13, 36, .7), inset 0 1px 0 rgba(255, 255, 255, .14);
+  border: 1px solid rgba(255, 255, 255, .10);
+}
+.pro-welcome::after {
+  right: -60px; top: -60px; width: 260px; height: 260px;
+  background: radial-gradient(circle, rgba(220, 38, 38, .35), transparent 68%);
+}
+.pro-welcome .wave { font-size: 1.6rem; }
+.pro-welcome h2 {
+  font-family: var(--b26-display); font-size: clamp(2rem, 3.2vw, 2.8rem); font-weight: 900;
+  letter-spacing: .01em; text-transform: uppercase; line-height: .95; margin: .1rem 0 .5rem; color: #fff;
+}
+.pro-welcome h2 .nm {
+  background: linear-gradient(115deg, #fff 55%, #93b4e8);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.pro-welcome p { color: #dbe6fb; font-size: .95rem; }
+.pro-welcome .firma { color: #b9c8e6; }
+.pro-welcome .date {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 12px;
+  font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #dfe7f7;
+}
+.pro-welcome .date::before { content: ''; width: 22px; height: 2px; background: #dc2626; box-shadow: 0 0 10px rgba(220, 38, 38, .8); }
+.pro-welcome .x { width: 32px; height: 32px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .18); backdrop-filter: blur(6px); }
+
+/* Alertas de atraso: tarjeta limpia con barra de estado */
+.pro-atrasos {
+  border: 1px solid var(--b26-border); border-left-width: 1px;
+  border-radius: 22px; padding: 18px 22px 16px;
+  background: #fff; position: relative; overflow: hidden;
+  box-shadow: 0 12px 30px -20px rgba(15, 23, 42, .4);
+}
+.pro-atrasos::before {
+  content: ''; position: absolute; left: 0; top: 0; right: 0; height: 5px;
+  background: linear-gradient(90deg, #dc2626 0%, #f05252 40%, rgba(220, 38, 38, 0) 100%);
+}
+.pro-atrasos.ambar::before { background: linear-gradient(90deg, #d97706 0%, #f59e0b 40%, rgba(217, 119, 6, 0) 100%); }
+.pro-atrasos .atr-head { margin-bottom: 12px; }
+.pro-atrasos .atr-head h3 {
+  font-family: var(--b26-display); font-size: 1.45rem; font-weight: 800;
+  letter-spacing: .01em; text-transform: uppercase; color: var(--b26-navy);
+}
+.pro-atrasos.ambar .atr-head h3 { color: var(--b26-navy); }
+.atr-chip { font-family: var(--b26-display); font-size: .95rem; padding: 4px 12px; letter-spacing: .02em; }
+.atr-list {
+  max-height: 232px; border-radius: 14px; border: 1px solid #eef2f7;
+  background: #fafbfe; padding: 4px 6px; margin-bottom: 14px;
+}
+.atr-item {
+  padding: 8px 10px; border-bottom: 1px solid #eef2f7; border-radius: 10px;
+  align-items: center; transition: background .15s;
+}
+.atr-item:hover { background: #fff; }
+.atr-item .st { margin-top: 0; width: 8px; height: 8px; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 15%, transparent); }
+.atr-item .st.rojo { color: #dc2626; }
+.atr-item .st.ambar { color: #d97706; }
+.atr-item .dias {
+  font-family: var(--b26-display); font-size: .95rem; letter-spacing: .02em;
+  padding: 2px 10px; border-radius: 999px;
+}
+.atr-item .dias.rojo { background: #fee2e2; }
+.atr-item .dias.ambar { background: #fef3c7; }
+.atr-actions { border-top: none; padding-top: 0; gap: 10px; }
+.atr-btn { border-radius: 999px; padding: 9px 16px; font-weight: 700; letter-spacing: .01em; }
+.atr-btn.wsp { background: linear-gradient(135deg, #25d366, #1aa84f); box-shadow: 0 8px 18px -8px rgba(37, 211, 102, .7); }
+.atr-btn.mail { background: linear-gradient(135deg, #1e3a8a, #0a2463); box-shadow: 0 8px 18px -8px rgba(10, 36, 99, .7); }
+.atr-btn.copy { background: #f1f5f9; border: 1px solid #e2e8f0; }
+.atr-nota { margin-top: 10px; }
+
+/* Encabezado "Selecciona un módulo" */
+.pro-h1 {
+  font-family: var(--b26-display); font-size: 2rem; font-weight: 800;
+  letter-spacing: .01em; text-transform: uppercase; color: var(--b26-navy); margin: 0 0 2px;
+}
+.pro-sub { margin-bottom: 14px; }
+@media (max-width: 640px) {
+  .pro-welcome { padding: 22px 18px 18px; border-radius: 18px; }
+  .pro-atrasos { padding: 14px 14px 12px; border-radius: 18px; }
+  .atr-btn { flex: 1 1 auto; justify-content: center; }
+}
