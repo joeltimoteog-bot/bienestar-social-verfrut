@@ -1,0 +1,105 @@
+/* ============================================================
+   Bienestar Social — Form V3 (2027)
+   Capa ADITIVA sobre styles.css + bs-form-v2.css. No cambia lógica.
+   Moderniza: campos, foco, estados de validación, botones del modal,
+   secciones, barra de progreso y versión móvil.
+   ============================================================ */
+:root {
+  --f3-primary: #0033A0; --f3-primary-soft: #e5ebfa; --f3-accent: #E2231A;
+  --f3-fg: #13213f; --f3-muted: #5b6785; --f3-line: #d8e0ec; --f3-bg: #f8fafd;
+  --f3-ok: #15803d; --f3-bad: #b91c1c; --f3-radius: 10px;
+}
+
+/* ---- Campos ---- */
+.bs-modal .bs-input, .bs-modal .bs-select, .bs-modal .bs-textarea,
+.bs-modal input[type="text"], .bs-modal input[type="number"], .bs-modal input[type="date"],
+.bs-modal input[type="email"], .bs-modal input[type="tel"], .bs-modal input[type="search"],
+.bs-modal select, .bs-modal textarea {
+  width: 100%; min-height: 42px; padding: .55rem .8rem !important;
+  border: 1.5px solid var(--f3-line) !important; border-radius: var(--f3-radius) !important;
+  background: var(--f3-bg) !important; color: var(--f3-fg) !important; font: inherit; font-size: .95rem !important;
+  transition: border-color .15s, box-shadow .15s, background .15s; box-shadow: none !important;
+}
+.bs-modal .bs-input:hover, .bs-modal .bs-select:hover, .bs-modal .bs-textarea:hover { border-color: #aab7d1 !important; }
+.bs-modal .bs-input:focus, .bs-modal .bs-select:focus, .bs-modal .bs-textarea:focus,
+.bs-modal input:focus, .bs-modal select:focus, .bs-modal textarea:focus {
+  outline: none !important; background: #fff !important; border-color: var(--f3-primary) !important;
+  box-shadow: 0 0 0 4px rgba(0, 51, 160, .14) !important;
+}
+.bs-modal input[readonly], .bs-modal .bs-input[readonly] { background: #eef2f8 !important; color: var(--f3-muted) !important; cursor: default; }
+.bs-modal select, .bs-modal .bs-select {
+  appearance: none; -webkit-appearance: none; padding-right: 2.2rem !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235b6785' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") !important;
+  background-repeat: no-repeat !important; background-position: right .8rem center !important;
+}
+.bs-modal input[type="date"] { font-variant-numeric: tabular-nums; }
+.bs-modal textarea, .bs-modal .bs-textarea { min-height: 72px !important; line-height: 1.45; }
+
+/* ---- Etiquetas ---- */
+.bs-modal .bs-label, .bs-modal label {
+  display: flex; align-items: center; gap: .35rem; font-size: .74rem !important; font-weight: 700 !important;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--f3-muted) !important; margin-bottom: .3rem !important;
+}
+.bs-modal .bs-label .f3-req { color: var(--f3-accent); font-weight: 800; }
+.bs-modal .bs-form-group { margin-bottom: .85rem !important; min-width: 0; }
+.bs-modal .bs-helptext, .bs-modal .f3-help { font-size: .76rem; color: var(--f3-muted); margin-top: .25rem; }
+
+/* ---- Estados de validación (los pone bs-form-v3.js) ---- */
+.bs-modal .f3-invalid, .bs-modal .f3-invalid:focus { border-color: var(--f3-bad) !important; box-shadow: 0 0 0 4px rgba(185, 28, 28, .12) !important; background: #fff7f7 !important; }
+.bs-modal .f3-valid { border-color: #86efac !important; }
+.bs-modal .f3-group-invalid .bs-label { color: var(--f3-bad) !important; }
+.bs-modal .f3-msg { font-size: .76rem; color: var(--f3-bad); margin-top: .25rem; display: none; }
+.bs-modal .f3-group-invalid .f3-msg { display: block; }
+
+/* ---- Secciones dentro del formulario (h3/h4 o .bs-section-title existentes) ---- */
+.bs-modal .bs-modal-body h3, .bs-modal .bs-modal-body h4, .bs-modal .bs-section-title {
+  font-size: .8rem !important; font-weight: 800 !important; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--f3-primary) !important; margin: 1.1rem 0 .6rem !important; padding-bottom: .35rem;
+  border-bottom: 2px solid var(--f3-primary-soft); display: flex; align-items: center; gap: .5rem;
+}
+.bs-modal .bs-modal-body h3:first-child, .bs-modal .bs-modal-body h4:first-child { margin-top: 0 !important; }
+
+/* ---- Cabecera del modal: progreso ---- */
+.bs-modal .f3-progress { height: 4px; background: var(--f3-primary-soft); position: relative; flex: 0 0 auto; }
+.bs-modal .f3-progress > i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, var(--f3-primary), #2a63ea); transition: width .25s; }
+.bs-modal .f3-counter { font-size: .72rem; color: var(--f3-muted); font-weight: 600; margin-left: auto; white-space: nowrap; padding: 0 .6rem; }
+
+/* ---- Botones del modal ---- */
+.bs-modal .bs-btn, .bs-modal button[type="submit"], .bs-modal #btnSubmit {
+  border-radius: var(--f3-radius) !important; min-height: 42px; padding: .55rem 1.1rem !important; font-weight: 700 !important;
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem; transition: transform .1s, filter .15s, box-shadow .15s;
+}
+.bs-modal .bs-btn-primary, .bs-modal button[type="submit"], .bs-modal #btnSubmit, .bs-modal .bs-btn-dm {
+  background: var(--f3-primary) !important; color: #fff !important; border: 0 !important; box-shadow: 0 6px 16px rgba(0, 51, 160, .25);
+}
+.bs-modal .bs-btn-primary:hover, .bs-modal button[type="submit"]:hover, .bs-modal #btnSubmit:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.bs-modal .bs-btn:active { transform: translateY(0); }
+.bs-modal .bs-btn-outline, .bs-modal .bs-btn-ghost, .bs-modal .bs-btn-secondary {
+  background: #fff !important; color: var(--f3-fg) !important; border: 1.5px solid var(--f3-line) !important;
+}
+.bs-modal .bs-btn-outline:hover, .bs-modal .bs-btn-ghost:hover { border-color: var(--f3-primary) !important; color: var(--f3-primary) !important; }
+.bs-modal .bs-btn:disabled { opacity: .6; cursor: not-allowed; transform: none !important; }
+.bs-modal .bs-modal-footer, .bs-modal form > .bs-flex:last-child { position: sticky; bottom: 0; background: #fff; padding-top: .75rem; border-top: 1px solid var(--f3-line); z-index: 2; }
+
+/* ---- Cierre del modal ---- */
+.bs-modal .bs-modal-close { width: 36px; height: 36px; border-radius: 9px !important; background: var(--f3-primary-soft) !important; color: var(--f3-primary) !important; font-size: 1.2rem; display: grid; place-items: center; }
+.bs-modal .bs-modal-close:hover { background: var(--f3-accent) !important; color: #fff !important; }
+
+/* ---- Atajos en el pie ---- */
+.bs-modal .f3-atajos { font-size: .72rem; color: var(--f3-muted); display: flex; gap: .8rem; flex-wrap: wrap; align-items: center; }
+.bs-modal .f3-atajos kbd { font: inherit; font-size: .68rem; border: 1px solid var(--f3-line); border-bottom-width: 2px; border-radius: 5px; padding: 0 .35rem; background: #fff; }
+
+/* ---- Tablas y filtros fuera del modal (toque ligero) ---- */
+.bs-main .bs-input, .bs-main .bs-select { border-radius: var(--f3-radius); min-height: 40px; }
+.bs-main .bs-input:focus, .bs-main .bs-select:focus { border-color: var(--f3-primary); box-shadow: 0 0 0 4px rgba(0, 51, 160, .12); outline: none; }
+.bs-table tbody tr:hover { background: #f4f7fd; }
+
+/* ---- Móvil ---- */
+@media (max-width: 768px) {
+  .bs-modal .bs-grid, .bs-modal .bs-grid-2, .bs-modal .bs-grid-3, .bs-modal .bs-grid-4 { grid-template-columns: 1fr !important; }
+  .bs-modal .bs-form-group[style*="span"] { grid-column: auto !important; }
+  .bs-modal .bs-modal-body { padding: 1rem !important; }
+  .bs-modal .bs-btn { width: 100%; }
+  .bs-modal .f3-atajos { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .bs-modal * { transition: none !important; } }

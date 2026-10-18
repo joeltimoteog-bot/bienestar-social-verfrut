@@ -6,201 +6,247 @@
   <title>Portal · Bienestar Social - RR.LL.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css">
   <script src="assets/js/modal-system.js"></script>
 
-  <!-- ===== PORTAL PRO: estilos (marca de agua, banner, chips, tarjetas) ===== -->
+  <!-- ===== PORTAL 2027: barra lateral + lienzo (sin tocar la lógica) ===== -->
   <style>
-    :root{ --pro-navy:#1e3a8a; --pro-red:#E2001A; --pro-muted:#64748b; --pro-wm:0.05; }
-
-    /* Marca de agua */
-    body::before{
-      content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
-      background:url('assets/img/bienestar-logo-unifrutti.png') no-repeat center 55%;
-      background-size:min(46vw,430px);
-      opacity:var(--pro-wm);
+    :root{
+      --p-bg:#f3f5fa; --p-panel:#ffffff; --p-fg:#13213f; --p-muted:#5b6785; --p-line:#dde3ef;
+      --p-primary:#0033A0; --p-primary-soft:#e5ebfa; --p-accent:#E2231A;
+      --p-ok:#15803d; --p-warn:#b45309; --p-bad:#b91c1c; --p-ok-soft:#dcfce7; --p-warn-soft:#fef3c7; --p-bad-soft:#fee2e2;
+      --p-shadow:0 8px 22px rgba(0,30,90,.10);
+      --p-display:"Barlow Condensed","Arial Narrow",sans-serif; --p-body:"Barlow","Segoe UI",system-ui,sans-serif;
     }
-    .bs-appshell{position:relative;z-index:1;}
+    html[data-theme="dark"]{
+      --p-bg:#0e1424; --p-panel:#171f33; --p-fg:#e8ecf6; --p-muted:#9aa6c4; --p-line:#2a3550;
+      --p-primary:#6f93ff; --p-primary-soft:#1d2a4f; --p-accent:#ff6a63;
+      --p-ok:#4ade80; --p-warn:#fbbf24; --p-bad:#f87171; --p-ok-soft:#113524; --p-warn-soft:#3b2a0b; --p-bad-soft:#3f1414;
+      --p-shadow:0 8px 22px rgba(0,0,0,.35); color-scheme:dark;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--p-bg);color:var(--p-fg);font-family:var(--p-body);font-size:15px;line-height:1.45}
+    button{font:inherit;color:inherit;cursor:pointer}
+    a{color:inherit}
+    .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
 
-    /* Banner de bienvenida */
-    .pro-welcome{position:relative;overflow:hidden;border-radius:18px;color:#fff;
-      background:linear-gradient(120deg,#1e3a8a,#0d47a6 55%,#1d5fc4);
-      padding:22px 26px;margin:0 0 22px;box-shadow:0 10px 26px rgba(10,61,145,.20);}
-    .pro-welcome::after{content:"";position:absolute;right:-40px;top:-40px;width:210px;height:210px;
-      background:radial-gradient(circle,rgba(226,0,26,.35),transparent 70%);}
-    .pro-welcome .wave{font-size:1.5rem;}
-    .pro-welcome h2{margin:.2rem 0 .4rem;font-size:1.5rem;font-weight:800;letter-spacing:-.01em;}
-    .pro-welcome h2 .nm{color:#ffd7a6;}
-    .pro-welcome p{margin:0;font-size:.95rem;color:#dbe6fb;max-width:660px;line-height:1.5;}
-    .pro-welcome .firma{margin-top:10px;font-size:.8rem;color:#bcd0f2;font-style:italic;}
-    .pro-welcome .date{margin-top:8px;font-size:.78rem;color:#cddcf7;text-transform:capitalize;}
-    .pro-welcome .x{position:absolute;top:14px;right:16px;background:rgba(255,255,255,.14);border:none;color:#fff;
-      width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:1rem;line-height:1;}
+    /* ---- Barra lateral ---- */
+    .side{background:var(--p-panel);border-right:1px solid var(--p-line);padding:18px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto}
+    .brand{display:flex;align-items:center;gap:10px;padding:2px 6px 16px}
+    .brand .mark{width:38px;height:38px;border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden;border:1px solid var(--p-line)}
+    .brand .mark img{width:30px;height:30px;object-fit:contain}
+    .brand b{font-family:var(--p-display);font-size:19px;font-weight:700;line-height:1.05;display:block}
+    .brand small{color:var(--p-muted);font-size:12px}
+    .side h5{margin:12px 10px 4px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--p-muted);font-weight:700}
+    .nav{background:none;border:0;text-align:left;padding:8px 10px;border-radius:8px;display:flex;align-items:center;gap:9px;color:var(--p-muted);font-weight:500;width:100%;text-decoration:none;font-size:14px}
+    .nav:hover{background:var(--p-primary-soft);color:var(--p-fg)}
+    .nav.on{background:var(--p-primary-soft);color:var(--p-primary);font-weight:600}
+    .nav .ic{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:0 0 auto;background:var(--mc,var(--p-primary))}
+    .nav .ic svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .nav .dot{margin-left:auto;background:var(--p-accent);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px}
+    .nav.off{opacity:.45;cursor:not-allowed}
+    .side .foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--p-line);font-size:12px;color:var(--p-muted);display:flex;flex-direction:column;gap:8px}
+    .sync{display:flex;align-items:center;gap:7px}
+    .sync i{width:8px;height:8px;border-radius:50%;background:var(--p-ok);display:inline-block}
+    .side .foot b{color:var(--p-fg)}
+    .foot a.rl{display:inline-flex;align-items:center;gap:6px;color:var(--p-primary);font-weight:600;text-decoration:none}
 
-    .pro-h1{color:var(--pro-navy);font-size:1.35rem;font-weight:800;margin:0 0 2px;}
-    .pro-sub{color:var(--pro-muted);margin:0 0 16px;font-size:.9rem;}
+    /* ---- Lienzo ---- */
+    .main{padding:22px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px));min-width:0}
+    .wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+    .top{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+    .top h1{font-family:var(--p-display);font-size:30px;font-weight:700;margin:0;text-wrap:balance;line-height:1.05}
+    .top h1 .nm{color:var(--p-primary)}
+    .top p{margin:2px 0 0;color:var(--p-muted)}
+    .tools{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .search{display:flex;align-items:center;gap:8px;background:var(--p-panel);border:1px solid var(--p-line);border-radius:9px;padding:8px 12px;min-width:230px;color:var(--p-muted)}
+    .search input{border:0;background:none;color:var(--p-fg);font:inherit;width:100%;outline:none}
+    .search kbd{font-size:11px;border:1px solid var(--p-line);border-radius:4px;padding:0 5px}
+    .tog{background:var(--p-panel);border:1px solid var(--p-line);border-radius:9px;padding:8px 12px;font-weight:500;display:inline-flex;gap:6px;align-items:center;position:relative;text-decoration:none;font-size:14px}
+    .tog:hover{border-color:var(--p-primary)}
+    .tog.danger{color:var(--p-bad)}
+    .tog .n{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--p-bad);color:#fff;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center}
+    .tog .n.ambar{background:var(--p-warn)}
+    .tog.visible .n{display:inline-flex}
+    .pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .pills .lbl{font-size:12px;color:var(--p-muted);margin-right:4px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+    .pill{border:1px solid var(--p-line);background:var(--p-panel);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:500;color:var(--p-muted)}
+    .pill.on{background:var(--p-fg);color:var(--p-bg);border-color:var(--p-fg)}
+    h2{font-family:var(--p-display);font-size:21px;font-weight:700;margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    h2 span{font-family:var(--p-body);font-size:13px;font-weight:500;color:var(--p-muted)}
+    .sect{display:flex;flex-direction:column;gap:12px}
 
-    /* Chips resumen */
-    .pro-chips{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 24px;}
-    .pro-chip{background:#fff;border:1px solid #e3e9f2;border-radius:999px;padding:8px 15px;font-size:.82rem;
-      color:#334155;display:flex;align-items:center;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
-    .pro-chip b{color:var(--pro-navy);font-weight:800;font-size:.95rem;}
-    .pro-chip .dot{width:8px;height:8px;border-radius:50%;}
+    /* Bienvenida compacta */
+    .welcome{background:linear-gradient(120deg,#0033A0,#1d4fd6 60%,#2a63ea);color:#fff;border-radius:14px;padding:14px 18px;display:flex;gap:12px;align-items:center;position:relative;overflow:hidden}
+    .welcome::after{content:"";position:absolute;right:-50px;top:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(226,35,26,.45),transparent 70%)}
+    .welcome .wave{font-size:1.5rem}
+    .welcome p{margin:0;font-size:14px;color:#e4ecff}
+    .welcome b{color:#ffd7a6}
+    .welcome .x{margin-left:auto;background:rgba(255,255,255,.14);border:0;color:#fff;width:28px;height:28px;border-radius:7px;position:relative;z-index:1}
 
-    /* Grid + tarjetas PRO */
-    .pro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
-    .pro-card{position:relative;background:#fff;border:1px solid #e6ebf2;border-radius:16px;padding:20px;
-      overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.05);cursor:pointer;
-      transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
-      display:flex;flex-direction:column;min-height:206px;}
-    .pro-card:hover{transform:translateY(-5px);box-shadow:0 14px 30px color-mix(in srgb,var(--mc) 22%, rgba(7,18,51,.12));border-color:color-mix(in srgb,var(--mc) 45%, #fff);}
-    .pro-card.pro-off{opacity:.55;cursor:not-allowed;}
-    .pro-card.pro-off:hover{transform:none;box-shadow:0 1px 4px rgba(15,23,42,.05);border-color:#e6ebf2;}
-    .pro-card .strip{position:absolute;top:0;left:0;right:0;height:4px;background:var(--mc);}
-    .pro-badge{position:absolute;top:12px;right:12px;font-size:.64rem;padding:3px 8px;border-radius:999px;font-weight:700;}
-    .pro-badge.conf{color:#b45309;background:#fef3c7;border:1px solid #fde68a;}
-    .pro-badge.lock{color:#b91c1c;background:#fee2e2;border:1px solid #fecaca;}
-    .pro-ic{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin:6px 0 14px;background:linear-gradient(135deg,var(--mc),color-mix(in srgb,var(--mc) 65%, #000 12%));box-shadow:0 5px 14px color-mix(in srgb,var(--mc) 35%, transparent);}
-    .pro-ic svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
-    .pro-card h3{margin:0 0 6px;color:var(--pro-navy);font-size:1.04rem;font-weight:700;line-height:1.2;}
-    .pro-card p{margin:0;color:var(--pro-muted);font-size:.79rem;line-height:1.45;flex:1;}
-    .pro-kpis{display:flex;gap:8px 14px;margin-top:14px;padding-top:12px;border-top:1px solid #eef2f7;flex-wrap:wrap;}
-    .pro-kpi{flex:1 1 auto;display:flex;flex-direction:column;min-width:70px;}
-    .pro-kpi .kn{font-size:1.02rem;font-weight:800;line-height:1.15;color:var(--mc);white-space:nowrap;letter-spacing:-.01em;}
-    .pro-kpi .kl{font-size:.62rem;color:var(--pro-muted);text-transform:uppercase;letter-spacing:.03em;margin-top:3px;}
-    .pro-open{margin-top:14px;padding-top:12px;border-top:1px solid #eef2f7;font-size:.78rem;font-weight:700;color:var(--mc);}
+    /* Alertas / atrasos como semáforo */
+    .pro-atrasos{display:none}
+    .pro-atrasos.visible{display:block}
+    .atr-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+    .atr-head h3{margin:0;font-family:var(--p-display);font-size:20px;font-weight:700;flex:1;min-width:180px}
+    .atr-chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px}
+    .atr-chip.rojo{background:var(--p-bad-soft);color:var(--p-bad)}
+    .atr-chip.ambar{background:var(--p-warn-soft);color:var(--p-warn)}
+    .atr-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;max-height:380px;overflow-y:auto;padding-right:2px}
+    .atr-item{border-left:4px solid var(--p-line);background:var(--p-panel);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0;font-size:13.5px}
+    .atr-item.rojo{border-left-color:var(--p-bad)} .atr-item.ambar{border-left-color:var(--p-warn)}
+    .atr-item .mod{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--p-muted);font-weight:700}
+    .atr-item .tx{font-weight:600;line-height:1.3}
+    .atr-item .meta{font-size:12.5px;color:var(--p-muted)}
+    .atr-item .dias{font-weight:700;margin-top:2px}
+    .atr-item .dias.rojo{color:var(--p-bad)} .atr-item .dias.ambar{color:var(--p-warn)}
+    .atr-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .atr-btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;color:#fff;background:var(--p-primary)}
+    .atr-btn.wsp{background:#25d366}.atr-btn.copy{background:var(--p-line);color:var(--p-fg)}
+    .atr-nota{font-size:12px;color:var(--p-muted);margin-top:6px}
+    .atr-ok{border-left:4px solid var(--p-ok);background:var(--p-panel);border-radius:8px;padding:10px 12px;font-size:13.5px}
 
-    @media(max-width:1000px){.pro-grid{grid-template-columns:repeat(2,1fr);}}
-    @media(max-width:560px){.pro-grid{grid-template-columns:1fr;} .pro-welcome h2{font-size:1.25rem;}}
+    /* Chips KPI */
+    .pro-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+    .pro-chip{background:var(--p-panel);border:1px solid var(--p-line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+    .pro-chip .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+    .pro-chip b{font-family:var(--p-display);font-size:30px;font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums}
+    .pro-chip span.l{font-size:12px;color:var(--p-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 
-    /* ===== Alertas de atrasos ===== */
-    .pro-atrasos{display:none;background:#fff;border:1px solid #fecaca;border-left:6px solid #dc2626;border-radius:14px;
-      padding:16px 20px;margin:0 0 22px;box-shadow:0 4px 14px rgba(220,38,38,.10);}
-    .pro-atrasos.ambar{border-color:#fde68a;border-left-color:#d97706;box-shadow:0 4px 14px rgba(217,119,6,.10);}
-    .pro-atrasos.visible{display:block;animation:atrPulse .6s ease;}
-    @keyframes atrPulse{0%{transform:scale(.985);opacity:0}100%{transform:none;opacity:1}}
-    .pro-atrasos .atr-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
-    .pro-atrasos .atr-head h3{margin:0;font-size:1rem;font-weight:800;color:#b91c1c;flex:1;min-width:180px;}
-    .pro-atrasos.ambar .atr-head h3{color:#b45309;}
-    .atr-chip{font-size:.74rem;font-weight:800;padding:4px 10px;border-radius:999px;}
-    .atr-chip.rojo{background:#fee2e2;color:#b91c1c;}
-    .atr-chip.ambar{background:#fef3c7;color:#b45309;}
-    .atr-list{margin:0 0 12px;max-height:210px;overflow-y:auto;}
-    .atr-item{display:flex;align-items:flex-start;gap:9px;padding:7px 4px;border-bottom:1px dashed #f1e0e0;font-size:.83rem;color:#334155;}
-    .atr-item:last-child{border-bottom:none;}
-    .atr-item .st{width:9px;height:9px;border-radius:50%;margin-top:5px;flex-shrink:0;}
-    .atr-item .st.rojo{background:#dc2626;}
-    .atr-item .st.ambar{background:#d97706;}
-    .atr-item b{color:#0f172a;}
-    .atr-item .dias{font-weight:800;white-space:nowrap;}
-    .atr-item .dias.rojo{color:#b91c1c;}
-    .atr-item .dias.ambar{color:#b45309;}
-    .atr-actions{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #f3f4f6;padding-top:12px;}
-    .atr-btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:9px;padding:8px 14px;
-      font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s ease,opacity .15s ease;}
-    .atr-btn:hover{transform:translateY(-1px);opacity:.92;}
-    .atr-btn.wsp{background:#25d366;color:#fff;}
-    .atr-btn.mail{background:#1e3a8a;color:#fff;}
-    .atr-btn.copy{background:#e2e8f0;color:#334155;}
-    .atr-nota{font-size:.72rem;color:#94a3b8;margin-top:8px;}
+    /* Tarjetas de módulo */
+    .pro-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+    .pro-card{position:relative;background:var(--p-panel);border:1px solid var(--p-line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;overflow:hidden}
+    .pro-card:hover{transform:translateY(-2px);box-shadow:var(--p-shadow);border-color:color-mix(in srgb,var(--mc) 45%,var(--p-line))}
+    .pro-card.pro-off{opacity:.5;cursor:not-allowed}
+    .pro-card.pro-off:hover{transform:none;box-shadow:none}
+    .pro-card .strip{position:absolute;top:0;left:0;right:0;height:3px;background:var(--mc)}
+    .pro-badge{position:absolute;top:10px;right:10px;font-size:10.5px;padding:3px 8px;border-radius:999px;font-weight:700}
+    .pro-badge.conf{color:var(--p-warn);background:var(--p-warn-soft)}
+    .pro-badge.lock{color:var(--p-bad);background:var(--p-bad-soft)}
+    .pro-ic{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;background:var(--mc);color:#fff;font-size:18px}
+    .pro-ic svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .pro-card h3{margin:0;font-size:16.5px;font-weight:600;line-height:1.2}
+    .pro-card p{margin:0;color:var(--p-muted);font-size:13.5px;line-height:1.4;flex:1}
+    .pro-kpis{display:flex;gap:6px 14px;margin-top:auto;padding-top:8px;border-top:1px solid var(--p-line);flex-wrap:wrap;font-variant-numeric:tabular-nums}
+    .pro-kpi{display:flex;flex-direction:column;min-width:60px}
+    .pro-kpi .kn{font-size:16px;font-weight:700;color:var(--mc);white-space:nowrap}
+    .pro-kpi .kl{font-size:10.5px;color:var(--p-muted);text-transform:uppercase;letter-spacing:.04em}
+    .pro-open{margin-top:auto;padding-top:8px;border-top:1px solid var(--p-line);font-size:13px;font-weight:600;color:var(--mc)}
+    .pro-card.hit{outline:2px solid var(--p-primary);outline-offset:2px}
 
-    /* Campanita con contador en topbar */
-    .atr-bell{position:relative;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
-      color:#fff;width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:1rem;line-height:1;
-      display:none;align-items:center;justify-content:center;transition:background .15s ease;}
-    .atr-bell:hover{background:rgba(255,255,255,.22);}
-    .atr-bell.visible{display:inline-flex;}
-    .atr-bell.con-rojo{animation:bellShake 2.6s ease-in-out infinite;}
-    @keyframes bellShake{0%,88%,100%{transform:rotate(0)}90%{transform:rotate(12deg)}93%{transform:rotate(-10deg)}96%{transform:rotate(6deg)}}
-    .atr-bell .n{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;
-      background:#dc2626;color:#fff;font-size:.66rem;font-weight:800;display:flex;align-items:center;justify-content:center;
-      border:2px solid #1e3a8a;}
-    .atr-bell .n.ambar{background:#d97706;}
+    .toast{position:fixed;bottom:max(16px,env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--p-fg);color:var(--p-bg);padding:10px 16px;border-radius:9px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s;z-index:6000}
+    .toast.show{opacity:1}
 
-    /* Toast de aviso de atrasos */
-    .atr-toast{position:fixed;bottom:24px;right:24px;z-index:5000;max-width:360px;background:#fff;
-      border:1px solid #fecaca;border-left:6px solid #dc2626;border-radius:14px;padding:14px 16px;
-      box-shadow:0 14px 40px rgba(15,23,42,.22);display:flex;gap:11px;align-items:flex-start;cursor:pointer;
-      transform:translateY(140%);opacity:0;transition:transform .4s cubic-bezier(.2,.9,.3,1.2),opacity .4s ease;}
-    .atr-toast.visible{transform:none;opacity:1;}
-    .atr-toast.ambar{border-color:#fde68a;border-left-color:#d97706;}
-    .atr-toast .ico{font-size:1.4rem;line-height:1;}
-    .atr-toast .tt{font-weight:800;font-size:.86rem;color:#b91c1c;margin:0 0 3px;}
-    .atr-toast.ambar .tt{color:#b45309;}
-    .atr-toast .tx{font-size:.78rem;color:#475569;line-height:1.45;margin:0;}
-    .atr-toast .tx b{color:#0f172a;}
-    .atr-toast .cta{font-size:.74rem;font-weight:700;color:#1e3a8a;margin-top:6px;display:block;}
-    .atr-toast .x{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:.9rem;padding:2px;flex-shrink:0;}
-    @media(max-width:560px){.atr-toast{left:16px;right:16px;bottom:16px;max-width:none;}}
+    /* Toast de atrasos (se conserva) */
+    .atr-toast{position:fixed;bottom:24px;right:24px;z-index:5000;max-width:360px;background:var(--p-panel);color:var(--p-fg);border:1px solid var(--p-line);border-left:6px solid var(--p-bad);border-radius:14px;padding:14px 16px;box-shadow:var(--p-shadow);display:flex;gap:11px;align-items:flex-start;cursor:pointer;transform:translateY(140%);opacity:0;transition:transform .4s cubic-bezier(.2,.9,.3,1.2),opacity .4s ease}
+    .atr-toast.visible{transform:none;opacity:1}
+    .atr-toast.ambar{border-left-color:var(--p-warn)}
+    .atr-toast .ico{font-size:1.4rem;line-height:1}
+    .atr-toast .tt{font-weight:800;font-size:.86rem;color:var(--p-bad);margin:0 0 3px}
+    .atr-toast.ambar .tt{color:var(--p-warn)}
+    .atr-toast .tx{font-size:.78rem;color:var(--p-muted);line-height:1.45;margin:0}
+    .atr-toast .tx b{color:var(--p-fg)}
+    .atr-toast .cta{font-size:.74rem;font-weight:700;color:var(--p-primary);margin-top:6px;display:block}
+    .atr-toast .x{background:none;border:none;color:var(--p-muted);cursor:pointer;font-size:.9rem;padding:2px;flex-shrink:0}
+
+    .menu-btn{display:none;background:var(--p-panel);border:1px solid var(--p-line);border-radius:9px;width:40px;height:40px;font-size:18px}
+    @media (max-width:900px){
+      .app{grid-template-columns:1fr}
+      .side{position:fixed;inset:0 auto 0 0;width:260px;transform:translateX(-100%);transition:transform .2s;z-index:1000;box-shadow:var(--p-shadow)}
+      .side.open{transform:none}
+      .menu-btn{display:inline-grid;place-items:center}
+      .search{min-width:0;flex:1}
+      .top h1{font-size:24px}
+    }
+    @media (prefers-reduced-motion:reduce){.pro-card,.side{transition:none}}
   </style>
-  <link rel="stylesheet" href="assets/css/bs-theme-pro.css">
-  <link rel="stylesheet" href="assets/css/bs-theme-2026.css">
-  <script src="assets/js/bs-ui.js"></script>
 </head>
 <body>
-  <div class="bs-appshell">
+  <div class="app">
 
-    <!-- TOPBAR -->
-    <header class="bs-topbar">
-      <div class="bs-topbar-inner">
-        <div class="bs-topbar-brand">
-          <div class="bs-topbar-brand-icon"><img src="images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
-          <span>Bienestar Social · RR.LL.</span>
+    <!-- ===== BARRA LATERAL ===== -->
+    <aside class="side" id="side">
+      <div class="brand">
+        <div class="mark"><img src="images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
+        <div><b>Bienestar Social</b><small>Unifrutti Perú · RR.LL.</small></div>
+      </div>
+      <a class="nav on" href="#inicio">🏠 Inicio</a>
+      <a class="nav" href="#alertas" id="navAlertas">🚨 Alertas <span class="dot" id="navAlertasN" style="display:none">0</span></a>
+      <a class="nav" href="#modulos">🗂️ Módulos</a>
+      <h5>Acceso rápido</h5>
+      <div id="sideNav"></div>
+      <div class="foot">
+        <div class="sync"><i id="syncDot"></i><span id="syncTxt">Conectando…</span></div>
+        <div>Sesión: <b id="userName">Cargando…</b></div>
+        <a class="rl" href="https://joeltimoteog-bot.github.io/sistema-rl-verfrut/frontend/pages/dashboard.html">← Volver al Sistema RR.LL.</a>
+      </div>
+    </aside>
+
+    <!-- ===== LIENZO ===== -->
+    <main class="main"><div class="wrap" id="inicio">
+
+      <div class="top">
+        <button class="menu-btn" onclick="document.getElementById('side').classList.toggle('open')" aria-label="Menú">☰</button>
+        <div>
+          <h1 id="proTitulo">Hola, <span class="nm" id="proNombre"></span></h1>
+          <p id="proFecha"></p>
         </div>
-        <div class="bs-topbar-user">
-          <button class="atr-bell" id="atrBell" title="Alertas de atrasos" onclick="irAAtrasos()">🔔<span class="n" id="atrBellN">0</span></button>
-          <span class="bs-topbar-user-name" id="userName">Cargando...</span>
-          <button class="bs-topbar-logout" onclick="window.location.href='https://joeltimoteog-bot.github.io/sistema-rl-verfrut/frontend/pages/dashboard.html'" style="background:#1e40af;color:#fff;margin-right:8px">← Volver al Sistema RR.LL.</button>
-          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        <div class="tools">
+          <label class="search">🔍 <input id="q" type="search" placeholder="Ir a un módulo…" autocomplete="off"><kbd>/</kbd></label>
+          <button class="tog" id="atrBell" title="Alertas de atrasos" onclick="irAAtrasos()">🔔<span class="n" id="atrBellN">0</span></button>
+          <button class="tog" id="btnTema" title="Tema claro / oscuro">🌙</button>
+          <button class="tog danger" onclick="logout()">Cerrar sesión</button>
         </div>
       </div>
-    </header>
 
-    <!-- MAIN -->
-    <main class="bs-main">
-      <!-- Banner de bienvenida -->
-      <div class="pro-welcome" id="proWelcome">
+      <div class="welcome" id="proWelcome">
+        <span class="wave">👋</span>
+        <p id="proSaludo">Te saluda Joel. Bienvenido al <b>Sistema de Bienestar Social</b>. Estoy para apoyarte en lo que necesites.</p>
         <button class="x" title="Cerrar" onclick="this.parentNode.style.display='none'">✕</button>
-        <div class="wave">👋</div>
-        <h2>¡Hola, <span class="nm" id="proNombre"></span>!</h2>
-        <p id="proSaludo">Te saluda Joel. Te damos la bienvenida al <b>Sistema de Bienestar Social</b>. Estoy para apoyarte en lo que necesites.</p>
-        <div class="firma">— Joel Ángel Timoteo, Coordinador de Relaciones Laborales</div>
-        <div class="date" id="proFecha"></div>
+      </div>
+
+      <div class="pills" id="emp">
+        <span class="lbl">Empresa</span>
+        <button class="pill on" data-e="">Ambas</button>
+        <button class="pill" data-e="RAPEL">RAPEL</button>
+        <button class="pill" data-e="VERFRUT">VERFRUT</button>
       </div>
 
       <!-- Alertas de atrasos + envío de reporte -->
-      <div class="pro-atrasos" id="proAtrasos">
-        <div class="atr-head">
-          <h3 id="atrTitulo">🚨 Alertas de Atrasos</h3>
-          <span class="atr-chip rojo" id="atrChipRojo" style="display:none;"></span>
-          <span class="atr-chip ambar" id="atrChipAmbar" style="display:none;"></span>
+      <section class="sect" id="alertas">
+        <h2>Qué necesita atención <span>semáforo legal · plazos en días hábiles</span></h2>
+        <div class="atr-ok" id="atrOk">🟢 Sin atrasos ni casos por vencer en tus módulos.</div>
+        <div class="pro-atrasos" id="proAtrasos">
+          <div class="atr-head">
+            <h3 id="atrTitulo">🚨 Alertas de Atrasos</h3>
+            <span class="atr-chip rojo" id="atrChipRojo" style="display:none;"></span>
+            <span class="atr-chip ambar" id="atrChipAmbar" style="display:none;"></span>
+          </div>
+          <div class="atr-list" id="atrLista"></div>
+          <div class="atr-actions">
+            <button class="atr-btn wsp" onclick="enviarReporteAtrasos('whatsapp')">📱 Enviar por WhatsApp</button>
+            <button class="atr-btn" onclick="enviarReporteAtrasos('correo')">✉️ Enviar por correo</button>
+            <button class="atr-btn copy" onclick="enviarReporteAtrasos('copiar')">📋 Copiar reporte</button>
+          </div>
+          <div class="atr-nota">El reporte incluye los casos vencidos y por vencer de todos tus módulos, listo para enviar.</div>
         </div>
-        <div class="atr-list" id="atrLista"></div>
-        <div class="atr-actions">
-          <button class="atr-btn wsp" onclick="enviarReporteAtrasos('whatsapp')">📱 Enviar por WhatsApp</button>
-          <button class="atr-btn mail" onclick="enviarReporteAtrasos('correo')">✉️ Enviar por correo</button>
-          <button class="atr-btn copy" onclick="enviarReporteAtrasos('copiar')">📋 Copiar reporte</button>
-        </div>
-        <div class="atr-nota">El reporte incluye los casos vencidos y por vencer de todos tus módulos, listo para enviar.</div>
-      </div>
+      </section>
 
-      <h1 class="pro-h1">Selecciona un módulo</h1>
-      <p class="pro-sub">Elige el módulo con el que deseas trabajar.</p>
+      <section class="sect">
+        <h2>Indicadores <span>datos en vivo · se actualizan cada 3 minutos</span></h2>
+        <div class="pro-chips" id="proChips"></div>
+      </section>
 
-      <!-- Chips de resumen -->
-      <div class="pro-chips" id="proChips"></div>
+      <section class="sect" id="modulos">
+        <h2>Módulos <span id="modCount"></span></h2>
+        <div class="pro-grid" id="moduleGrid"></div>
+      </section>
 
-      <div class="pro-grid" id="moduleGrid">
-        <!-- Cards generadas por JS según permisos -->
-      </div>
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="bs-footer">
-      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · RAPEL S.A.C. / VERFRUT S.A.C. · v1.0.0
-    </footer>
+      <p style="font-size:12px;color:var(--p-muted);margin:8px 0 0;">Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · RAPEL S.A.C. / VERFRUT S.A.C. · v2.0.0</p>
+    </div></main>
   </div>
+  <div class="toast" id="toast"></div>
 
   <script>
     // ===== ENDPOINT BIENESTAR =====
@@ -216,10 +262,7 @@
 
     // ===== AUTH CHECK =====
     const session = localStorage.getItem('bienestarSocialAuth');
-    if (!session) {
-      window.location.href = 'index.html';
-    }
-
+    if (!session) { window.location.href = 'index.html'; }
     let user;
     try {
       user = JSON.parse(session);
@@ -229,36 +272,36 @@
       window.location.href = 'index.html';
     }
 
+    // ===== TEMA (claro/oscuro, solo portal) =====
+    (function(){
+      var t = null; try { t = localStorage.getItem('bs_tema'); } catch(e){}
+      if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+      var b = document.getElementById('btnTema');
+      function pintar(){ b.textContent = document.documentElement.getAttribute('data-theme')==='dark' ? '☀️' : '🌙'; }
+      b.onclick = function(){ var d = document.documentElement.getAttribute('data-theme')==='dark'; if (d) document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme','dark'); try { localStorage.setItem('bs_tema', d ? 'light' : 'dark'); } catch(e){} pintar(); };
+      pintar();
+    })();
+
     // ===== CONFIRMACIÓN DE IDENTIDAD (computadoras compartidas) =====
-    // Si hay una sesión guardada de otro día/u otra persona, preguntar una vez
-    // por sesión de navegador: "¿Eres tú?". "No soy yo" limpia todo y va al login.
     (function () {
       try {
         if (sessionStorage.getItem('_bsIdentOk') === '1') return;
         var ov = document.createElement('div');
         ov.id = '_bsIdentOv';
-        ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,36,64,.92);z-index:2147483647;' +
-          'display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit;';
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,36,64,.92);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit;';
         var nom = (user.nombre || user.usuario || '').replace(/[<>"&]/g, '');
-        ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:400px;width:100%;text-align:center;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+        ov.innerHTML = '<div style="background:#fff;color:#0a2463;border-radius:16px;max-width:400px;width:100%;text-align:center;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
           '<div style="font-size:42px">👤</div>' +
-          '<div style="font-size:16.5px;font-weight:800;color:#0a2463;margin-top:8px">Hay una sesión activa de<br>' + nom + '</div>' +
+          '<div style="font-size:16.5px;font-weight:800;margin-top:8px">Hay una sesión activa de<br>' + nom + '</div>' +
           '<div style="font-size:13px;color:#475569;margin-top:6px">Si esta computadora es compartida, confírmanos que eres tú.</div>' +
           '<div style="display:flex;gap:10px;margin-top:18px">' +
           '<button id="_bsIdentSi" style="flex:1;background:#16a34a;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:13.5px;cursor:pointer">✅ Sí, soy yo</button>' +
           '<button id="_bsIdentNo" style="flex:1;background:#dc2626;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:13.5px;cursor:pointer">No soy yo</button>' +
           '</div></div>';
         var poner = function () { document.body.appendChild(ov);
-          document.getElementById('_bsIdentSi').onclick = function () {
-            try { sessionStorage.setItem('_bsIdentOk', '1'); } catch (e) {}
-            if (ov.parentNode) ov.parentNode.removeChild(ov);
-          };
+          document.getElementById('_bsIdentSi').onclick = function () { try { sessionStorage.setItem('_bsIdentOk', '1'); } catch (e) {} if (ov.parentNode) ov.parentNode.removeChild(ov); };
           document.getElementById('_bsIdentNo').onclick = function () {
-            try {
-              localStorage.removeItem('bienestarSocialAuth');
-              Object.keys(localStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); });
-              sessionStorage.clear();
-            } catch (e) {}
+            try { localStorage.removeItem('bienestarSocialAuth'); Object.keys(localStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); sessionStorage.clear(); } catch (e) {}
             window.location.href = 'index.html';
           };
         };
@@ -266,11 +309,11 @@
       } catch (e) {}
     })();
 
-    // ===== UI: Header con datos del user =====
+    // ===== UI: datos del user =====
     document.getElementById('userName').textContent = user.nombre || user.usuario;
 
     // ===== SALUDO PERSONALIZADO + GÉNERO (~90%) =====
-    function _sinTilde(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+    function _sinTilde(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); }
     function generoPorNombre(nombre){
       var p = _sinTilde(String(nombre||'').trim().split(/\s+/)[0]);
       if(!p) return 'M';
@@ -288,27 +331,26 @@
       first = first.charAt(0).toUpperCase()+first.slice(1).toLowerCase();
       var g = generoPorNombre(full);
       var bienv = (g==='F') ? 'Bienvenida' : 'Bienvenido';
+      var h = new Date().getHours(); var sal = h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+      document.getElementById('proTitulo').innerHTML = sal + ', <span class="nm" id="proNombre"></span>';
       document.getElementById('proNombre').textContent = first;
-      document.getElementById('proSaludo').innerHTML =
-        'Te saluda Joel. '+bienv+' al <b>Sistema de Bienestar Social</b>. Estoy para apoyarte en lo que necesites.';
-      try{
-        document.getElementById('proFecha').textContent =
-          new Date().toLocaleDateString('es-PE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-      }catch(e){}
+      document.getElementById('proSaludo').innerHTML = 'Te saluda Joel. '+bienv+' al <b>Sistema de Bienestar Social</b>. Estoy para apoyarte en lo que necesites.';
+      try{ var f = new Date().toLocaleDateString('es-PE',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); document.getElementById('proFecha').textContent = f.charAt(0).toUpperCase()+f.slice(1); }catch(e){}
     })();
 
     // ===== ICONOS SVG POR MÓDULO =====
     var ICONS = {
-      sugerencias:'<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z"/>',
       ficha:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M17 11l1.5 1.5L21 10"/>',
       descansos:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 9v6M9 12h6"/>',
+      sugerencias:'<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z"/>',
       quejas:'<rect x="6" y="4" width="12" height="18" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9 10h6M9 14h6M9 18h4"/>',
       accidentes:'<path d="M12 2v6M9 5h6"/><rect x="4" y="8" width="16" height="13" rx="2"/><path d="M12 12v5M9.5 14.5h5"/>',
       hostigamiento:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v3"/>',
       subsidios:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5a2.5 2 0 0 1 2.5-1.5c1.4 0 2.5.7 2.5 1.6S15.4 11 12 12s-2.5.6-2.5 1.6.9 1.6 2.5 1.6a2.5 2 0 0 0 2.5-1.5"/>',
       rendiciones:'<path d="M6 2h12v20l-2-1.5L14 22l-2-1.5L10 22l-2-1.5L6 22V2Z"/><path d="M9 7h6M9 11h6M9 15h4"/>',
       panel:'<path d="M4 20h16"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="7" width="3" height="11"/><rect x="16" y="4" width="3" height="14"/>',
-      estadisticas:'<path d="M4 20h16M6 15l4-4 3 2 5-6"/><circle cx="6" cy="15" r="1.2"/><circle cx="10" cy="11" r="1.2"/><circle cx="13" cy="13" r="1.2"/><circle cx="18" cy="7" r="1.2"/>'
+      estadisticas:'<path d="M4 20h16M6 15l4-4 3 2 5-6"/><circle cx="6" cy="15" r="1.2"/><circle cx="10" cy="11" r="1.2"/><circle cx="13" cy="13" r="1.2"/><circle cx="18" cy="7" r="1.2"/>',
+      auditoria:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
     };
     // KPIs por módulo: [etiqueta1, etiqueta2]. Los valores se llenan con datos reales.
     var KPI_LABELS = {
@@ -320,7 +362,7 @@
       rendiciones:['Monto total','Pendientes']
     };
 
-    // ===== MÓDULOS ===== (idéntico a tu configuración)
+    // ===== MÓDULOS ===== (misma configuración; solo cambia la presentación)
     const MODULOS = [
       { id: 'ficha', permiso: null, url: 'modulos/ficha.html', title: 'Ficha del Trabajador', desc: 'Todo el historial de un trabajador por DNI: contrato, accidentes, subsidios, casos y documentos.', icon: '👤', color: '#0033A0', siempre: true },
       { id: 'sugerencias', permiso: null, url: 'modulos/sugerencias.html', title: 'Sugerencias de Mejora', desc: 'Propon mejoras del sistema y dale seguimiento.', icon: '💡', color: '#0a2463', confidencial: false, siempre: true },
@@ -335,48 +377,73 @@
       { id: 'auditoria', adminOnly: true, permiso: 'auditoria', url: 'modulos/auditoria.html', title: 'Auditoría', desc: 'Registro de quién hizo qué y cuándo en todos los módulos.', icon: '🕘', color: '#334155' }
     ];
 
-    function renderModules() {
-      const grid = document.getElementById('moduleGrid');
+    function modulosVisibles(){
       const ADMINS = ['jtimoteo','ovilela'];
       const isAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test((user && user.rol) || '');
-      const html = MODULOS.filter(function(m) { return !m.adminOnly || isAdmin || (m.permiso && user.permisos && user.permisos[m.permiso]); }).map(function(m) {
-        const tienePermiso = m.adminOnly ? true : (m.siempre === true || isAdmin || (user.permisos && user.permisos[m.permiso]));
-        const offClass = tienePermiso ? '' : 'pro-off';
-        const onclick = tienePermiso ? 'onclick="window.location.href=\'' + m.url + '\'"' : '';
+      return MODULOS.filter(function(m) { return !m.adminOnly || isAdmin || (m.permiso && user.permisos && user.permisos[m.permiso]); }).map(function(m){
+        return Object.assign({}, m, { tienePermiso: m.adminOnly ? true : (m.siempre === true || isAdmin || (user.permisos && user.permisos[m.permiso])) });
+      });
+    }
+
+    function renderModules() {
+      const grid = document.getElementById('moduleGrid');
+      var lista = modulosVisibles();
+      const html = lista.map(function(m) {
+        const offClass = m.tienePermiso ? '' : 'pro-off';
+        const onclick = m.tienePermiso ? 'onclick="window.location.href=\'' + m.url + '\'"' : '';
         var badge = '';
-        if (!tienePermiso) badge = '<span class="pro-badge lock">❌ Sin acceso</span>';
+        if (!m.tienePermiso) badge = '<span class="pro-badge lock">❌ Sin acceso</span>';
         else if (m.confidencial) badge = '<span class="pro-badge conf">🔐 Confidencial</span>';
-
         var svg = ICONS[m.id] || '';
-        var iconHtml = svg
-          ? '<div class="pro-ic" style="--mc:'+m.color+'"><svg viewBox="0 0 24 24">'+svg+'</svg></div>'
-          : '<div class="pro-ic" style="--mc:'+m.color+';font-size:1.4rem;color:#fff;">'+m.icon+'</div>';
-
-        // bloque KPIs (o acceso)
+        var iconHtml = svg ? '<div class="pro-ic" style="--mc:'+m.color+'"><svg viewBox="0 0 24 24">'+svg+'</svg></div>' : '<div class="pro-ic" style="--mc:'+m.color+'">'+m.icon+'</div>';
         var foot = '';
-        if (tienePermiso && KPI_LABELS[m.id]) {
+        if (m.tienePermiso && KPI_LABELS[m.id]) {
           var L = KPI_LABELS[m.id];
           foot = '<div class="pro-kpis">' +
                    '<div class="pro-kpi"><span class="kn" id="kpi_'+m.id+'_1">—</span><span class="kl">'+L[0]+'</span></div>' +
                    '<div class="pro-kpi"><span class="kn" id="kpi_'+m.id+'_2">—</span><span class="kl">'+L[1]+'</span></div>' +
                  '</div>';
-        } else if (tienePermiso) {
+        } else if (m.tienePermiso) {
           foot = '<div class="pro-open" style="--mc:'+m.color+'">Abrir →</div>';
         }
-
-        return (
-          '<div class="pro-card ' + offClass + '" style="--mc:'+m.color+'" ' + onclick + '>' +
-            '<span class="strip"></span>' + badge + iconHtml +
-            '<h3>' + m.title + '</h3>' +
-            '<p>' + m.desc + '</p>' + foot +
-          '</div>'
-        );
+        return '<div class="pro-card ' + offClass + '" data-id="'+m.id+'" data-title="'+m.title.toLowerCase()+'" style="--mc:'+m.color+'" ' + onclick + '>' +
+            '<span class="strip"></span>' + badge + iconHtml + '<h3>' + m.title + '</h3><p>' + m.desc + '</p>' + foot + '</div>';
       }).join('');
       grid.innerHTML = html;
+      document.getElementById('modCount').textContent = lista.filter(function(m){ return m.tienePermiso; }).length + ' disponibles';
+      // Acceso rápido en la barra lateral
+      document.getElementById('sideNav').innerHTML = lista.map(function(m){
+        var svg = ICONS[m.id] || '';
+        return '<a class="nav'+(m.tienePermiso?'':' off')+'" '+(m.tienePermiso?'href="'+m.url+'"':'')+' style="--mc:'+m.color+'"><span class="ic">'+(svg?'<svg viewBox="0 0 24 24">'+svg+'</svg>':m.icon)+'</span>'+m.title+'</a>';
+      }).join('');
       paintKPIs();
     }
-
     renderModules();
+
+    // ===== BUSCADOR DE MÓDULOS (/ para enfocar, Enter abre el primero) =====
+    (function(){
+      var q = document.getElementById('q');
+      q.addEventListener('input', function(){
+        var v = q.value.toLowerCase().trim(); var first = null;
+        document.querySelectorAll('.pro-card').forEach(function(c){
+          var hit = v && c.dataset.title.indexOf(v) >= 0 && !c.classList.contains('pro-off');
+          c.classList.toggle('hit', hit); c.style.display = (!v || c.dataset.title.indexOf(v) >= 0) ? '' : 'none';
+          if (hit && !first) first = c;
+        });
+      });
+      q.addEventListener('keydown', function(e){ if (e.key === 'Enter') { var f = document.querySelector('.pro-card.hit'); if (f) f.click(); } if (e.key === 'Escape') { q.value=''; q.dispatchEvent(new Event('input')); q.blur(); } });
+      document.addEventListener('keydown', function(e){ if (e.key === '/' && document.activeElement !== q && !/input|textarea/i.test(document.activeElement.tagName)) { e.preventDefault(); q.focus(); } });
+    })();
+
+    // ===== FILTRO DE EMPRESA (afecta la lista de alertas) =====
+    var EMP = '';
+    document.getElementById('emp').addEventListener('click', function(e){
+      var b = e.target.closest('.pill'); if (!b) return;
+      document.querySelectorAll('#emp .pill').forEach(function(x){ x.classList.toggle('on', x === b); });
+      EMP = b.dataset.e; renderAtrasos(ATRASOS, {});
+      toast(EMP ? 'Alertas de ' + EMP : 'Alertas de ambas empresas');
+    });
+    var _tt; function toast(m){ var t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(_tt); _tt = setTimeout(function(){ t.classList.remove('show'); }, 1400); }
 
     // ===== MINI-KPIs REALES + CHIPS =====
     var KPI_DATA = null;
@@ -386,35 +453,24 @@
     function paintKPIs(){
       if(!KPI_DATA) return;
       var d = KPI_DATA;
-      // Quejas
-      if(d.quejas){ setTxt('kpi_quejas_1', d.quejas.total||0);
-        setTxt('kpi_quejas_2', (d.quejas.total? Math.round((d.quejas.resueltas||0)*100/d.quejas.total):0)+'%'); }
-      // Accidentes
-      if(d.accidentes){ setTxt('kpi_accidentes_1', d.accidentes.enSeguimiento||0);
-        setTxt('kpi_accidentes_2', d.accidentes.cerrados||0); }
-      // Hostigamiento
-      if(d.hostigamiento){ setTxt('kpi_hostigamiento_1', d.hostigamiento.total||0);
-        setTxt('kpi_hostigamiento_2', '—'); }
-      // Subsidios
-      if(d.subsidios){ setTxt('kpi_subsidios_1', (d.subsidios.total||0).toLocaleString('es-PE'));
-        setTxt('kpi_subsidios_2', fmtMonto(d.subsidios.recuperadoEssalud)); }
-      // Rendiciones
-      if(d.rendiciones){ setTxt('kpi_rendiciones_1', fmtMonto(d.rendiciones.monto_total));
-        setTxt('kpi_rendiciones_2', d.rendiciones.pendientes||0); }
-      // Sugerencias
-      if(d.sugerencias){ setTxt('kpi_sugerencias_1', d.sugerencias.recibidas||0);
-        setTxt('kpi_sugerencias_2', d.sugerencias.enProceso||0); }
-      // Chips resumen
+      if(d.quejas){ setTxt('kpi_quejas_1', d.quejas.total||0); setTxt('kpi_quejas_2', (d.quejas.total? Math.round((d.quejas.resueltas||0)*100/d.quejas.total):0)+'%'); }
+      if(d.accidentes){ setTxt('kpi_accidentes_1', d.accidentes.enSeguimiento||0); setTxt('kpi_accidentes_2', d.accidentes.cerrados||0); }
+      if(d.hostigamiento){ setTxt('kpi_hostigamiento_1', d.hostigamiento.total||0); setTxt('kpi_hostigamiento_2', '—'); }
+      if(d.subsidios){ setTxt('kpi_subsidios_1', (d.subsidios.total||0).toLocaleString('es-PE')); setTxt('kpi_subsidios_2', fmtMonto(d.subsidios.recuperadoEssalud)); }
+      if(d.rendiciones){ setTxt('kpi_rendiciones_1', fmtMonto(d.rendiciones.monto_total)); setTxt('kpi_rendiciones_2', d.rendiciones.pendientes||0); }
+      if(d.sugerencias){ setTxt('kpi_sugerencias_1', d.sugerencias.recibidas||0); setTxt('kpi_sugerencias_2', d.sugerencias.enProceso||0); }
       var chips = [];
       if(d.accidentes) chips.push(['#dc2626', d.accidentes.enSeguimiento||0, 'accidentes activos']);
       if(d.quejas)     chips.push(['#e08e0b', d.quejas.pendientes||0, 'hallazgos pendientes']);
       if(d.rendiciones)chips.push(['#16a34a', d.rendiciones.pendientes||0, 'rendiciones pendientes']);
       if(d.subsidios)  chips.push(['#0891b2', (d.subsidios.enTramite!=null?d.subsidios.enTramite:(d.subsidios.total||0)), 'subsidios por cobrar']);
       var cw = document.getElementById('proChips');
-      if(cw){ cw.innerHTML = chips.map(function(c){
-        return '<span class="pro-chip"><span class="dot" style="background:'+c[0]+'"></span> <b>'+c[1]+'</b> '+c[2]+'</span>';
-      }).join(''); }
+      if(cw){ cw.innerHTML = chips.map(function(c){ return '<div class="pro-chip"><b>'+c[1]+'</b><span class="l"><span class="dot" style="background:'+c[0]+'"></span>'+c[2]+'</span></div>'; }).join(''); }
+      setSync(true);
     }
+    function setSync(ok){ var d=document.getElementById('syncDot'), t=document.getElementById('syncTxt'); d.style.background = ok ? 'var(--p-ok)' : 'var(--p-warn)'; t.textContent = ok ? 'Sincronizado · ' + new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : 'Sin conexión'; }
+    window.addEventListener('offline', function(){ setSync(false); });
+    window.addEventListener('online', function(){ refrescarKPIs(); });
 
     function fetchKPIs(){
       var permisos = user.permisos || {};
@@ -425,21 +481,13 @@
         bsApi('bs_listarSubsidios', {}).catch(function(){ return {ok:false}; })
       ]).then(function(r){
         var dash=r[0]||{}, rend=r[1]||{}, sug=r[2]||{}, subs=r[3]||{};
-        KPI_DATA = {
-          quejas: dash.quejas, accidentes: dash.accidentes,
-          hostigamiento: dash.hostigamiento, subsidios: dash.subsidios
-        };
+        KPI_DATA = { quejas: dash.quejas, accidentes: dash.accidentes, hostigamiento: dash.hostigamiento, subsidios: dash.subsidios };
         if(rend && rend.ok){ KPI_DATA.rendiciones = { monto_total: rend.monto_total||0, pendientes: (rend.pendiente&&rend.pendiente.n)||0 }; }
-        // Subsidios: calcular recuperado real desde la base (montos pueden venir como "S/ 457.10")
         if(subs && subs.ok && subs.items){
           var _num=function(v){ var n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
           var _monto=function(x){ var v=_num(x.monto_total); if(!v) v=_num(x.pago_empresa)+_num(x.recuperado_essalud); if(!v) v=_num(x.calculo_por_dia)*(parseInt(x.dias)||0); return v; };
           var _rec=0,_tram=0;
-          subs.items.forEach(function(x){
-            var e=String(x.estado_general||'').trim().toUpperCase();
-            if(e==='COBRADO'||e==='RECUPERADO') _rec+=_monto(x);
-            else if(e!=='NO RECUPERABLE') _tram++;
-          });
+          subs.items.forEach(function(x){ var e=String(x.estado_general||'').trim().toUpperCase(); if(e==='COBRADO'||e==='RECUPERADO') _rec+=_monto(x); else if(e!=='NO RECUPERABLE') _tram++; });
           KPI_DATA.subsidios = { total: subs.items.length, recuperadoEssalud: _rec, enTramite: _tram };
         }
         if(sug && sug.ok && sug.items){
@@ -448,32 +496,18 @@
           KPI_DATA.sugerencias = { recibidas: rec, enProceso: enP };
         }
         paintKPIs();
-      });
+      }).catch(function(){ setSync(false); });
     }
     fetchKPIs();
 
-    // ── REFRESCO AUTOMÁTICO DE TARJETAS ──
-    // Antes los números se cargaban UNA sola vez al abrir el portal; si se
-    // registraba algo en un módulo y se volvía (o el portal quedaba abierto),
-    // las tarjetas quedaban desactualizadas. Ahora se refrescan:
-    //   1) cada 3 minutos mientras el portal esté visible,
-    //   2) al volver a la pestaña del portal desde otra pestaña o programa,
-    //   3) al regresar con la flecha "atrás" del navegador (página restaurada).
+    // ── REFRESCO AUTOMÁTICO ──
     var _kpiUltimo = Date.now();
-    function refrescarKPIs(){
-      _kpiUltimo = Date.now();
-      try { fetchKPIs(); } catch(e) {}
-      try { cargarAtrasos(); } catch(e) {}
-    }
+    function refrescarKPIs(){ _kpiUltimo = Date.now(); try { fetchKPIs(); } catch(e) {} try { cargarAtrasos(); } catch(e) {} }
     setInterval(function(){ if(!document.hidden) refrescarKPIs(); }, 3*60*1000);
-    document.addEventListener('visibilitychange', function(){
-      if(!document.hidden && (Date.now()-_kpiUltimo) > 20*1000) refrescarKPIs();
-    });
-    window.addEventListener('pageshow', function(e){
-      if(e && e.persisted) refrescarKPIs();
-    });
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden && (Date.now()-_kpiUltimo) > 20*1000) refrescarKPIs(); });
+    window.addEventListener('pageshow', function(e){ if(e && e.persisted) refrescarKPIs(); });
 
-    // ===== SINCRONIZAR PERMISOS DESDE LA HOJA USUARIOS (fuente única de verdad) =====
+    // ===== SINCRONIZAR PERMISOS DESDE LA HOJA USUARIOS =====
     (function(){
       bsApi('bs_permisosUsuario', { usuario: user.usuario })
       .then(function(res){
@@ -482,8 +516,7 @@
           if (!user.rol && res.rol) user.rol = res.rol;
           if (!user.nombre && res.nombre) user.nombre = res.nombre;
           try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch(e) {}
-          renderModules(); // re-pinta con permisos reales (y re-aplica KPIs)
-          cargarAtrasos(); // re-carga alertas de atrasos con permisos reales
+          renderModules(); cargarAtrasos();
         }
       })
       .catch(function(e){ console.warn('[permisos] No se pudo sincronizar:', e); });
@@ -502,61 +535,33 @@
       }).catch(function(e){ console.warn('[atrasos] No se pudieron cargar:', e); });
     }
 
-    function renderAtrasos(al, resumen){
-      var box = document.getElementById('proAtrasos');
-      if(!al.length){ box.classList.remove('visible'); document.getElementById('atrBell').classList.remove('visible'); return; }
-
+    function renderAtrasos(todas, resumen){
+      var al = todas.filter(function(a){ return !EMP || String(a.empresa||'').toUpperCase().indexOf(EMP) >= 0; });
+      var box = document.getElementById('proAtrasos'), ok = document.getElementById('atrOk');
+      var bell = document.getElementById('atrBell'), bellN = document.getElementById('atrBellN');
+      var navN = document.getElementById('navAlertasN');
+      if(!al.length){ box.classList.remove('visible'); ok.style.display=''; bell.classList.remove('visible'); navN.style.display='none'; return; }
+      ok.style.display='none';
       var rojos = al.filter(function(a){ return a.estado==='rojo'; }).length;
       var ambar = al.length - rojos;
-
-      box.classList.toggle('ambar', rojos===0);
-      document.getElementById('atrTitulo').textContent = rojos>0
-        ? '🚨 Alertas de Atrasos — ¡requieren reporte!'
-        : '⏳ Casos por vencer — envía tu reporte a tiempo';
-      var cr = document.getElementById('atrChipRojo');
-      var ca = document.getElementById('atrChipAmbar');
-      cr.style.display = rojos>0 ? '' : 'none';
-      ca.style.display = ambar>0 ? '' : 'none';
-      cr.textContent = rojos + ' vencido' + (rojos===1?'':'s');
-      ca.textContent = ambar + ' por vencer';
-
-      // Vencidos primero, luego por días
-      al.sort(function(a,b){
-        if(a.estado!==b.estado) return a.estado==='rojo' ? -1 : 1;
-        return (a.diasRestantes||0) - (b.diasRestantes||0);
-      });
-
+      document.getElementById('atrTitulo').textContent = rojos>0 ? '🚨 Atrasos: requieren reporte' : '⏳ Casos por vencer';
+      var cr = document.getElementById('atrChipRojo'), ca = document.getElementById('atrChipAmbar');
+      cr.style.display = rojos>0 ? '' : 'none'; ca.style.display = ambar>0 ? '' : 'none';
+      cr.textContent = rojos + ' vencido' + (rojos===1?'':'s'); ca.textContent = ambar + ' por vencer';
+      al.sort(function(a,b){ if(a.estado!==b.estado) return a.estado==='rojo' ? -1 : 1; return (a.diasRestantes||0) - (b.diasRestantes||0); });
       document.getElementById('atrLista').innerHTML = al.map(function(a){
         var dr = Number(a.diasRestantes||0);
-        var diasTxt = dr < 0 ? (Math.abs(dr)+' día'+(Math.abs(dr)===1?'':'s')+' de atraso')
-                             : (dr===0 ? 'vence HOY' : 'vence en '+dr+' día'+(dr===1?'':'s'));
-        return '<div class="atr-item">'+
-          '<span class="st '+a.estado+'"></span>'+
-          '<span style="flex:1;"><b>'+escHtml(a.modulo)+'</b> — '+escHtml(String(a.descripcion||'').replace(/\s*·\s*_+\s*$/,'').trim()+(a.id!=null&&String(a.id).trim()!==''?' #'+String(a.id).trim():''))+
-          (a.empresa ? ' <span style="color:#94a3b8;">('+escHtml(a.empresa)+')</span>' : '')+
-          (a.fechaLimite ? ' · límite: '+escHtml(a.fechaLimite) : '')+'</span>'+
-          '<span class="dias '+a.estado+'">'+diasTxt+'</span>'+
-        '</div>';
+        var diasTxt = dr < 0 ? (Math.abs(dr)+' día'+(Math.abs(dr)===1?'':'s')+' de atraso') : (dr===0 ? 'vence HOY' : 'vence en '+dr+' día'+(dr===1?'':'s'));
+        var desc = String(a.descripcion||'').replace(/\s*·\s*_+\s*$/,'').trim() + (a.id!=null&&String(a.id).trim()!==''?' #'+String(a.id).trim():'');
+        return '<div class="atr-item '+a.estado+'"><span class="mod">'+escHtml(a.modulo)+(a.empresa?' · '+escHtml(a.empresa):'')+'</span><span class="tx">'+escHtml(desc)+'</span>'+(a.fechaLimite?'<span class="meta">Límite: '+escHtml(a.fechaLimite)+'</span>':'')+'<span class="dias '+a.estado+'">'+diasTxt+'</span></div>';
       }).join('');
-
       box.classList.add('visible');
-
-      // Campanita con contador en topbar
-      var bell = document.getElementById('atrBell');
-      var bellN = document.getElementById('atrBellN');
-      bell.classList.add('visible');
-      bell.classList.toggle('con-rojo', rojos>0);
-      bellN.textContent = al.length > 99 ? '99+' : al.length;
-      bellN.classList.toggle('ambar', rojos===0);
-
-      // Toast de aviso (1 vez por sesión de navegación)
+      bell.classList.add('visible'); bellN.textContent = al.length > 99 ? '99+' : al.length; bellN.classList.toggle('ambar', rojos===0);
+      navN.style.display=''; navN.textContent = al.length > 99 ? '99+' : al.length;
       mostrarToastAtrasos(rojos, ambar);
     }
 
-    function irAAtrasos(){
-      var box = document.getElementById('proAtrasos');
-      if(box) box.scrollIntoView({behavior:'smooth', block:'center'});
-    }
+    function irAAtrasos(){ var box = document.getElementById('alertas'); if(box) box.scrollIntoView({behavior:'smooth', block:'start'}); }
 
     function mostrarToastAtrasos(rojos, ambar){
       try { if(sessionStorage.getItem('bsToastAtrasos')) return; } catch(e){}
@@ -564,60 +569,35 @@
       if(rojos>0) partes.push('<b>'+rojos+' caso'+(rojos===1?'':'s')+' vencido'+(rojos===1?'':'s')+'</b>');
       if(ambar>0) partes.push('<b>'+ambar+' por vencer</b>');
       if(!partes.length) return;
-
       var t = document.createElement('div');
       t.className = 'atr-toast' + (rojos===0 ? ' ambar' : '');
-      t.innerHTML =
-        '<span class="ico">'+(rojos>0?'🚨':'⏳')+'</span>'+
-        '<span style="flex:1;">'+
-          '<p class="tt">'+(rojos>0?'¡Atención! Hay atrasos pendientes':'Casos próximos a vencer')+'</p>'+
-          '<p class="tx">Tienes '+partes.join(' y ')+'. No olvides enviar tu reporte de atrasos.</p>'+
-          '<span class="cta">Ver alertas y enviar reporte →</span>'+
-        '</span>'+
-        '<button class="x" title="Cerrar">✕</button>';
-
-      t.addEventListener('click', function(ev){
-        if(ev.target.classList.contains('x')){ cerrar(); return; }
-        cerrar(); irAAtrasos();
-      });
-      function cerrar(){
-        t.classList.remove('visible');
-        setTimeout(function(){ t.remove(); }, 450);
-      }
+      t.innerHTML = '<span class="ico">'+(rojos>0?'🚨':'⏳')+'</span><span style="flex:1;"><p class="tt">'+(rojos>0?'¡Atención! Hay atrasos pendientes':'Casos próximos a vencer')+'</p><p class="tx">Tienes '+partes.join(' y ')+'. No olvides enviar tu reporte de atrasos.</p><span class="cta">Ver alertas y enviar reporte →</span></span><button class="x" title="Cerrar">✕</button>';
+      t.addEventListener('click', function(ev){ if(ev.target.classList.contains('x')){ cerrar(); return; } cerrar(); irAAtrasos(); });
+      function cerrar(){ t.classList.remove('visible'); setTimeout(function(){ t.remove(); }, 450); }
       document.body.appendChild(t);
       requestAnimationFrame(function(){ requestAnimationFrame(function(){ t.classList.add('visible'); }); });
-      setTimeout(cerrar, 12000); // se oculta solo a los 12s
+      setTimeout(cerrar, 12000);
       try { sessionStorage.setItem('bsToastAtrasos','1'); } catch(e){}
     }
 
     function textoReporteAtrasos(){
       var hoy = new Date().toLocaleDateString('es-PE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-      var rojos = ATRASOS.filter(function(a){ return a.estado==='rojo'; });
-      var ambar = ATRASOS.filter(function(a){ return a.estado==='ambar'; });
+      var base = ATRASOS.filter(function(a){ return !EMP || String(a.empresa||'').toUpperCase().indexOf(EMP) >= 0; });
+      var rojos = base.filter(function(a){ return a.estado==='rojo'; });
+      var ambar = base.filter(function(a){ return a.estado==='ambar'; });
       var L = [];
-      L.push('🚨 *REPORTE DE ATRASOS · BIENESTAR SOCIAL*');
+      L.push('🚨 *REPORTE DE ATRASOS · BIENESTAR SOCIAL*' + (EMP ? ' · ' + EMP : ''));
       L.push('📅 ' + hoy.charAt(0).toUpperCase() + hoy.slice(1));
       L.push('👤 Generado por: ' + (user.nombre || user.usuario));
       L.push('');
       if(rojos.length){
         L.push('⛔ *VENCIDOS (' + rojos.length + '):*');
-        rojos.forEach(function(a,i){
-          L.push((i+1)+'. ['+a.modulo+'] '+a.descripcion+
-            (a.fechaLimite?' — venció '+a.fechaLimite:'')+
-            ' ('+Math.abs(a.diasRestantes||0)+' días de atraso)'+
-            (a.empresa?' · '+a.empresa:''));
-        });
+        rojos.forEach(function(a,i){ L.push((i+1)+'. ['+a.modulo+'] '+a.descripcion+(a.fechaLimite?' — venció '+a.fechaLimite:'')+' ('+Math.abs(a.diasRestantes||0)+' días de atraso)'+(a.empresa?' · '+a.empresa:'')); });
         L.push('');
       }
       if(ambar.length){
         L.push('⏳ *POR VENCER (' + ambar.length + '):*');
-        ambar.forEach(function(a,i){
-          var dr = Number(a.diasRestantes||0);
-          L.push((i+1)+'. ['+a.modulo+'] '+a.descripcion+
-            (a.fechaLimite?' — vence '+a.fechaLimite:'')+
-            ' ('+(dr===0?'HOY':'en '+dr+' días')+')'+
-            (a.empresa?' · '+a.empresa:''));
-        });
+        ambar.forEach(function(a,i){ var dr = Number(a.diasRestantes||0); L.push((i+1)+'. ['+a.modulo+'] '+a.descripcion+(a.fechaLimite?' — vence '+a.fechaLimite:'')+' ('+(dr===0?'HOY':'en '+dr+' días')+')'+(a.empresa?' · '+a.empresa:'')); });
         L.push('');
       }
       L.push('— Sistema de Bienestar Social · RR.LL. · Unifrutti Group');
@@ -627,19 +607,9 @@
     function enviarReporteAtrasos(medio){
       if(!ATRASOS.length){ (window.appAlert||alert)('No hay atrasos que reportar. ✅'); return; }
       var txt = textoReporteAtrasos();
-      if(medio==='whatsapp'){
-        window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
-      } else if(medio==='correo'){
-        var asunto = '🚨 Reporte de Atrasos · Bienestar Social · ' + new Date().toLocaleDateString('es-PE');
-        window.location.href = 'mailto:?subject=' + encodeURIComponent(asunto) +
-          '&body=' + encodeURIComponent(txt.replace(/\*/g,''));
-      } else {
-        (navigator.clipboard && navigator.clipboard.writeText
-          ? navigator.clipboard.writeText(txt)
-          : Promise.reject()
-        ).then(function(){ (window.appAlert||alert)('📋 Reporte copiado al portapapeles.'); })
-         .catch(function(){ window.prompt('Copia el reporte:', txt); });
-      }
+      if(medio==='whatsapp'){ window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank'); }
+      else if(medio==='correo'){ var asunto = '🚨 Reporte de Atrasos · Bienestar Social · ' + new Date().toLocaleDateString('es-PE'); window.location.href = 'mailto:?subject=' + encodeURIComponent(asunto) + '&body=' + encodeURIComponent(txt.replace(/\*/g,'')); }
+      else { (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function(){ (window.appAlert||alert)('📋 Reporte copiado al portapapeles.'); }).catch(function(){ window.prompt('Copia el reporte:', txt); }); }
     }
     cargarAtrasos();
 
@@ -650,6 +620,8 @@
         window.location.href = 'index.html';
       }
     }
+    // Cerrar menú lateral al navegar en móvil
+    document.getElementById('side').addEventListener('click', function(e){ if (e.target.closest('a')) document.getElementById('side').classList.remove('open'); });
   </script>
 </body>
 </html>
