@@ -23,7 +23,8 @@ function bs_cierreMasivoQuejas(p) {
     if (rol.indexOf('admin') < 0 && ADMINS.indexOf(String(usuario).toLowerCase()) < 0) {
       return { ok: false, code: 403, message: 'Solo administradores pueden hacer cierres masivos.' };
     }
-    var corte = _aFecha(p.fecha_corte);
+    var mC = String(p.fecha_corte || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    var corte = mC ? new Date(+mC[1], +mC[2] - 1, +mC[3]) : _aFecha(p.fecha_corte); // fecha local (evita el corrimiento de un día por zona horaria)
     if (!corte) return { ok: false, message: 'Indica una fecha de corte válida.' };
     var motivo = String(p.motivo || '').trim();
     if (!p.simular && motivo.length < 5) return { ok: false, message: 'Escribe un motivo (mínimo 5 caracteres); queda en el historial.' };
