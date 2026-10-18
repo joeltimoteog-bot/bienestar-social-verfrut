@@ -559,6 +559,20 @@
       });
     });
 
+    // orden inicial: la última elegida por el usuario o, por defecto, la primera columna de fecha (más reciente primero)
+    (function () {
+      var ths = table.tHead.rows[0].cells, ini = null;
+      try { ini = JSON.parse(localStorage.getItem('bsm_sort_' + MOD_KEY + '_' + qKey) || 'null'); } catch (e) {}
+      if (!ini || !ths[ini.c]) {
+        for (var k = 0; k < ths.length; k++) { if (/fecha|d[ií]a |^d[ií]a$|recepci|denuncia|inicio|periodo/i.test(ths[k].textContent)) { ini = { c: k, a: false }; break; } }
+      }
+      if (ini && ths[ini.c] && ths[ini.c].classList.contains('bsm-sortable')) {
+        table._bsmT.sortCol = ini.c; table._bsmT.sortAsc = !!ini.a;
+        table.tHead.querySelectorAll('.arr').forEach(function (a) { a.textContent = '↕'; });
+        var ar = ths[ini.c].querySelector('.arr'); if (ar) ar.textContent = ini.a ? '▲' : '▼';
+        sortRows(table);
+      }
+    })();
     apply(table);
 
     // re-aplicar cuando el módulo repinta la tabla
@@ -574,8 +588,12 @@
   function cellVal(row, i) {
     var c = row.cells[i]; if (!c) return '';
     var t = c.textContent.trim();
+    // fechas dd/mm/yyyy o yyyy-mm-dd -> número ordenable (las celdas vacías van al final)
+    var m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (m) return new Date(+m[3], +m[2] - 1, +m[1]).getTime();
+    var m2 = t.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m2) return new Date(+m2[1], +m2[2] - 1, +m2[3]).getTime();
     var n = t.replace(/[S\/,%\s]/g, '').replace(',', '.');
-    return (n !== '' && !isNaN(n)) ? Number(n) : t.toLowerCase();
+    if (n !== '' && !isNaN(n)) return Number(n);
+    return t === '' || t === '-' || t === '—' ? null : t.toLowerCase();
   }
 
   function sortRows(table) {
@@ -585,9 +603,11 @@
     var rows = Array.prototype.slice.call(tbody.rows);
     rows.sort(function (a, b) {
       var va = cellVal(a, s.sortCol), vb = cellVal(b, s.sortCol);
+      if (va === null && vb === null) return 0; if (va === null) return 1; if (vb === null) return -1;
       if (typeof va === 'number' && typeof vb === 'number') return s.sortAsc ? va - vb : vb - va;
       return s.sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
     });
+    try { localStorage.setItem('bsm_sort_' + MOD_KEY + '_' + s.qKey, JSON.stringify({ c: s.sortCol, a: s.sortAsc })); } catch (e) {}
     rows.forEach(function (r) { tbody.appendChild(r); });
     setTimeout(function () { table._bsmLock = false; }, 300);
   }
@@ -613,6 +633,7 @@
       idx++;
     });
     if (table._bsmCnt) table._bsmCnt.textContent = 'Mostrando ' + shown + ' de ' + vis.length + (vis.length !== rows.length ? ' (filtrado de ' + rows.length + ')' : '');
+    if (table._bsmCnt && s.sortCol >= 0 && table.tHead) { var _h = table.tHead.rows[0].cells[s.sortCol]; if (_h) table._bsmCnt.textContent += ' · orden: ' + _h.textContent.replace(/[↕▲▼]/g, '').trim() + (s.sortAsc ? ' ↑' : ' ↓'); }
 
     // chips de conteo por estado (de lo visible)
     if (table._bsmEst) {
@@ -759,6 +780,7 @@
       if (r.getAttribute('data-bsm-i') === null) r.setAttribute('data-bsm-i', i);
       for (var j = 0; j < r.cells.length; j++) {
         var c = r.cells[j];
+        if (!c.title && c.textContent.trim().length > 28) c.title = c.textContent.trim(); // texto completo al pasar el mouse (celdas recortadas)
         if (c.children.length) continue;
         var m = c.textContent.trim().match(/^(\d{4})-(\d{2})-(\d{2})([T ].*)?$/);
         if (m) c.textContent = m[3] + '/' + m[2] + '/' + m[1];

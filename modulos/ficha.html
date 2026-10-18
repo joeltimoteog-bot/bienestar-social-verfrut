@@ -13,6 +13,7 @@
   <script src="../assets/js/bs-saludo.js"></script>
   <link rel="stylesheet" href="../assets/css/bs-theme-pro.css">
   <link rel="stylesheet" href="../assets/css/bs-theme-2026.css">
+  <link rel="stylesheet" href="../assets/css/bs-table-v3.css">
   <script src="../assets/js/bs-ui.js"></script>
   <style>
     /* Estilos propios de la ficha (el resto viene de styles.css / theme-2026) */
@@ -190,7 +191,8 @@
     $q.addEventListener('input', function () {
       clearTimeout(_tmr);
       var v = $q.value.trim();
-      if (v.length < 3) { cerrarSugg(); return; }
+      if (v.length < 3 || v === _abriendo) { cerrarSugg(); return; }
+      _abriendo = '';
       _tmr = setTimeout(function () { buscar(v); }, 260);
     });
     $q.addEventListener('keydown', function (e) {
@@ -212,6 +214,7 @@
       try {
         var r = await api('bs_fichaBuscar', { q: v });
         if (!r.ok) { cerrarSugg(); return; }
+        if ($q.value.trim() === _abriendo) { cerrarSugg(); return; }
         _cands = r.items || []; _sel = -1;
         if (!_cands.length) { $sugg.innerHTML = '<button disabled><small>Sin coincidencias en el padrón</small></button>'; $sugg.style.display = 'block'; return; }
         $sugg.innerHTML = _cands.map(function (c) {
@@ -224,8 +227,9 @@
 
     // ===== FICHA =====
     var _F = null;
+    var _abriendo = '';
     async function abrir(dni) {
-      cerrarSugg();
+      clearTimeout(_tmr); _abriendo = dni; cerrarSugg();
       $q.value = dni;
       var est = document.getElementById('estado');
       document.getElementById('ficha').hidden = true;

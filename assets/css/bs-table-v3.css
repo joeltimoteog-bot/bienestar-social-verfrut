@@ -1,0 +1,81 @@
+/* ============================================================
+   Bienestar Social — Tablas V3 (2027)
+   Capa ADITIVA sobre styles.css / bs-theme-2026.css. No cambia lógica.
+   Objetivo: listas ordenadas, legibles y compactas en todos los módulos.
+   ============================================================ */
+:root { --t3-line: #e3e8f1; --t3-head: #0a2463; --t3-muted: #5b6785; --t3-hover: #f4f7fd; --t3-zebra: #fafbfe; }
+
+/* Contenedor: desplazamiento horizontal con bordes suaves y sombra de corte */
+.bs-main .bs-table-wrap {
+  overflow: auto; max-height: 78vh; border: 1px solid var(--t3-line); border-radius: 12px; background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+  background-image: linear-gradient(to right, #fff 30%, rgba(255,255,255,0)), linear-gradient(to left, #fff 30%, rgba(255,255,255,0)),
+    linear-gradient(to right, rgba(10,36,99,.10), rgba(0,0,0,0)), linear-gradient(to left, rgba(10,36,99,.10), rgba(0,0,0,0));
+  background-position: left center, right center, left center, right center; background-repeat: no-repeat;
+  background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%; background-attachment: local, local, scroll, scroll;
+}
+.bs-main .bs-table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 760px; font-size: .9rem; }
+
+/* Cabecera pegajosa bajo la barra superior */
+.bs-main .bs-table thead th {
+  position: sticky; top: 0; z-index: 3; background: var(--t3-head); color: #fff;
+  font-size: .68rem; letter-spacing: .07em; text-transform: uppercase; font-weight: 700;
+  padding: .7rem .75rem; white-space: nowrap; text-align: left; border-bottom: 2px solid #E2231A;
+}
+.bs-main .bs-table thead th:first-child { border-top-left-radius: 11px; }
+.bs-main .bs-table thead th:last-child { border-top-right-radius: 11px; }
+.bs-main .bs-table th.bsm-sortable:hover { background: #12337f; }
+.bs-main .bs-table th.bsm-sortable .arr { opacity: .85; margin-left: 4px; }
+
+/* Filas: altura uniforme, cebra y resaltado */
+.bs-main .bs-table tbody td { padding: .6rem .75rem; vertical-align: middle; border-bottom: 1px solid var(--t3-line); line-height: 1.35; color: #13213f; }
+.bs-main .bs-table tbody tr:nth-child(even) td { background: var(--t3-zebra); }
+.bs-main .bs-table tbody tr:hover td { background: var(--t3-hover); }
+.bs-main .bs-table tbody tr:last-child td { border-bottom: 0; }
+
+/* Texto largo: una sola línea con puntos suspensivos (el título completo aparece al pasar el mouse) */
+.bs-main .bs-table tbody td { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bs-main .bs-table tbody td.t3-wrap, .bs-main .bs-table tbody td[data-wrap] { white-space: normal; max-width: 360px; }
+
+/* Primera columna (# / id) y DNI: tabulares y compactos */
+.bs-main .bs-table tbody td:first-child { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--t3-head); width: 1%; }
+.bs-main .bs-table tbody td:first-child .bs-badge { background: #eef2fb; color: var(--t3-head); }
+.bs-main .bs-table td { font-variant-numeric: tabular-nums; }
+
+/* Insignias: nunca partidas en varias líneas */
+.bs-main .bs-table .bs-badge { white-space: nowrap; display: inline-block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; font-size: .68rem; letter-spacing: .03em; padding: .22rem .6rem; border-radius: 999px; vertical-align: middle; }
+
+/* Columna de acciones: pegada a la derecha, siempre visible */
+.bs-main .bs-table th:last-child, .bs-main .bs-table tbody td:last-child {
+  position: sticky; right: 0; z-index: 2; background: #fff; text-align: right; white-space: nowrap; width: 1%;
+  box-shadow: -8px 0 10px -8px rgba(15, 23, 42, .18);
+}
+.bs-main .bs-table th:last-child { z-index: 4; background: var(--t3-head); }
+.bs-main .bs-table tbody tr:nth-child(even) td:last-child { background: var(--t3-zebra); }
+.bs-main .bs-table tbody tr:hover td:last-child { background: var(--t3-hover); }
+.bs-main .bs-table tbody td:last-child .bs-btn, .bs-main .bs-table tbody td:last-child button {
+  padding: .3rem .6rem; font-size: .74rem; border-radius: 7px; min-height: 30px; margin-left: 4px;
+}
+
+/* Enlaces dentro de la tabla */
+.bs-main .bs-table tbody a { color: var(--t3-head); font-weight: 600; text-decoration: none; }
+.bs-main .bs-table tbody a:hover { text-decoration: underline; }
+
+/* Barra de herramientas de la tabla (bs-mejoras) */
+.bsm-tb { background: #fff; border: 1px solid var(--t3-line); border-bottom: 0; border-radius: 12px 12px 0 0; padding: 10px 12px !important; margin: 0 !important; gap: 10px; align-items: center; flex-wrap: wrap; }
+.bsm-tb + .bs-table-wrap { border-top-left-radius: 0; border-top-right-radius: 0; }
+.bsm-tb + .bs-table-wrap .bs-table thead th:first-child, .bsm-tb + .bs-table-wrap .bs-table thead th:last-child { border-radius: 0; }
+.bsm-tb input[type="search"] { border: 1.5px solid var(--t3-line) !important; border-radius: 9px !important; padding: .5rem .8rem !important; min-height: 38px; }
+.bsm-tb input[type="search"]:focus { border-color: #0033A0 !important; box-shadow: 0 0 0 4px rgba(0, 51, 160, .12); outline: none; }
+.bsm-tb .cnt { font-size: .76rem; color: var(--t3-muted); font-weight: 600; }
+.bsm-pag { margin-top: 10px !important; }
+.bsm-pag button { border-radius: 8px !important; min-height: 32px; }
+.bsm-tot { background: #f4f7fd; border: 1px solid var(--t3-line); border-radius: 10px; padding: 8px 12px; margin-top: 10px !important; }
+
+/* Densidad compacta en pantallas medianas */
+@media (max-width: 1200px) { .bs-main .bs-table { font-size: .85rem; } .bs-main .bs-table tbody td { padding: .5rem .6rem; } }
+@media (max-width: 768px) {
+  .bs-main .bs-table { min-width: 640px; }
+  .bs-main .bs-table tbody td:last-child .bs-btn { padding: .25rem .45rem; }
+}
+@media print { .bs-main .bs-table thead th { position: static; } .bs-main .bs-table th:last-child, .bs-main .bs-table td:last-child { display: none; } }
