@@ -68,3 +68,6 @@ GS - BIENESTAR.txt
 # Copias locales del codigo GAS (source of truth: editor de Apps Script)
 /codigo.gs
 backend/codigo-produccion-olmos.gs
+
+*.bak
+gas/*.bak
