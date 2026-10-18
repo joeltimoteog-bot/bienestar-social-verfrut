@@ -133,8 +133,8 @@ function bs_fichaTrabajador(d) {
           var edad = fi ? Math.round((hoy.getTime() - fi.getTime()) / 86400000) : 0;
           if (edad > BS_FICHA.POR_COBRAR_DIAS) out.alertas.push({ nivel: 'ambar', modulo: 'subsidios', titulo: 'Subsidio por cobrar con ' + edad + ' días', detalle: 'S/ ' + monto.toFixed(2) + ' · ' + (o.tipo || '') + ' · exp. ' + (o.expediente || '-'), id: o.id });
         }
-        out.timeline.push({ fecha: inicio, modulo: 'subsidios', id: o.id, titulo: 'Subsidio ' + (o.tipo || ''), detalle: (o.dias || 0) + ' días · S/ ' + monto.toFixed(2) + ' · ' + cat.replace('_', ' ') });
-        return { id: o.id, anio: o.anio, mes: o.mes, tipo: o.tipo, dias: Number(o.dias) || 0, inicio: inicio, termino: _fichaFecha_(o.termino), monto: monto, categoria: cat, estado: o.estado, estado_general: o.estado_general, expediente: o.expediente, empresa: o.empresa };
+        out.timeline.push({ fecha: inicio, modulo: 'subsidios', id: o.id, titulo: 'Subsidio: ' + _fichaConting_(o), detalle: (o.dias || 0) + ' días · S/ ' + monto.toFixed(2) + ' · ' + cat.replace('_', ' ') });
+        return { id: o.id, anio: o.anio, mes: o.mes, tipo: o.tipo, contingencia: _fichaConting_(o), dias: Number(o.dias) || 0, inicio: inicio, termino: _fichaFecha_(o.termino), monto: monto, categoria: cat, estado: o.estado, estado_general: o.estado_general, expediente: o.expediente, empresa: o.empresa };
       });
       out.kpis.subsidios_total = out.subsidios.length;
       out.kpis.subsidios_dias = dias;
@@ -275,6 +275,17 @@ function _fichaCatSub_(o) {
   if (e === 'COBRADO' || e === 'RECUPERADO') return 'cobrado';
   if (e === 'NO RECUPERABLE') return 'no_recuperable';
   return 'por_cobrar';
+}
+
+// Misma normalización que conting() del dashboard de Subsidios
+function _fichaConting_(o) {
+  var t = String(o.tipo || '').trim().toUpperCase();
+  if (!t || /^\d+$/.test(t)) t = String(o.descripcion || t || '').trim().toUpperCase();
+  if (/MATERN/.test(t)) return 'Maternidad pre y post natal';
+  if (/INCAP/.test(t)) return 'Incapacidad temporal';
+  if (/LACTAN/.test(t)) return 'Lactancia';
+  if (/SEPELIO/.test(t)) return 'Sepelio';
+  return t ? (t.charAt(0) + t.slice(1).toLowerCase()) : '(Sin contingencia)';
 }
 
 function _fichaMascara_(nombre) {

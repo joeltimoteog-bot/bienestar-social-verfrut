@@ -308,7 +308,7 @@
       document.getElementById('p-sub').innerHTML = !perm.subsidios ? sinPermiso('Subsidios') : tabla(F.subsidios, [
         ['#', function (s) { return '<a href="subsidios.html?id=' + esc(s.id) + '"><b>#' + esc(s.id) + '</b></a>'; }],
         ['Periodo', function (s) { return esc(s.anio) + (s.mes ? '-' + esc(s.mes) : ''); }],
-        ['Contingencia', function (s) { return esc(s.tipo); }],
+        ['Contingencia', function (s) { return esc(s.contingencia || s.tipo); }],
         ['Inicio', function (s) { return fecha(s.inicio); }],
         ['Término', function (s) { return fecha(s.termino); }],
         ['Días', function (s) { return esc(s.dias); }],
