@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha del Trabajador · Bienestar Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-mejoras.js"></script>
+  <script src="../assets/js/bs-saludo.js"></script>
+  <link rel="stylesheet" href="../assets/css/bs-theme-pro.css">
+  <link rel="stylesheet" href="../assets/css/bs-theme-2026.css">
+  <script src="../assets/js/bs-ui.js"></script>
+  <style>
+    /* Estilos propios de la ficha (el resto viene de styles.css / theme-2026) */
+    .fi-search { position: relative; max-width: 560px; }
+    .fi-search input { padding-left: 2.6rem; font-size: 1.05rem; height: 3rem; }
+    .fi-search .fi-ico { position: absolute; left: .9rem; top: 50%; transform: translateY(-50%); opacity: .55; }
+    .fi-sugg { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #dde3ef; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,30,90,.12); z-index: 30; max-height: 320px; overflow: auto; display: none; }
+    .fi-sugg button { display: flex; width: 100%; gap: .75rem; align-items: center; padding: .6rem .9rem; background: none; border: 0; border-bottom: 1px solid #f0f3f9; text-align: left; cursor: pointer; font: inherit; }
+    .fi-sugg button:hover, .fi-sugg button.on { background: #eef2fb; }
+    .fi-sugg b { font-variant-numeric: tabular-nums; min-width: 5.5rem; }
+    .fi-sugg small { color: #5b6785; }
+    .fi-head { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: flex-start; }
+    .fi-avatar { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg,#0033A0,#1f4fd6); color: #fff; display: grid; place-items: center; font-size: 1.5rem; font-weight: 700; flex: 0 0 auto; }
+    .fi-head h2 { margin: 0 0 .15rem; font-size: 1.35rem; }
+    .fi-meta { display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; color: #5b6785; font-size: .92rem; }
+    .fi-meta b { color: #13213f; }
+    .fi-chip { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; padding: .3rem .8rem; font-weight: 600; font-size: .85rem; border: 1px solid transparent; }
+    .fi-chip.prueba { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .fi-chip.plazo_fijo { background: #e5ebfa; color: #0033A0; border-color: #b9c7f2; }
+    .fi-chip.indeterminado { background: #dcfce7; color: #166534; border-color: #86efac; }
+    .fi-chip.sin_fecha { background: #f1f5f9; color: #475569; }
+    .fi-chip.prox { background: #ffe4e6; color: #9f1239; border-color: #fda4af; }
+    .fi-kpi { padding: .85rem 1rem; }
+    .fi-kpi .l { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: #5b6785; font-weight: 600; }
+    .fi-kpi .v { font-size: 1.6rem; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; margin-top: .15rem; }
+    .fi-kpi .s { font-size: .8rem; color: #5b6785; }
+    .fi-alert { border-left: 4px solid #dde3ef; padding: .6rem .9rem; border-radius: 8px; background: #fff; display: flex; gap: .6rem; align-items: center; }
+    .fi-alert.rojo { border-left-color: #b91c1c; background: #fff5f5; }
+    .fi-alert.ambar { border-left-color: #b45309; background: #fffbeb; }
+    .fi-tabs { display: flex; gap: .25rem; flex-wrap: wrap; border-bottom: 1px solid #dde3ef; margin-bottom: 1rem; }
+    .fi-tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: .6rem .9rem; font: inherit; font-weight: 600; color: #5b6785; cursor: pointer; }
+    .fi-tabs button.on { color: #0033A0; border-bottom-color: #0033A0; }
+    .fi-tabs button .n { display: inline-block; min-width: 1.4rem; padding: 0 .4rem; margin-left: .3rem; border-radius: 999px; background: #eef2fb; color: #0033A0; font-size: .75rem; text-align: center; }
+    .fi-tl { list-style: none; margin: 0; padding: 0 0 0 1.2rem; border-left: 2px solid #dde3ef; }
+    .fi-tl li { position: relative; padding: 0 0 1rem 1rem; }
+    .fi-tl li::before { content: ""; position: absolute; left: -1.65rem; top: .35rem; width: 12px; height: 12px; border-radius: 50%; background: var(--c, #0033A0); border: 2px solid #fff; box-shadow: 0 0 0 2px var(--c, #0033A0); }
+    .fi-tl .f { font-size: .8rem; color: #5b6785; font-variant-numeric: tabular-nums; }
+    .fi-mask { filter: blur(4px); user-select: none; }
+    .fi-empty { padding: 2.5rem 1rem; text-align: center; color: #5b6785; }
+    @media print { .bs-topbar, .fi-search, .fi-tabs, .bs-footer, .no-print { display: none !important; } .fi-pane[hidden] { display: block !important; } }
+  </style>
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon"><img src="../images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
+          <span>Bienestar Social · <strong>Ficha del Trabajador</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: #0033A0;">
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">👤</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Ficha del Trabajador</b></div>
+            <h1 style="color: #0033A0;">Ficha del Trabajador 360°</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Todo el historial de un trabajador en un solo lugar: contrato, accidentes, subsidios, casos y documentos.</p>
+          </div>
+        </div>
+        <div class="bs-flex no-print" style="gap:.5rem; flex-wrap:wrap;">
+          <button class="bs-btn bs-btn-outline" id="btnDiscreto" onclick="toggleDiscreto()" title="Ocultar nombres en pantalla">🙈 Modo discreto</button>
+          <button class="bs-btn bs-btn-outline" onclick="window.print()" id="btnImprimir" disabled>🖨️ Imprimir</button>
+        </div>
+      </div>
+
+      <!-- Buscador -->
+      <div class="bs-card bs-mb">
+        <label class="bs-label" for="q">Buscar trabajador</label>
+        <div class="fi-search">
+          <span class="fi-ico">🔍</span>
+          <input type="text" class="bs-input" id="q" placeholder="DNI (8 dígitos) o apellido…" autocomplete="off" inputmode="search">
+          <div class="fi-sugg" id="sugg"></div>
+        </div>
+        <p class="bs-text-xs bs-text-muted" style="margin:.5rem 0 0;">Escribe al menos 3 caracteres. Con un DNI completo (8 dígitos) presiona <b>Enter</b> y se abre la ficha directamente. Atajo: <kbd>/</kbd></p>
+      </div>
+
+      <div id="estado"></div>
+
+      <!-- Ficha -->
+      <div id="ficha" hidden>
+        <div class="bs-card bs-mb">
+          <div class="fi-head">
+            <div class="fi-avatar" id="fAvatar">?</div>
+            <div style="flex:1; min-width:0;">
+              <h2 class="nm" id="fNombre">—</h2>
+              <div class="fi-meta" id="fMeta"></div>
+              <div class="bs-flex" style="gap:.4rem; flex-wrap:wrap; margin-top:.6rem;" id="fChips"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="fAlertas" class="bs-mb" style="display:grid; gap:.5rem;"></div>
+
+        <div class="bs-grid bs-grid-4 bs-gap bs-mb" id="fKpis"></div>
+
+        <div class="bs-card">
+          <div class="fi-tabs" id="tabs">
+            <button data-t="acc" class="on">🩺 Accidentes <span class="n" id="nAcc">0</span></button>
+            <button data-t="sub">💰 Subsidios <span class="n" id="nSub">0</span></button>
+            <button data-t="hos" id="tabHos">🔒 Hostigamiento <span class="n" id="nHos">0</span></button>
+            <button data-t="doc">📎 Documentos <span class="n" id="nDoc">0</span></button>
+            <button data-t="tl">🕒 Línea de tiempo <span class="n" id="nTl">0</span></button>
+          </div>
+          <div class="fi-pane" id="p-acc"></div>
+          <div class="fi-pane" id="p-sub" hidden></div>
+          <div class="fi-pane" id="p-hos" hidden></div>
+          <div class="fi-pane" id="p-doc" hidden></div>
+          <div class="fi-pane" id="p-tl" hidden></div>
+        </div>
+        <p class="bs-text-xs bs-text-muted" style="margin-top:.6rem;" id="fPie"></p>
+      </div>
+
+    </main>
+
+    <footer class="bs-footer">
+      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0
+    </footer>
+  </div>
+
+  <script>
+    const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
+
+    // ===== AUTH =====
+    const session = localStorage.getItem('bienestarSocialAuth');
+    if (!session) window.location.href = '../index.html';
+    let user;
+    try { user = JSON.parse(session); if (!user || !user.usuario) throw new Error(); }
+    catch (e) { window.location.href = '../index.html'; }
+    document.getElementById('userName').textContent = user.nombre || user.usuario;
+
+    async function api(action, payload) {
+      let res;
+      try {
+        res = await fetch(BS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(Object.assign({ action: action, token: (window.bsToken ? bsToken() : '') }, payload || {}))
+        });
+      } catch (e) { throw new Error('Sin conexión con el servidor.'); }
+      if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '.');
+      let _j;
+      try { _j = await res.json(); } catch (e) { throw new Error('Respuesta inválida del servidor.'); }
+      if (window.bsSesionInvalida && bsSesionInvalida(_j)) throw new Error('Sesión expirada.');
+      return _j;
+    }
+
+    function esc(t) {
+      return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    function fecha(v) { return v ? (window.bsFechaDMY ? bsFechaDMY(v) : v) : '—'; }
+    function soles(n) { return 'S/ ' + (Number(n) || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function badgeEstado(e) {
+      var s = String(e || '').toLowerCase();
+      if (/cerrad|finaliz|cobrad|recuper|resuelt/.test(s)) return 'bs-badge-success';
+      if (/no recuper|rechaz|anulad/.test(s)) return 'bs-badge-danger';
+      if (/proceso|seguim|pendien|abiert|investig/.test(s)) return 'bs-badge-warning';
+      return 'bs-badge-info';
+    }
+
+    // ===== BUSCADOR =====
+    var $q = document.getElementById('q'), $sugg = document.getElementById('sugg'), _tmr = null, _sel = -1, _cands = [];
+    $q.addEventListener('input', function () {
+      clearTimeout(_tmr);
+      var v = $q.value.trim();
+      if (v.length < 3) { cerrarSugg(); return; }
+      _tmr = setTimeout(function () { buscar(v); }, 260);
+    });
+    $q.addEventListener('keydown', function (e) {
+      var items = $sugg.querySelectorAll('button');
+      if (e.key === 'ArrowDown' && items.length) { e.preventDefault(); _sel = Math.min(_sel + 1, items.length - 1); marcar(items); }
+      else if (e.key === 'ArrowUp' && items.length) { e.preventDefault(); _sel = Math.max(_sel - 1, 0); marcar(items); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (_sel >= 0 && _cands[_sel]) abrir(_cands[_sel].dni);
+        else if (/^\d{8}$/.test($q.value.trim())) abrir($q.value.trim());
+      } else if (e.key === 'Escape') cerrarSugg();
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === '/' && document.activeElement !== $q) { e.preventDefault(); $q.focus(); $q.select(); } });
+    document.addEventListener('click', function (e) { if (!e.target.closest('.fi-search')) cerrarSugg(); });
+    function marcar(items) { items.forEach(function (b, i) { b.classList.toggle('on', i === _sel); }); if (items[_sel]) items[_sel].scrollIntoView({ block: 'nearest' }); }
+    function cerrarSugg() { $sugg.style.display = 'none'; $sugg.innerHTML = ''; _sel = -1; _cands = []; }
+
+    async function buscar(v) {
+      try {
+        var r = await api('bs_fichaBuscar', { q: v });
+        if (!r.ok) { cerrarSugg(); return; }
+        _cands = r.items || []; _sel = -1;
+        if (!_cands.length) { $sugg.innerHTML = '<button disabled><small>Sin coincidencias en el padrón</small></button>'; $sugg.style.display = 'block'; return; }
+        $sugg.innerHTML = _cands.map(function (c) {
+          return '<button type="button" data-dni="' + esc(c.dni) + '"><b>' + esc(c.dni) + '</b><span style="flex:1;min-width:0;">' + esc(c.nombre) + '<br><small>' + esc(c.cargo || '') + (c.zona ? ' · ' + esc(c.zona) : '') + '</small></span><span class="bs-badge ' + (c.empresa === 'RAPEL' ? 'bs-badge-primary' : 'bs-badge-info') + '">' + esc(c.empresa) + '</span></button>';
+        }).join('');
+        $sugg.querySelectorAll('button[data-dni]').forEach(function (b) { b.addEventListener('click', function () { abrir(b.dataset.dni); }); });
+        $sugg.style.display = 'block';
+      } catch (e) { cerrarSugg(); }
+    }
+
+    // ===== FICHA =====
+    var _F = null;
+    async function abrir(dni) {
+      cerrarSugg();
+      $q.value = dni;
+      var est = document.getElementById('estado');
+      document.getElementById('ficha').hidden = true;
+      est.innerHTML = '<div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div><p class="bs-text-muted bs-text-sm">Armando la ficha…</p></div>';
+      try {
+        var r = await api('bs_fichaTrabajador', { dni: dni });
+        if (!r.ok) {
+          est.innerHTML = '<div class="bs-alert bs-alert-danger"><strong>No se pudo abrir la ficha:</strong> ' + esc(r.message || 'error desconocido') +
+            (/no definid|not defined|unknown action|acción/i.test(r.message || '') ? '<br><span class="bs-text-sm">🔧 Verifica que <code>bs-ficha.gs</code> esté instalado y los dos <code>case</code> agregados en <code>doPost</code>.</span>' : '') + '</div>';
+          return;
+        }
+        _F = r; est.innerHTML = '';
+        try { history.replaceState(null, '', '?dni=' + dni); } catch (e) {}
+        render();
+      } catch (err) {
+        est.innerHTML = '<div class="bs-alert bs-alert-danger">Error: ' + esc(err.message) + '</div>';
+      }
+    }
+
+    function render() {
+      var F = _F, p = F.padron, c = F.contrato;
+      document.getElementById('ficha').hidden = false;
+      document.getElementById('btnImprimir').disabled = false;
+
+      // Cabecera
+      var nombre = p ? p.nombre : 'DNI ' + F.dni + ' (no está en el padrón)';
+      document.getElementById('fNombre').textContent = nombre;
+      document.getElementById('fAvatar').textContent = p ? (p.nombre || '?').trim().split(/\s+/).slice(0, 2).map(function (x) { return x.charAt(0); }).join('') : '?';
+      var meta = [['DNI', F.dni]];
+      if (p) meta.push(['Empresa', p.empresa], ['Cargo', p.cargo], ['Sector', p.zona], ['Régimen', p.regimen], ['Ingreso', fecha(p.fecha_inicio)], ['Término', p.fecha_termino ? fecha(p.fecha_termino) : '—'], ['Código', p.codigo]);
+      document.getElementById('fMeta').innerHTML = meta.filter(function (m) { return m[1]; }).map(function (m) { return '<span>' + esc(m[0]) + ': <b>' + esc(m[1]) + '</b></span>'; }).join('');
+      var chips = '';
+      if (c) {
+        chips += '<span class="fi-chip ' + esc(c.tipo) + '">📄 ' + esc(c.etiqueta) + (c.antiguedadTexto ? ' · ' + esc(c.antiguedadTexto) : '') + '</span>';
+        if (c.proximoIndeterminado) chips += '<span class="fi-chip prox">⏳ Próximo a indeterminado · ' + fecha(c.fechaIndeterminado) + '</span>';
+        if (c.porVencerDias !== null && c.porVencerDias >= 0 && c.porVencerDias <= 30) chips += '<span class="fi-chip prox">⚠️ Contrato vence en ' + c.porVencerDias + ' día(s)</span>';
+      }
+      if (F.cache) chips += '<span class="fi-chip sin_fecha" title="Datos en caché del servidor (10 min)">⚡ caché</span>';
+      document.getElementById('fChips').innerHTML = chips;
+
+      // Alertas
+      var al = F.alertas || [];
+      document.getElementById('fAlertas').innerHTML = al.length ? al.map(function (a) {
+        return '<div class="fi-alert ' + esc(a.nivel) + '"><span>' + (a.nivel === 'rojo' ? '🔴' : '🟡') + '</span><div style="flex:1;min-width:0;"><b>' + esc(a.titulo) + '</b><div class="bs-text-sm bs-text-muted">' + esc(a.detalle || '') + '</div></div><span class="bs-badge">' + esc(a.modulo) + '</span></div>';
+      }).join('') : '<div class="fi-alert"><span>🟢</span><div>Sin alertas activas para este trabajador.</div></div>';
+
+      // KPIs
+      var k = F.kpis || {}, perm = F.permisos || {};
+      var kp = [];
+      if (perm.accidentes) kp.push(['Accidentes', k.accidentes_total || 0, (k.accidentes_abiertos || 0) + ' en seguimiento']);
+      if (perm.subsidios) {
+        kp.push(['Subsidios', k.subsidios_total || 0, (k.subsidios_dias || 0) + ' días subsidiados']);
+        kp.push(['Por cobrar', soles(k.subsidios_por_cobrar), 'cobrado ' + soles(k.subsidios_cobrado)]);
+      }
+      if (perm.hostigamiento) kp.push(['Casos de hostigamiento', k.hostigamiento_total || 0, 'ambas sedes']);
+      kp.push(['Documentos', k.documentos || 0, 'adjuntos en sus casos']);
+      document.getElementById('fKpis').innerHTML = kp.map(function (x) {
+        return '<div class="bs-card fi-kpi"><div class="l">' + esc(x[0]) + '</div><div class="v">' + esc(x[1]) + '</div><div class="s">' + esc(x[2]) + '</div></div>';
+      }).join('');
+
+      // Pestañas
+      document.getElementById('nAcc').textContent = (F.accidentes || []).length;
+      document.getElementById('nSub').textContent = (F.subsidios || []).length;
+      document.getElementById('nHos').textContent = (F.hostigamiento || []).length;
+      document.getElementById('nDoc').textContent = (F.documentos || []).length;
+      document.getElementById('nTl').textContent = (F.timeline || []).length;
+      document.getElementById('tabHos').hidden = !perm.hostigamiento;
+
+      document.getElementById('p-acc').innerHTML = !perm.accidentes ? sinPermiso('Accidentes') : tabla(F.accidentes, [
+        ['#', function (a) { return '<a href="accidentes.html?id=' + esc(a.id) + '"><b>#' + esc(a.id) + '</b></a>'; }],
+        ['Fecha', function (a) { return fecha(a.dia_accidente); }],
+        ['Tipo', function (a) { return esc(a.tipo_accidente); }],
+        ['Parte del cuerpo', function (a) { return esc(a.parte_cuerpo); }],
+        ['Diagnóstico', function (a) { return esc(a.diagnostico); }],
+        ['Descanso', function (a) { return esc(a.descanso_medico || '—'); }],
+        ['Restricción hasta', function (a) { return a.fecha_fin_restriccion ? fecha(a.fecha_fin_restriccion) + ' (' + a.dias_restriccion + ' d)' : '—'; }],
+        ['Estado', function (a) { return '<span class="bs-badge ' + badgeEstado(a.estado_caso) + '">' + esc(a.estado_caso || '—') + '</span>'; }]
+      ], 'Sin accidentes registrados.');
+
+      document.getElementById('p-sub').innerHTML = !perm.subsidios ? sinPermiso('Subsidios') : tabla(F.subsidios, [
+        ['#', function (s) { return '<a href="subsidios.html?id=' + esc(s.id) + '"><b>#' + esc(s.id) + '</b></a>'; }],
+        ['Periodo', function (s) { return esc(s.anio) + (s.mes ? '-' + esc(s.mes) : ''); }],
+        ['Contingencia', function (s) { return esc(s.tipo); }],
+        ['Inicio', function (s) { return fecha(s.inicio); }],
+        ['Término', function (s) { return fecha(s.termino); }],
+        ['Días', function (s) { return esc(s.dias); }],
+        ['Monto', function (s) { return '<b>' + soles(s.monto) + '</b>'; }],
+        ['Expediente', function (s) { return esc(s.expediente || '—'); }],
+        ['Estado', function (s) { return '<span class="bs-badge ' + badgeEstado(s.categoria === 'cobrado' ? 'cobrado' : s.categoria === 'no_recuperable' ? 'no recuperable' : 'pendiente') + '">' + esc(s.estado_general || s.categoria.replace('_', ' ')) + '</span>'; }]
+      ], 'Sin subsidios registrados.');
+
+      document.getElementById('p-hos').innerHTML = !perm.hostigamiento ? sinPermiso('Hostigamiento') : tabla(F.hostigamiento, [
+        ['Código', function (h) { return '<a href="hostigamiento.html"><b>' + esc(h.codigo) + '</b></a>'; }],
+        ['Sede', function (h) { return esc(h.sede); }],
+        ['Fecha', function (h) { return fecha(h.fecha_denuncia); }],
+        ['Rol en el caso', function (h) { return '<span class="bs-badge ' + (h.rol === 'denunciado' ? 'bs-badge-danger' : 'bs-badge-info') + '">' + esc(h.rol) + '</span>'; }],
+        ['Otra parte', function (h) { return '<span class="nm">' + esc(h.otra_parte) + '</span>'; }],
+        ['Medida de protección', function (h) { return esc(h.medida_proteccion || '—'); }],
+        ['Estado', function (h) { return '<span class="bs-badge ' + badgeEstado(h.status) + '">' + esc(h.status || '—') + '</span>'; }],
+        ['Decisión', function (h) { return esc(h.decision || '—'); }]
+      ], 'Sin casos de hostigamiento.') + (perm.hostigamiento ? '<p class="bs-text-xs bs-text-muted" style="margin:.6rem 0 0;">🔒 Los nombres de la otra parte se muestran enmascarados (Ley 29733).</p>' : '');
+
+      document.getElementById('p-doc').innerHTML = tabla(F.documentos, [
+        ['Módulo', function (d) { return esc(d.modulo); }],
+        ['Caso', function (d) { return '#' + esc(d.caso_id); }],
+        ['Archivo', function (d) { return (window.bsmVerEvid ? '<a href="#" onclick="bsmVerEvid(' + esc(d.id) + ', this);return false;">' : '') + esc(d.nombre) + (window.bsmVerEvid ? '</a>' : ''); }],
+        ['Tipo', function (d) { return esc(d.tipo || ''); }],
+        ['Tamaño', function (d) { return d.tamano_kb ? esc(d.tamano_kb) + ' KB' : ''; }],
+        ['Fecha', function (d) { return fecha(d.fecha); }]
+      ], 'Sin documentos adjuntos en sus casos.');
+
+      var col = { accidentes: '#dc2626', subsidios: '#0891b2', hostigamiento: '#7c3aed' };
+      document.getElementById('p-tl').innerHTML = (F.timeline || []).length
+        ? '<ul class="fi-tl">' + F.timeline.map(function (t) {
+            return '<li style="--c:' + (col[t.modulo] || '#0033A0') + ';"><div class="f">' + fecha(t.fecha) + ' · ' + esc(t.modulo) + '</div><b>' + esc(t.titulo) + '</b>' + (t.detalle ? '<div class="bs-text-sm bs-text-muted">' + esc(t.detalle) + '</div>' : '') + '</li>';
+          }).join('') + '</ul>'
+        : '<div class="fi-empty">Sin eventos registrados.</div>';
+
+      document.getElementById('fPie').textContent = 'Ficha generada el ' + new Date().toLocaleString('es-PE') + ' por ' + (user.nombre || user.usuario) + '. Datos de solo lectura; para editar, abre el registro en su módulo.';
+      aplicarDiscreto();
+      mostrarTab('acc');
+    }
+
+    function tabla(rows, cols, vacio) {
+      if (!rows || !rows.length) return '<div class="fi-empty">' + esc(vacio) + '</div>';
+      var h = '<div class="bs-table-wrap"><table class="bs-table"><thead><tr>' + cols.map(function (c) { return '<th>' + esc(c[0]) + '</th>'; }).join('') + '</tr></thead><tbody>';
+      rows.forEach(function (r) { h += '<tr>' + cols.map(function (c) { return '<td>' + c[1](r) + '</td>'; }).join('') + '</tr>'; });
+      return h + '</tbody></table></div>';
+    }
+    function sinPermiso(m) { return '<div class="fi-empty">🔒 No tienes permiso para ver el módulo ' + esc(m) + '.</div>'; }
+
+    document.getElementById('tabs').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-t]'); if (b) mostrarTab(b.dataset.t);
+    });
+    function mostrarTab(t) {
+      document.querySelectorAll('#tabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.t === t); });
+      ['acc', 'sub', 'hos', 'doc', 'tl'].forEach(function (k) { document.getElementById('p-' + k).hidden = k !== t; });
+    }
+
+    // Modo discreto: enmascara nombres en pantalla (no cambia los datos)
+    var _disc = false;
+    try { _disc = localStorage.getItem('bs_ficha_discreto') === '1'; } catch (e) {}
+    function toggleDiscreto() { _disc = !_disc; try { localStorage.setItem('bs_ficha_discreto', _disc ? '1' : '0'); } catch (e) {} aplicarDiscreto(); }
+    function aplicarDiscreto() {
+      document.querySelectorAll('.nm').forEach(function (n) { n.classList.toggle('fi-mask', _disc); });
+      document.getElementById('btnDiscreto').classList.toggle('bs-btn-primary', _disc);
+    }
+    aplicarDiscreto();
+
+    async function logout() {
+      if (await appConfirm('¿Cerrar sesión?')) {
+        localStorage.removeItem('bienestarSocialAuth');
+        try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); } catch (e) {}
+        window.location.href = '../index.html';
+      }
+    }
+
+    // Deep link: ficha.html?dni=12345678
+    (function () {
+      var m = location.search.match(/[?&]dni=(\d{8})/);
+      if (m) abrir(m[1]); else $q.focus();
+    })();
+  </script>
+<script src="../assets/js/bs-presencia.js"></script>
+</body>
+</html>
