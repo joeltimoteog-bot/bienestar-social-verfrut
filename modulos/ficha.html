@@ -124,12 +124,14 @@
           <div class="fi-tabs" id="tabs">
             <button data-t="acc" class="on">🩺 Accidentes <span class="n" id="nAcc">0</span></button>
             <button data-t="sub">💰 Subsidios <span class="n" id="nSub">0</span></button>
+            <button data-t="dm" id="tabDm">🏥 Descansos <span class="n" id="nDm">0</span></button>
             <button data-t="hos" id="tabHos">🔒 Hostigamiento <span class="n" id="nHos">0</span></button>
             <button data-t="doc">📎 Documentos <span class="n" id="nDoc">0</span></button>
             <button data-t="tl">🕒 Línea de tiempo <span class="n" id="nTl">0</span></button>
           </div>
           <div class="fi-pane" id="p-acc"></div>
           <div class="fi-pane" id="p-sub" hidden></div>
+          <div class="fi-pane" id="p-dm" hidden></div>
           <div class="fi-pane" id="p-hos" hidden></div>
           <div class="fi-pane" id="p-doc" hidden></div>
           <div class="fi-pane" id="p-tl" hidden></div>
@@ -155,27 +157,9 @@
     catch (e) { window.location.href = '../index.html'; }
     document.getElementById('userName').textContent = user.nombre || user.usuario;
 
-    async function api(action, payload) {
-      let res;
-      try {
-        res = await fetch(BS_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(Object.assign({ action: action, token: (window.bsToken ? bsToken() : '') }, payload || {}))
-        });
-      } catch (e) { throw new Error('Sin conexión con el servidor.'); }
-      if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '.');
-      let _j;
-      try { _j = await res.json(); } catch (e) { throw new Error('Respuesta inválida del servidor.'); }
-      if (window.bsSesionInvalida && bsSesionInvalida(_j)) throw new Error('Sesión expirada.');
-      return _j;
-    }
+    // api(): compartida en assets/js/bs-core.js
 
-    function esc(t) {
-      return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-      });
-    }
+    // esc(): compartida en assets/js/bs-core.js
     function fecha(v) { return v ? (window.bsFechaDMY ? bsFechaDMY(v) : v) : '—'; }
     function soles(n) { return 'S/ ' + (Number(n) || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function badgeEstado(e) {
@@ -284,6 +268,7 @@
         kp.push(['Subsidios', k.subsidios_total || 0, (k.subsidios_dias || 0) + ' días subsidiados']);
         kp.push(['Por cobrar', soles(k.subsidios_por_cobrar), 'cobrado ' + soles(k.subsidios_cobrado)]);
       }
+      if (perm.descansos) kp.push(['Descanso médico ' + new Date().getFullYear(), (k.descansos_dias_anio || 0) + ' / ' + (k.descansos_umbral || 20) + ' d', (k.descansos_total || 0) + ' descanso(s) registrados']);
       if (perm.hostigamiento) kp.push(['Casos de hostigamiento', k.hostigamiento_total || 0, 'ambas sedes']);
       kp.push(['Documentos', k.documentos || 0, 'adjuntos en sus casos']);
       document.getElementById('fKpis').innerHTML = kp.map(function (x) {
@@ -293,6 +278,8 @@
       // Pestañas
       document.getElementById('nAcc').textContent = (F.accidentes || []).length;
       document.getElementById('nSub').textContent = (F.subsidios || []).length;
+      document.getElementById('nDm').textContent = (F.descansos || []).length;
+      document.getElementById('tabDm').hidden = !perm.descansos;
       document.getElementById('nHos').textContent = (F.hostigamiento || []).length;
       document.getElementById('nDoc').textContent = (F.documentos || []).length;
       document.getElementById('nTl').textContent = (F.timeline || []).length;
@@ -321,6 +308,18 @@
         ['Estado', function (s) { return '<span class="bs-badge ' + badgeEstado(s.categoria === 'cobrado' ? 'cobrado' : s.categoria === 'no_recuperable' ? 'no recuperable' : 'pendiente') + '">' + esc(s.estado_general || s.categoria.replace('_', ' ')) + '</span>'; }]
       ], 'Sin subsidios registrados.');
 
+      document.getElementById('p-dm').innerHTML = !perm.descansos ? sinPermiso('Descansos Médicos') : tabla(F.descansos, [
+        ['#', function (d) { return '<a href="descansos.html"><b>#' + esc(d.id) + '</b></a>'; }],
+        ['Tipo', function (d) { return esc(d.tipo); }],
+        ['Inicio', function (d) { return fecha(d.fecha_inicio); }],
+        ['Fin', function (d) { return fecha(d.fecha_fin); }],
+        ['Días', function (d) { return '<b>' + esc(d.dias) + '</b>'; }],
+        ['Diagnóstico', function (d) { return esc(d.diagnostico || '') + (d.cie10 ? ' <span class="bs-badge">' + esc(d.cie10) + '</span>' : ''); }],
+        ['CITT', function (d) { return d.citt_estado === 'Canjeado' ? '<span class="bs-badge bs-badge-success">' + esc(d.citt_numero || 'Canjeado') + '</span>' : d.citt_estado === 'Pendiente de canje' ? '<span class="bs-badge bs-badge-warning">Pendiente</span>' : '<span class="bs-badge">' + esc(d.citt_estado || 'N/A') + '</span>'; }],
+        ['Subsidio', function (d) { return d.id_subsidio ? '<a href="subsidios.html?id=' + esc(d.id_subsidio) + '"><b>#' + esc(d.id_subsidio) + '</b></a>' : '—'; }],
+        ['Estado', function (d) { return '<span class="bs-badge ' + (d.estado === 'Activo' ? 'bs-badge-warning' : 'bs-badge-success') + '">' + esc(d.estado || '—') + '</span>'; }]
+      ], 'Sin descansos médicos registrados.');
+
       document.getElementById('p-hos').innerHTML = !perm.hostigamiento ? sinPermiso('Hostigamiento') : tabla(F.hostigamiento, [
         ['Código', function (h) { return '<a href="hostigamiento.html"><b>' + esc(h.codigo) + '</b></a>'; }],
         ['Sede', function (h) { return esc(h.sede); }],
@@ -341,7 +340,7 @@
         ['Fecha', function (d) { return fecha(d.fecha); }]
       ], 'Sin documentos adjuntos en sus casos.');
 
-      var col = { accidentes: '#dc2626', subsidios: '#0891b2', hostigamiento: '#7c3aed' };
+      var col = { accidentes: '#dc2626', subsidios: '#0891b2', hostigamiento: '#7c3aed', descansos: '#be185d' };
       document.getElementById('p-tl').innerHTML = (F.timeline || []).length
         ? '<ul class="fi-tl">' + F.timeline.map(function (t) {
             return '<li style="--c:' + (col[t.modulo] || '#0033A0') + ';"><div class="f">' + fecha(t.fecha) + ' · ' + esc(t.modulo) + '</div><b>' + esc(t.titulo) + '</b>' + (t.detalle ? '<div class="bs-text-sm bs-text-muted">' + esc(t.detalle) + '</div>' : '') + '</li>';
@@ -366,7 +365,7 @@
     });
     function mostrarTab(t) {
       document.querySelectorAll('#tabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.t === t); });
-      ['acc', 'sub', 'hos', 'doc', 'tl'].forEach(function (k) { document.getElementById('p-' + k).hidden = k !== t; });
+      ['acc', 'sub', 'dm', 'hos', 'doc', 'tl'].forEach(function (k) { document.getElementById('p-' + k).hidden = k !== t; });
     }
 
     // Modo discreto: enmascara nombres en pantalla (no cambia los datos)
@@ -379,13 +378,7 @@
     }
     aplicarDiscreto();
 
-    async function logout() {
-      if (await appConfirm('¿Cerrar sesión?')) {
-        localStorage.removeItem('bienestarSocialAuth');
-        try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); } catch (e) {}
-        window.location.href = '../index.html';
-      }
-    }
+    // logout(): compartida en assets/js/bs-core.js
 
     // Deep link: ficha.html?dni=12345678
     (function () {

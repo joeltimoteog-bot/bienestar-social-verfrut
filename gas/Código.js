@@ -742,7 +742,8 @@ function calcularAlertasBienestar(permisos){
     var ver = {
       quejas:        permisos.quejas===true        || permisos.mod_quejas===true,
       accidentes:    permisos.accidentes===true    || permisos.mod_accidentes===true,
-      hostigamiento: permisos.hostigamiento===true || permisos.mod_hostigamiento===true
+      hostigamiento: permisos.hostigamiento===true || permisos.mod_hostigamiento===true,
+      descansos:     permisos.descansos===true     || permisos.mod_descansos===true
     };
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     function leer(n){ var sh=ss.getSheetByName(n); if(!sh) return {h:[],rows:[]}; var lr=sh.getLastRow(),lc=sh.getLastColumn(); if(lc===0) return {h:[],rows:[]}; var data=sh.getRange(1,1,Math.max(1,lr),lc).getValues(); var h=data.shift(); return {h:h,rows:lr<2?[]:data}; }
@@ -768,6 +769,18 @@ function calcularAlertasBienestar(permisos){
       });
     }
  
+    // ---- DESCANSOS MÉDICOS (canje de CITT) ----
+    if(ver.descansos && typeof _dmLeer_==='function'){
+      try {
+        var plazoCanje = (typeof BS_DM!=='undefined' && BS_DM.PLAZO_CANJE_DIAS) || 30;
+        _dmLeer_().forEach(function(x){
+          if(x.citt_estado!=='Pendiente de canje') return;
+          var fb=_aFecha(x.fecha_inicio); if(!fb) return;
+          push('Descansos', x.id, 'Canje de CITT', 'DM '+(x.tipo||'')+' · '+String(x.nombre||'').split(/\s+/).slice(0,2).join(' '), fb, _sumarCalendario(fb, plazoCanje), x.empresa||'');
+        });
+      } catch(eDm) {}
+    }
+
     // ---- HOSTIGAMIENTO (confidencial, sin nombres) ----
     if(ver.hostigamiento){
       var h=leer('BS_Hostigamiento');

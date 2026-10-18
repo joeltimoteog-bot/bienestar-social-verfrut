@@ -585,33 +585,9 @@
     if (!user.permisos || !user.permisos.accidentes) { appAlert('No tienes permiso para acceder a este módulo'); window.location.href = '../portal.html'; }
     document.getElementById('userName').textContent = user.nombre || user.usuario;
 
-    async function api(action, payload) {
-      let res;
-      try {
-        res = await fetch(BS_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(Object.assign({ action: action, token: (window.bsToken ? bsToken() : '') }, payload || {}))
-        });
-      } catch (e) {
-        throw new Error('Sin conexión con el servidor. Verifica tu internet e intenta de nuevo.');
-      }
-      if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '. Intenta de nuevo.');
-      let _j;
-      try {
-        _j = await res.json();
-      } catch (e) {
-        throw new Error('Respuesta inválida del servidor. Intenta de nuevo en unos segundos.');
-      }
-      if (window.bsSesionInvalida && bsSesionInvalida(_j)) throw new Error('Sesión expirada. Vuelve a iniciar sesión.');
-      return _j;
-    }
+    // api(): compartida en assets/js/bs-core.js
 
-    function esc(t) {
-      return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){
-        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-      });
-    }
+    // esc(): compartida en assets/js/bs-core.js
 
     // ===== AUTO-TAB =====
     const FORM_ORDER = ['dni','nombre','edad','telefono','sexo','empresa','fundo','fecha_ingreso','dia_accidente','dia_reportado','parte_cuerpo','tipo_lesion','tipo_accidente','seguro','diagnostico','detalle','accidente_hora_inicio','accidente_hora_fin','centro_atencion','tipo_derivacion','especialidades','staff_medico','estatus_accidente','fecha_reincorporo','fecha_fin_restriccion','dias_restriccion','detalle_restriccion','descanso_medico','descanso_medico_inicio','descanso_medico_fin','descanso_medico_dias','formulario_con_goce','goce_inicio','goce_fin','goce_dias','estado','situacion','responsable','responsable_autorizar','estado_caso'];
@@ -971,9 +947,7 @@
       } finally { btn.disabled = false; btn.textContent = '+ Agregar Seguimiento'; }
     }
 
-    async function logout() {
-      if (await appConfirm('¿Cerrar sesión?')) { localStorage.removeItem('bienestarSocialAuth'); try { Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); Object.keys(sessionStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) sessionStorage.removeItem(k); }); } catch(e){} window.location.href = '../index.html'; }
-    }
+    // logout(): compartida en assets/js/bs-core.js
 
     // ===== A2: visibilidad y calculos de campos auto-revelados =====
     function toggleDescanso() {

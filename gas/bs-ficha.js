@@ -76,7 +76,7 @@ function bs_fichaTrabajador(d) {
     var puede = function (m) { return esAdmin || !!perm[m]; };
 
     // Caché por DNI + perfil de permisos (para no filtrar datos entre usuarios)
-    var claveCache = 'bs_ficha_' + dni + '_' + (esAdmin ? 'A' : ['accidentes', 'subsidios', 'hostigamiento', 'quejas'].map(function (m) { return perm[m] ? 1 : 0; }).join(''));
+    var claveCache = 'bs_ficha_' + dni + '_' + (esAdmin ? 'A' : ['accidentes', 'subsidios', 'hostigamiento', 'descansos'].map(function (m) { return perm[m] ? 1 : 0; }).join(''));
     try {
       var c = CacheService.getScriptCache().get(claveCache);
       if (c) { var cached = JSON.parse(c); cached.cache = true; return cached; }
@@ -84,7 +84,7 @@ function bs_fichaTrabajador(d) {
 
     var hoy = _hoy();
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var out = { ok: true, dni: dni, padron: null, contrato: null, kpis: {}, alertas: [], accidentes: [], subsidios: [], hostigamiento: [], documentos: [], timeline: [], permisos: { accidentes: puede('accidentes'), subsidios: puede('subsidios'), hostigamiento: puede('hostigamiento') } };
+    var out = { ok: true, dni: dni, padron: null, contrato: null, kpis: {}, alertas: [], accidentes: [], subsidios: [], hostigamiento: [], descansos: [], documentos: [], timeline: [], permisos: { accidentes: puede('accidentes'), subsidios: puede('subsidios'), hostigamiento: puede('hostigamiento'), descansos: puede('descansos') } };
 
     /* --- 1. Padrón + clasificación de contrato --- */
     out.padron = _fichaPadron_(dni);
@@ -157,6 +157,27 @@ function bs_fichaTrabajador(d) {
         });
       });
       out.kpis.hostigamiento_total = out.hostigamiento.length;
+    }
+
+    /* --- 4b. Descansos médicos (hoja BS_Descansos, si existe) --- */
+    if (puede('descansos') && typeof _dmLeer_ === 'function') {
+      try {
+        var dms = _dmLeer_().filter(function (x) { return String(x.dni) === dni; });
+        dms.sort(function (a, b) { return String(b.fecha_inicio).localeCompare(String(a.fecha_inicio)); });
+        var anioHoy = hoy.getFullYear(), acumAnio = 0, matAnio = 0;
+        out.descansos = dms.map(function (x) {
+          var d = Number(x.dias) || 0;
+          if (String(x.fecha_inicio).slice(0, 4) == anioHoy) { if (x.tipo === 'Maternidad') matAnio += d; else acumAnio += d; }
+          if (x.estado === 'Activo') out.alertas.push({ nivel: 'rojo', modulo: 'descansos', titulo: 'Descanso médico vigente hasta ' + x.fecha_fin, detalle: (x.tipo || '') + ' · ' + (x.diagnostico || '') + ' · DM #' + x.id, id: x.id });
+          if (x.citt_estado === 'Pendiente de canje') out.alertas.push({ nivel: 'ambar', modulo: 'descansos', titulo: 'Certificado pendiente de canje a CITT', detalle: 'DM #' + x.id + ' · ' + x.fecha_inicio, id: x.id });
+          out.timeline.push({ fecha: x.fecha_inicio, modulo: 'descansos', id: x.id, titulo: 'Descanso médico: ' + (x.tipo || ''), detalle: d + ' días · ' + (x.diagnostico || '') + (x.cie10 ? ' (' + x.cie10 + ')' : '') + ' · CITT ' + (x.citt_estado || '') });
+          return { id: x.id, tipo: x.tipo, origen: x.origen, citt_numero: x.citt_numero, citt_estado: x.citt_estado, fecha_inicio: x.fecha_inicio, fecha_fin: x.fecha_fin, dias: d, diagnostico: x.diagnostico, cie10: x.cie10, centro: x.centro, estado: x.estado, id_accidente: x.id_accidente, id_subsidio: x.id_subsidio };
+        });
+        out.kpis.descansos_total = out.descansos.length;
+        out.kpis.descansos_dias_anio = acumAnio;
+        out.kpis.descansos_umbral = (typeof BS_DM !== 'undefined' && BS_DM.UMBRAL_DIAS) || 20;
+        if (acumAnio > out.kpis.descansos_umbral) out.alertas.push({ nivel: 'rojo', modulo: 'descansos', titulo: acumAnio + ' días de descanso médico en ' + anioHoy + ' (supera ' + out.kpis.descansos_umbral + ')', detalle: 'Corresponde subsidio EsSalud por el excedente' + (matAnio ? ' · maternidad: ' + matAnio + ' d' : '') });
+      } catch (eDm) {}
     }
 
     /* --- 5. Documentos de sus casos --- */

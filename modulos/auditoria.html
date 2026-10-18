@@ -127,27 +127,9 @@
     }
     document.getElementById('userName').textContent = user.nombre || user.usuario;
 
-    async function api(action, payload) {
-      let res;
-      try {
-        res = await fetch(BS_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(Object.assign({ action: action, token: (window.bsToken ? bsToken() : '') }, payload || {}))
-        });
-      } catch (e) { throw new Error('Sin conexión con el servidor.'); }
-      if (!res.ok) throw new Error('El servidor respondió con error ' + res.status + '.');
-      let _j;
-      try { _j = await res.json(); } catch (e) { throw new Error('Respuesta inválida del servidor.'); }
-      if (window.bsSesionInvalida && bsSesionInvalida(_j)) throw new Error('Sesión expirada.');
-      return _j;
-    }
+    // api(): compartida en assets/js/bs-core.js
 
-    function esc(t) {
-      return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){
-        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-      });
-    }
+    // esc(): compartida en assets/js/bs-core.js
 
     let _AUD = [];
     let _ordCol = 'fecha', _ordAsc = false;   // orden por defecto: fecha descendente
@@ -287,13 +269,7 @@
     // Refresco automático cada 2 minutos
     setInterval(function(){ cargarAuditoria(); }, 120000);
 
-    async function logout() {
-      if (await appConfirm('¿Cerrar sesión?')) {
-        localStorage.removeItem('bienestarSocialAuth');
-        try { Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); } catch(e){}
-        window.location.href = '../index.html';
-      }
-    }
+    // logout(): compartida en assets/js/bs-core.js
 
     cargarAuditoria();
   </script>
