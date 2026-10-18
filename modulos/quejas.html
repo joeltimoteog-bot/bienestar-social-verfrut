@@ -126,6 +126,7 @@
             </div>
           </div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <button class="bs-btn qx-btn-ghost" id="btnCierreMasivo" style="display:none;" onclick="abrirCierreMasivo()" title="Solo administradores">🧹 Cierre masivo</button>
             <button class="bs-btn qx-btn-ghost" onclick="BSDashQuejas.abrir()">📊 Estadísticas</button>
             <button class="bs-btn qx-btn-cta" onclick="openModal()">+ Nuevo Hallazgo</button>
           </div>
@@ -1209,6 +1210,63 @@
     } catch(e) { /* si Firebase no carga, el auto-refresh de 60s sigue activo */ }
   })();
   </script>
+<!-- === CIERRE MASIVO (solo administradores) === -->
+<div class="bs-modal-overlay" id="modalCierre">
+  <div class="bs-modal" style="max-width:560px;">
+    <div class="bs-modal-header"><h3 class="bs-modal-title">🧹 Cierre masivo de hallazgos antiguos</h3><button class="bs-modal-close" onclick="document.getElementById('modalCierre').classList.remove('bs-active')">×</button></div>
+    <div class="bs-modal-body">
+      <form id="formCierre" onsubmit="ejecutarCierreMasivo(event)">
+        <p class="bs-text-sm bs-text-muted" style="margin:0 0 .8rem;">Cierra en bloque los hallazgos <b>abiertos</b> con fecha de recepción <b>anterior</b> a la fecha de corte. No borra nada: cambia el resultado a <b>Cerrado</b> y deja constancia del motivo en Observaciones y en Auditoría.</p>
+        <div class="bs-grid bs-grid-2 bs-gap">
+          <div class="bs-form-group"><label class="bs-label">Cerrar los anteriores a</label><input type="date" class="bs-input" id="cmFecha" required></div>
+          <div class="bs-form-group"><label class="bs-label">Vista previa</label><div id="cmPreview" style="min-height:42px;display:flex;align-items:center;font-weight:700;color:#0033A0;">—</div></div>
+        </div>
+        <div class="bs-form-group"><label class="bs-label">Motivo (queda en el historial)</label><input class="bs-input" id="cmMotivo" required minlength="5" placeholder="Ej. Depuración de casos 2025 ya atendidos fuera del sistema"></div>
+        <div class="bs-flex bs-justify-between" style="gap:.5rem;flex-wrap:wrap;margin-top:1rem;">
+          <button type="button" class="bs-btn bs-btn-outline" onclick="previsualizarCierre()">👁️ Calcular</button>
+          <div class="bs-flex" style="gap:.5rem;"><button type="button" class="bs-btn bs-btn-outline" onclick="document.getElementById('modalCierre').classList.remove('bs-active')">Cancelar</button><button type="submit" class="bs-btn bs-btn-danger" id="cmBtn" disabled>Cerrar hallazgos</button></div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var ADM = ['jtimoteo', 'ovilela'];
+  var es = /admin|geren/i.test(user.rol || '') || ADM.indexOf(String(user.usuario || '').toLowerCase()) >= 0;
+  if (es) document.getElementById('btnCierreMasivo').style.display = '';
+})();
+function abrirCierreMasivo() {
+  var y = new Date().getFullYear();
+  document.getElementById('cmFecha').value = y + '-01-01';
+  document.getElementById('cmMotivo').value = '';
+  document.getElementById('cmPreview').textContent = '—';
+  document.getElementById('cmBtn').disabled = true;
+  document.getElementById('modalCierre').classList.add('bs-active');
+}
+async function previsualizarCierre() {
+  var f = document.getElementById('cmFecha').value; if (!f) { appAlert('Indica la fecha de corte.'); return; }
+  var pv = document.getElementById('cmPreview'); pv.textContent = 'Calculando…';
+  try {
+    var r = await api('bs_cierreMasivoQuejas', { usuario: user.usuario, fecha_corte: f, simular: true });
+    if (!r.ok) { pv.textContent = r.message || 'Error'; return; }
+    pv.innerHTML = r.total + ' hallazgo(s)' + (r.total ? ' <span class="bs-text-xs bs-text-muted">(' + Object.keys(r.porEmpresa).map(function (k) { return k + ': ' + r.porEmpresa[k]; }).join(' · ') + ')</span>' : '');
+    document.getElementById('cmBtn').disabled = !r.total;
+  } catch (e) { pv.textContent = e.message; }
+}
+async function ejecutarCierreMasivo(ev) {
+  ev.preventDefault();
+  var f = document.getElementById('cmFecha').value, m = document.getElementById('cmMotivo').value.trim(), n = document.getElementById('cmPreview').textContent;
+  if (!(await appConfirm('Se cerrarán ' + n + ' anteriores a ' + f + '.\n\nEsta acción queda registrada en Auditoría y no se puede deshacer en bloque. ¿Continuar?'))) return;
+  var b = document.getElementById('cmBtn'); b.disabled = true; b.textContent = 'Cerrando…';
+  try {
+    var r = await api('bs_cierreMasivoQuejas', { usuario: user.usuario, fecha_corte: f, motivo: m });
+    appAlert(r.message || (r.ok ? 'Listo.' : 'No se pudo completar.'));
+    if (r.ok) { document.getElementById('modalCierre').classList.remove('bs-active'); try { sessionStorage.clear(); } catch (e) {} cargarQuejas(); }
+  } catch (e) { appAlert('Error: ' + e.message); }
+  finally { b.textContent = 'Cerrar hallazgos'; }
+}
+</script>
 <script src="../assets/js/bs-presencia.js"></script>
 </body>
 </html>

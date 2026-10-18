@@ -246,6 +246,7 @@ function doPost(e) {
       case 'bs_acumuladoDescansos':      result = bs_acumuladoDescansos(params.dni, params.anio); break;
       case 'bs_generarSubsidioDesdeDM':  result = bs_generarSubsidioDesdeDM(params.usuario, params.id); break;
       case 'bs_dashboardDescansos':      result = bs_dashboardDescansos(params.anio, params.empresa); break;
+      case 'bs_cierreMasivoQuejas':      result = bs_cierreMasivoQuejas(params); break;
 
       // 👇 NUEVO — Dashboard consolidado de Bienestar
       case 'bs_dashboard':       result = bs_dashboardRapido(params); break;
