@@ -547,7 +547,7 @@
 
     // orden por columna
     Array.prototype.forEach.call(table.tHead.rows[0].cells, function (th, i) {
-      if (/acci|opci/i.test(th.textContent)) return; // no ordenar columna de acciones
+      if (/^\s*(acci[oó]n(es)?|opci[oó]n(es)?)?\s*$/i.test(th.textContent)) return; // no ordenar columna de acciones (ni cabeceras vacías)
       th.classList.add('bsm-sortable');
       var arr = document.createElement('span'); arr.className = 'arr'; arr.textContent = '↕'; th.appendChild(arr);
       th.addEventListener('click', function () {
