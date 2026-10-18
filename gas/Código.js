@@ -240,6 +240,12 @@ function doPost(e) {
       case 'bs_verDocumento':      result = bs_verDocumento(params); break;
       case 'bs_fichaBuscar':      result = bs_fichaBuscar(params); break;
       case 'bs_fichaTrabajador':  result = bs_fichaTrabajador(params); break;
+      case 'bs_crearDescanso':           result = bs_crearDescanso(params.usuario, params.datos); break;
+      case 'bs_listarDescansos':         result = bs_listarDescansos(params.filtros || params); break;
+      case 'bs_actualizarDescanso':      result = bs_actualizarDescanso(params.usuario, params.id, params.datos); break;
+      case 'bs_acumuladoDescansos':      result = bs_acumuladoDescansos(params.dni, params.anio); break;
+      case 'bs_generarSubsidioDesdeDM':  result = bs_generarSubsidioDesdeDM(params.usuario, params.id); break;
+      case 'bs_dashboardDescansos':      result = bs_dashboardDescansos(params.anio, params.empresa); break;
 
       // 👇 NUEVO — Dashboard consolidado de Bienestar
       case 'bs_dashboard':       result = bs_dashboardRapido(params); break;
@@ -2931,7 +2937,8 @@ function bs_login(usuario, password) {
             subsidios:     gv(row,'mod_subsidios') === true,
             rendiciones:   gv(row,'mod_rendiciones') === true,
             panel:         gv(row,'mod_panel') === true,
-            estadisticas:  gv(row,'mod_estadisticas') === true
+            estadisticas:  gv(row,'mod_estadisticas') === true,
+            descansos:     gv(row,'mod_descansos') === true
           },
           loginAt: new Date().toISOString()
         }
@@ -2984,7 +2991,8 @@ function bs_permisosUsuario(usuario) {
             subsidios:     gv(row, 'mod_subsidios') === true,
             rendiciones:   gv(row, 'mod_rendiciones') === true,
             panel:         gv(row, 'mod_panel') === true,
-            estadisticas:  gv(row, 'mod_estadisticas') === true
+            estadisticas:  gv(row, 'mod_estadisticas') === true,
+            descansos:     gv(row, 'mod_descansos') === true
           }
         };
       }
@@ -3193,7 +3201,8 @@ var BS_SEG = {
                  'bs_listarTodoHistorialAccidentes', 'bs_listarTodosSeguimientos',
                  'bs_importarAccidentes'],
     hostigamiento: ['bs_crearHostigamiento', 'bs_listarHostigamiento', 'bs_actualizarHostigamiento'],
-    subsidios: ['bs_crearSubsidio', 'bs_listarSubsidios', 'bs_actualizarSubsidio', 'bs_importarSubsidios']
+    subsidios: ['bs_crearSubsidio', 'bs_listarSubsidios', 'bs_actualizarSubsidio', 'bs_importarSubsidios'],
+    descansos: ['bs_crearDescanso', 'bs_listarDescansos', 'bs_actualizarDescanso', 'bs_acumuladoDescansos', 'bs_generarSubsidioDesdeDM', 'bs_dashboardDescansos']
   }
   // Cualquier otra acción bs_* (dashboard, alertas, documentos, rendiciones,
   // sugerencias, estadísticas, etc.) exige token válido, sin permiso extra.
