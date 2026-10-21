@@ -200,7 +200,9 @@ function doPost(e) {
 
     let result;
     switch(action) {
-      case 'bs_login':           result = bs_login(params.usuario, params.password); break;
+      case 'bs_login':           result = bs_login(params.usuario, params.password);
+        if ((!result || !result.ok) && params.rl_token && typeof bs_loginConRL_ === 'function') result = bs_loginConRL_(params.usuario, params.rl_token);   /* _BS_LOGIN_RL_V1 */
+        break;
       case 'bs_crearQueja':      result = bs_crearQueja(params.usuario, params.datos); break;
       case 'bs_listarQuejas':    result = bs_listarQuejas(params.filtros); break;
       case 'bs_actualizarQueja': result = bs_actualizarQueja(params.usuario, params.id, params.datos); break;

@@ -291,6 +291,7 @@
     })();
   </script>
 
+  <script src="https://joeltimoteog-bot.github.io/sistema-rl-verfrut/frontend/js/login-comun.js?v=1"></script>  <!-- _BS_LOGIN_RL_V1 (20-oct): misma contraseña que el Sistema RR.LL. -->
   <script>
     // ===== CONFIGURACIÓN =====
     const BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
@@ -467,7 +468,25 @@
           })
         });
 
-        const data = await res.json();
+        let data = await res.json();
+
+        /* _BS_LOGIN_RL_V1 (20-oct-2026): si la clave propia de Bienestar no coincide (p. ej. el usuario la
+           cambio en el Sistema RR.LL.), se valida con la contraseña del RR.LL. (Azure) y se reintenta con
+           ese login firmado. Bienestar decide los permisos con su hoja Usuarios, como siempre. */
+        if (!(data && data.ok) && window.rlLoginComun) {
+          try {
+            const rc = await window.rlLoginComun(usuario, password);
+            if (rc && rc.ok && rc.token) {
+              const res2 = await fetch(BS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'bs_login', usuario: usuario, password: password, rl_token: rc.token })
+              });
+              const d2 = await res2.json();
+              if (d2) data = d2;
+            }
+          } catch (eRL) { console.warn('[_BS_LOGIN_RL_V1]', eRL); }
+        }
 
         if (data.ok) {
           try { localStorage.setItem('bs_ultimo_usuario', usuario); } catch(e) {}
