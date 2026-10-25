@@ -19,6 +19,38 @@
 
   var DB = 'https://sistema-rl-verfrut-default-rtdb.firebaseio.com';
 
+  /* _BS_RTDB_AUTH_V1 (25-oct-2026): la base de presencia/mensajes exige autenticacion (igual que en RR.LL., que usa
+     sesion anonima de Firebase). Aqui se obtiene la misma sesion anonima y se agrega ?auth=<token> a cada llamada REST.
+     Si Firebase no carga, las llamadas salen como antes (y fallan en silencio como hasta hoy). */
+  var _fbCfg = { apiKey: 'AIzaSyBTp4WHO5bGEoYDhTbyWZVfdQxbAQHwp4I', authDomain: 'sistema-rl-verfrut.firebaseapp.com', projectId: 'sistema-rl-verfrut', databaseURL: DB };
+  var _tokProm = null;
+  function _token() {
+    if (_tokProm) return _tokProm;
+    _tokProm = (async function () {
+      try {
+        var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+        var appMod = await import(SDK + 'firebase-app.js'), authMod = await import(SDK + 'firebase-auth.js');
+        var NOMBRE = 'bs-presencia-app', app = null;
+        try { app = appMod.getApps().find(function (a) { return a.name === NOMBRE; }) || null; } catch (e) {}
+        if (!app) app = appMod.initializeApp(_fbCfg, NOMBRE);
+        var auth = authMod.getAuth(app);
+        if (!auth.currentUser) await authMod.signInAnonymously(auth);
+        return { auth: auth };
+      } catch (e) { console.warn('[bs-presencia] sin sesion Firebase:', e && (e.code || e.message)); return null; }
+    })();
+    return _tokProm;
+  }
+  async function _idToken() {
+    try { var s = await Promise.race([_token(), new Promise(function (r) { setTimeout(function () { r(null); }, 5000); })]);
+      return s && s.auth && s.auth.currentUser ? await s.auth.currentUser.getIdToken() : ''; } catch (e) { return ''; }
+  }
+  function fdb(url, opts) {
+    return _idToken().then(function (t) {
+      var u = t ? url + (url.indexOf('?') >= 0 ? '&' : '?') + 'auth=' + encodeURIComponent(t) : url;
+      return fetch(u, opts);
+    });
+  }
+
   var USER = null;
   try { USER = JSON.parse(localStorage.getItem('bienestarSocialAuth') || 'null'); } catch (e) {}
   if (!USER || !USER.usuario) return;
@@ -40,7 +72,7 @@
   }
   function marcar(online) {
     try {
-      fetch(DB + '/presencia/' + UKEY + '.json', { method: 'PUT', body: JSON.stringify(payload(online)) })['catch'](function () {});
+      fdb(DB + '/presencia/' + UKEY + '.json', { method: 'PUT', body: JSON.stringify(payload(online)) })['catch'](function () {});
     } catch (e) {}
   }
   marcar(!document.hidden);
@@ -48,7 +80,7 @@
   document.addEventListener('visibilitychange', function () { marcar(!document.hidden); });
   window.addEventListener('beforeunload', function () {
     try {
-      fetch(DB + '/presencia/' + UKEY + '.json', { method: 'PATCH', keepalive: true, body: JSON.stringify({ online: false }) })['catch'](function () {});
+      fdb(DB + '/presencia/' + UKEY + '.json', { method: 'PATCH', keepalive: true, body: JSON.stringify({ online: false }) })['catch'](function () {});
     } catch (e) {}
   });
 
@@ -56,7 +88,7 @@
   try {
     if (!sessionStorage.getItem('_bs_hist_ok')) {
       sessionStorage.setItem('_bs_hist_ok', '1');
-      fetch(DB + '/historial/' + UKEY + '.json', { method: 'POST',
+      fdb(DB + '/historial/' + UKEY + '.json', { method: 'POST',
         body: JSON.stringify({ ts: { '.sv': 'timestamp' }, evento: 'ingreso', pagina: PAG || 'portal', modulo: MODULO }) })['catch'](function () {});
     }
   } catch (e) {}
@@ -96,7 +128,7 @@
   }
   function responder(texto, cb) {
     try {
-      fetch(DB + '/mensajes/' + UKEY + '.json', { method: 'POST',
+      fdb(DB + '/mensajes/' + UKEY + '.json', { method: 'POST',
         body: JSON.stringify({ texto: String(texto).slice(0, 990), de: USER.nombre || USER.usuario,
                                de_usuario: USER.usuario, ts: { '.sv': 'timestamp' }, leido: false }) })
         .then(function (r) { cb(!!(r && r.ok)); })['catch'](function () { cb(false); });
@@ -133,7 +165,7 @@
   }
   function pollMsgs() {
     try {
-      fetch(DB + '/mensajes/' + UKEY + '.json?nc=' + Date.now())
+      fdb(DB + '/mensajes/' + UKEY + '.json?nc=' + Date.now())
         .then(function (r) { return r.json(); })
         .then(function (val) {
           if (!val) return;
@@ -144,7 +176,7 @@
             if (_vistos[id]) return;
             _vistos[id] = true;
             tarjetaMsg(id, m);
-            fetch(DB + '/mensajes/' + UKEY + '/' + id + '.json', { method: 'PATCH',
+            fdb(DB + '/mensajes/' + UKEY + '/' + id + '.json', { method: 'PATCH',
               body: JSON.stringify({ leido: true, leido_ts: { '.sv': 'timestamp' } }) })['catch'](function () {});
           });
         })['catch'](function () {});
