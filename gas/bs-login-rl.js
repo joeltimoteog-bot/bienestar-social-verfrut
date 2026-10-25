@@ -11,7 +11,7 @@
    No cambia nada de lo que ya funciona: bs_login se prueba primero, igual que antes.
    Para desactivar: borrar este archivo (doPost lo usa solo si existe).
    ═══════════════════════════════════════════════════════════════════════════ */
-var BS_RL_SSO_URL = 'https://rl-functions-verfrut-c0ctfjc0cjf5f0hz.brazilsouth-01.azurewebsites.net/api/auth/sso';
+var BS_RL_SSO_URL = 'https://rl-fn-verfrut.azurewebsites.net/api/auth/sso';
 
 function bs_loginConRL_(usuario, rlToken) {
   var NO = { ok: false, message: 'Usuario o contrasena incorrectos' };
