@@ -496,6 +496,7 @@
             rol: data.user.rol,
             permisos: data.user.permisos,
             token: data.user.token || data.token || '',
+            rl_token: data.user.rl_token || '',   /* _BS_AZURE_SESION_V1 (25-oct): sesion de RR.LL. para consultar Azure (busqueda de trabajadores) */
             loginAt: new Date().toISOString()
           }));
           mostrarBienvenida(data.user.nombre || data.user.usuario);

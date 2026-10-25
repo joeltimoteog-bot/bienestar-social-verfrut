@@ -63,3 +63,17 @@ function bs_loginConRL_(usuario, rlToken) {
     return NO;
   }
 }
+
+/* _BS_AZURE_SESION_V1 (25-oct-2026): con las mismas credenciales, pide a Azure (auth/login de RR.LL.) una sesion firmada.
+   Solo se usa para que Bienestar pueda consultar Azure (trabajadores). Si falla, devuelve '' y Bienestar sigue igual. */
+function bs_rlTokenPorClave_(usuario, password) {
+  try {
+    var u = String(usuario || '').toLowerCase().trim(), p = String(password || '');
+    if (!u || !p) return '';
+    var r = UrlFetchApp.fetch(BS_RL_SSO_URL.replace(/\/auth\/sso$/, '/auth/login'), {
+      method: 'post', contentType: 'application/json', payload: JSON.stringify({ usuario: u, password: p }), muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) return '';
+    var j = JSON.parse(r.getContentText());
+    return (j && j.success && j.token) ? String(j.token) : '';
+  } catch (e) { return ''; }
+}

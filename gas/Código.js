@@ -263,6 +263,8 @@ function doPost(e) {
     try {
       if (action === 'bs_login' && result && result.ok && result.user) {
         result.user.token = bs_emitirToken(result.user);
+        /* _BS_AZURE_SESION_V1 (25-oct-2026): sesion de RR.LL. para que Bienestar consulte Azure (busqueda de trabajadores) */
+        try { result.user.rl_token = params.rl_token || (typeof bs_rlTokenPorClave_ === 'function' ? bs_rlTokenPorClave_(params.usuario, params.password) : ''); } catch (eRT) {}
       }
     } catch(errTok) {}
 

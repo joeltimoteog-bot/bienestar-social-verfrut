@@ -15,7 +15,12 @@ const BS_TRABAJADORES_API = 'https://rl-fn-verfrut.azurewebsites.net/api/trabaja
 async function bsBuscarTrabajador(dni) {
   if (!dni || String(dni).length !== 8) return null;
   try {
-    const res = await fetch(BS_TRABAJADORES_API + '?dni=' + encodeURIComponent(dni), { method: 'GET' });
+    /* _BS_AZURE_SESION_V1 (25-oct-2026): Azure exige sesion en las lecturas desde el 18-oct; sin Authorization respondia 401
+       y la busqueda "no daba nada". Se envia la sesion de RR.LL. guardada al iniciar sesion (rl_token). */
+    let tk = '';
+    try { tk = (JSON.parse(localStorage.getItem('bienestarSocialAuth') || '{}') || {}).rl_token || ''; } catch (e) {}
+    const res = await fetch(BS_TRABAJADORES_API + '?dni=' + encodeURIComponent(dni), { method: 'GET', headers: tk ? { 'Authorization': 'Bearer ' + tk } : {} });
+    if (res.status === 401) { console.warn('[trabajadores] Azure pide sesion: cierra sesion y vuelve a entrar a Bienestar (o entra desde RR.LL.)'); window._bsSinSesionAzure = true; return null; }
     if (!res.ok) return null;
     const data = await res.json();
     if (data && data.success && data.encontrados > 0 && data.trabajadores && data.trabajadores.length > 0) {
