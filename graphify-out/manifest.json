@@ -118,5 +118,317 @@
     "seen": 1792976640.0972528,
     "ast_hash": "f208a90db97dfc1329f6da8053df5cd7",
     "semantic_hash": "f208a90db97dfc1329f6da8053df5cd7"
+  },
+  "assets/js/paginas/accidentes-01.js": {
+    "mtime": 1793016996.7828596,
+    "seen": 1793017173.4421456,
+    "ast_hash": "3c6579c130691b75c4d70851a8c9144d",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/accidentes-02.js": {
+    "mtime": 1793016996.8012643,
+    "seen": 1793017173.4421456,
+    "ast_hash": "0446d8d26b223b14adb34d58efe89a41",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/accidentes-03.js": {
+    "mtime": 1793016996.8174982,
+    "seen": 1793017173.4421456,
+    "ast_hash": "e4d81a18b22c9cf6e4fc89a046b154c7",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/auditoria-01.js": {
+    "mtime": 1793016996.956791,
+    "seen": 1793017173.4421456,
+    "ast_hash": "b41c193f8729b5de22e431db35b7c203",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/descansos-01.js": {
+    "mtime": 1793016997.0549908,
+    "seen": 1793017173.4421456,
+    "ast_hash": "1a3934007bc8b550848e90095a6e02d0",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/estadisticas-01.js": {
+    "mtime": 1793016997.1711195,
+    "seen": 1793017173.4421456,
+    "ast_hash": "fcb51acada9b266ccecb8f53a551169b",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/ficha-01.js": {
+    "mtime": 1793016997.262172,
+    "seen": 1793017173.4421456,
+    "ast_hash": "181e97211beb37cbe7c218853aef92d3",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/hostigamiento-01.js": {
+    "mtime": 1793016997.362381,
+    "seen": 1793017173.4421456,
+    "ast_hash": "277b2caebe6d2d7b0d6f2e41504d0727",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/hostigamiento-02.js": {
+    "mtime": 1793016997.3797007,
+    "seen": 1793017173.4421456,
+    "ast_hash": "f470a87547d718a0cb18056fa9a49901",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/hostigamiento-03.js": {
+    "mtime": 1793016997.3946989,
+    "seen": 1793017173.4421456,
+    "ast_hash": "10085d7a3355f7bccd91e98f22430e0e",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/portal-01.js": {
+    "mtime": 1793016996.6640873,
+    "seen": 1793017173.4421456,
+    "ast_hash": "495ee68d3e5e406b5369f3cfb3b5fe9d",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/quejas-01.js": {
+    "mtime": 1793016997.51716,
+    "seen": 1793017173.4421456,
+    "ast_hash": "dd11c73225ead4c73574be67e99c59f7",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/quejas-02.js": {
+    "mtime": 1793016997.5320845,
+    "seen": 1793017173.4421456,
+    "ast_hash": "423fea19805fcb925ad823a612acdca4",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/quejas-03.js": {
+    "mtime": 1793016997.547837,
+    "seen": 1793017173.4421456,
+    "ast_hash": "4dc22868611e93ea2f7d3399aaec9f39",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/quejas-04.js": {
+    "mtime": 1793016997.565482,
+    "seen": 1793017173.4421456,
+    "ast_hash": "1b9ec9149828c78496d68fa3c8ec536f",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/rendiciones-01.js": {
+    "mtime": 1793016997.7117255,
+    "seen": 1793017173.4421456,
+    "ast_hash": "d2da5999ecfb29840c5653a80a396573",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/rendiciones-02.js": {
+    "mtime": 1793016997.7244232,
+    "seen": 1793017173.4421456,
+    "ast_hash": "fb5c96cb6e058806a885d5f87d5c389f",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/rendiciones-03.js": {
+    "mtime": 1793016997.739607,
+    "seen": 1793017173.4421456,
+    "ast_hash": "f36a15776375565154e1db48610a7029",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/rendiciones-04.js": {
+    "mtime": 1793016997.7558956,
+    "seen": 1793017173.4421456,
+    "ast_hash": "20795d957ea073b8c03962edfc084be8",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/subsidios-01.js": {
+    "mtime": 1793016997.880909,
+    "seen": 1793017173.4421456,
+    "ast_hash": "fb3d8de2cc6b9ee610c9e82b2b9fae93",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/subsidios-02.js": {
+    "mtime": 1793016997.8982668,
+    "seen": 1793017173.4421456,
+    "ast_hash": "0f232a95da4706933e20f9e9590cbaf9",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/subsidios-03.js": {
+    "mtime": 1793016997.9126704,
+    "seen": 1793017173.4421456,
+    "ast_hash": "977273272e0769e1df0a46b53b0f6bec",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/sugerencias-01.js": {
+    "mtime": 1793016998.0304897,
+    "seen": 1793017173.4421456,
+    "ast_hash": "9780c751f646b2bfff39e620025d8da4",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/sugerencias-02.js": {
+    "mtime": 1793016998.0443056,
+    "seen": 1793017173.4421456,
+    "ast_hash": "164830d03a023b1f20b7a4938be836cf",
+    "semantic_hash": ""
+  },
+  "PROYECTO-BIENESTAR-SKILL.md": {
+    "mtime": 1779666511.4469416,
+    "seen": 1793017173.4421456,
+    "ast_hash": "0afbd6d6a4c22bec1e11f323c3189339",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1779111619.3434215,
+    "seen": 1793017173.4421456,
+    "ast_hash": "4dad8811151ed44596ef198ba396a230",
+    "semantic_hash": ""
+  },
+  "assets/js/paginas/README.md": {
+    "mtime": 1793016998.1314077,
+    "seen": 1793017173.4421456,
+    "ast_hash": "1af007477e9a900a189e93454fab076d",
+    "semantic_hash": ""
+  },
+  "backend/_historico/LEEME.md": {
+    "mtime": 1792293126.7231119,
+    "seen": 1793017173.4421456,
+    "ast_hash": "6ae48b044129149c6f21de28d908fb08",
+    "semantic_hash": ""
+  },
+  "docs/MEJORAS-2026-07.md": {
+    "mtime": 1784425908.6987286,
+    "seen": 1793017173.4421456,
+    "ast_hash": "b90a856eee087c812cb692344973dc3c",
+    "semantic_hash": ""
+  },
+  "docs/PROYECTO-BIENESTAR-SKILL.md": {
+    "mtime": 1779666381.9007804,
+    "seen": 1793017173.4421456,
+    "ast_hash": "0afbd6d6a4c22bec1e11f323c3189339",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1792971177.4491484,
+    "seen": 1793017173.4421456,
+    "ast_hash": "183143a8031fec0a875511f20725e6af",
+    "semantic_hash": ""
+  },
+  "modulos/accidentes.html": {
+    "mtime": 1793016996.931875,
+    "seen": 1793017173.4421456,
+    "ast_hash": "62c5cd6e01bdf07db01c546130fd1876",
+    "semantic_hash": ""
+  },
+  "modulos/auditoria.html": {
+    "mtime": 1793016997.028471,
+    "seen": 1793017173.4421456,
+    "ast_hash": "2f2d196c794f393c5b69a169b14aa9ef",
+    "semantic_hash": ""
+  },
+  "modulos/descansos.html": {
+    "mtime": 1793016997.1378603,
+    "seen": 1793017173.4421456,
+    "ast_hash": "cb012dee42e226a34ab589caaa3c3a05",
+    "semantic_hash": ""
+  },
+  "modulos/estadisticas.html": {
+    "mtime": 1793016997.2400448,
+    "seen": 1793017173.4421456,
+    "ast_hash": "15c3263f954ef8cd866c0f005d9e0b67",
+    "semantic_hash": ""
+  },
+  "modulos/ficha.html": {
+    "mtime": 1793016997.3358912,
+    "seen": 1793017173.4421456,
+    "ast_hash": "aebbf80cdfdf1e9bda8d8566feec7a55",
+    "semantic_hash": ""
+  },
+  "modulos/hostigamiento.html": {
+    "mtime": 1793016997.4828804,
+    "seen": 1793017173.4421456,
+    "ast_hash": "313fb7754a92b8f684e1c1392802db51",
+    "semantic_hash": ""
+  },
+  "modulos/quejas.html": {
+    "mtime": 1793016997.6785,
+    "seen": 1793017173.4421456,
+    "ast_hash": "bd1f5c1e51466bcac2ae00a57b4763b4",
+    "semantic_hash": ""
+  },
+  "modulos/rendiciones.html": {
+    "mtime": 1793016997.8495026,
+    "seen": 1793017173.4421456,
+    "ast_hash": "4bce0f5ecf88d54111261ae210720582",
+    "semantic_hash": ""
+  },
+  "modulos/subsidios.html": {
+    "mtime": 1793016998.009284,
+    "seen": 1793017173.4421456,
+    "ast_hash": "64f9d5d283a00915dec178e1188be5bf",
+    "semantic_hash": ""
+  },
+  "modulos/sugerencias.html": {
+    "mtime": 1793016998.1168883,
+    "seen": 1793017173.4421456,
+    "ast_hash": "b93933dcf3da2cce586cb5854b1453cd",
+    "semantic_hash": ""
+  },
+  "panel.html": {
+    "mtime": 1792128180.213372,
+    "seen": 1793017173.4421456,
+    "ast_hash": "2a94f24d20679fb128655984303acd00",
+    "semantic_hash": ""
+  },
+  "portal.html": {
+    "mtime": 1793016996.750104,
+    "seen": 1793017173.4421456,
+    "ast_hash": "ef8733072bf0b748913eecbf3905a34f",
+    "semantic_hash": ""
+  },
+  "assets/img/bienestar-logo-unifrutti.png": {
+    "mtime": 1782880229.6076322,
+    "seen": 1793017173.4421456,
+    "ast_hash": "5e26cc7de7a8627bc2d79aec597401b7",
+    "semantic_hash": ""
+  },
+  "images/apple-touch-icon.png": {
+    "mtime": 1777406365.4819217,
+    "seen": 1793017173.4421456,
+    "ast_hash": "565d4eb77c0d324837bb9bed31811d73",
+    "semantic_hash": ""
+  },
+  "images/favicon-16.png": {
+    "mtime": 1777406365.4999063,
+    "seen": 1793017173.4421456,
+    "ast_hash": "7429be5917c0d39d4d1a038d37569c77",
+    "semantic_hash": ""
+  },
+  "images/favicon-32.png": {
+    "mtime": 1777406365.4909234,
+    "seen": 1793017173.4421456,
+    "ast_hash": "c14ae167ce90d9d7bd3a37bc6aa59973",
+    "semantic_hash": ""
+  },
+  "images/icon-192.png": {
+    "mtime": 1777406365.4374566,
+    "seen": 1793017173.4421456,
+    "ast_hash": "65085def150221ff054376534d099546",
+    "semantic_hash": ""
+  },
+  "images/icon-512.png": {
+    "mtime": 1777406365.4689386,
+    "seen": 1793017173.4421456,
+    "ast_hash": "0cac2663cb596f2080abe9a80617ee3a",
+    "semantic_hash": ""
+  },
+  "images/login-campo.jpg": {
+    "mtime": 1792127821.5115316,
+    "seen": 1793017173.4421456,
+    "ast_hash": "4197b99db33b2667ef0c16b4c6095d09",
+    "semantic_hash": ""
+  },
+  "images/logo-unifrutti-hd.png": {
+    "mtime": 1777405755.1710851,
+    "seen": 1793017173.4421456,
+    "ast_hash": "e0268c8b6b687e5871b1fb777746312e",
+    "semantic_hash": ""
+  },
+  "images/logo-unifrutti.jpg": {
+    "mtime": 1775510539.4800029,
+    "seen": 1793017173.4421456,
+    "ast_hash": "3822dbe7ea99828a1d152d6adfa7bb0f",
+    "semantic_hash": ""
   }
 }

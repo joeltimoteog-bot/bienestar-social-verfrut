@@ -1,0 +1,122 @@
+{
+  "assets/js/bs-core.js": {
+    "mtime": 1792298494.3087115,
+    "seen": 1792976640.0972528,
+    "ast_hash": "d233540e95ffff73122baeb934d7d5ba",
+    "semantic_hash": "d233540e95ffff73122baeb934d7d5ba"
+  },
+  "assets/js/bs-dash-accidentes.js": {
+    "mtime": 1792295485.3081934,
+    "seen": 1792976640.0972528,
+    "ast_hash": "3e9ddcc21d5ad64c532e713cf1598b8e",
+    "semantic_hash": "3e9ddcc21d5ad64c532e713cf1598b8e"
+  },
+  "assets/js/bs-dash-hostigamiento.js": {
+    "mtime": 1787032212.8100295,
+    "seen": 1792976640.0972528,
+    "ast_hash": "320c4fb6f408f9fede0ea886b3a941e1",
+    "semantic_hash": "320c4fb6f408f9fede0ea886b3a941e1"
+  },
+  "assets/js/bs-dash-quejas.js": {
+    "mtime": 1787032213.6660707,
+    "seen": 1792976640.0972528,
+    "ast_hash": "35b07d4aff2b78c81e184ca78477d148",
+    "semantic_hash": "35b07d4aff2b78c81e184ca78477d148"
+  },
+  "assets/js/bs-dash-subsidios.js": {
+    "mtime": 1787032213.174017,
+    "seen": 1792976640.0972528,
+    "ast_hash": "d65e6e5b2feba249f396744541a23eaa",
+    "semantic_hash": "d65e6e5b2feba249f396744541a23eaa"
+  },
+  "assets/js/bs-filtro-fecha.js": {
+    "mtime": 1784435533.6815467,
+    "seen": 1792976640.0972528,
+    "ast_hash": "c7e65db64905eea579d931016a6afcdf",
+    "semantic_hash": "c7e65db64905eea579d931016a6afcdf"
+  },
+  "assets/js/bs-form-v3.js": {
+    "mtime": 1792296014.0288463,
+    "seen": 1792976640.0972528,
+    "ast_hash": "61c65c863988a899734b9734c098e320",
+    "semantic_hash": "61c65c863988a899734b9734c098e320"
+  },
+  "assets/js/bs-mejoras.js": {
+    "mtime": 1792297590.9188962,
+    "seen": 1792976640.0972528,
+    "ast_hash": "da61b9adfde8f8f9b88625f5e2adb5cf",
+    "semantic_hash": "da61b9adfde8f8f9b88625f5e2adb5cf"
+  },
+  "assets/js/bs-presencia.js": {
+    "mtime": 1792971662.3526797,
+    "seen": 1792976640.0972528,
+    "ast_hash": "e0d76d8c55dcae734b7f0a25ec7863da",
+    "semantic_hash": "e0d76d8c55dcae734b7f0a25ec7863da"
+  },
+  "assets/js/bs-saludo.js": {
+    "mtime": 1784435534.226737,
+    "seen": 1792976640.0972528,
+    "ast_hash": "9849beb670ee38ea4be79c7a9a99767d",
+    "semantic_hash": "9849beb670ee38ea4be79c7a9a99767d"
+  },
+  "assets/js/bs-ui.js": {
+    "mtime": 1792128230.097916,
+    "seen": 1792976640.0972528,
+    "ast_hash": "318b0c1f47367178b249668f5396a477",
+    "semantic_hash": "318b0c1f47367178b249668f5396a477"
+  },
+  "assets/js/modal-system.js": {
+    "mtime": 1784435535.1727512,
+    "seen": 1792976640.0972528,
+    "ast_hash": "a8cc320cc9f54e06d2a1f6d2f2dd64a8",
+    "semantic_hash": "a8cc320cc9f54e06d2a1f6d2f2dd64a8"
+  },
+  "assets/js/trabajadores.js": {
+    "mtime": 1792971177.4578614,
+    "seen": 1792976640.0972528,
+    "ast_hash": "cdf760e8165ff763d34ecfdb4097f137",
+    "semantic_hash": "cdf760e8165ff763d34ecfdb4097f137"
+  },
+  "gas/.clasp.json": {
+    "mtime": 1792292777.0073168,
+    "seen": 1792976640.0972528,
+    "ast_hash": "acd35917d373bf17ae9fa72de7adc158",
+    "semantic_hash": "acd35917d373bf17ae9fa72de7adc158"
+  },
+  "gas/C\u00f3digo.js": {
+    "mtime": 1792971177.4917152,
+    "seen": 1792976640.0972528,
+    "ast_hash": "45da472029eee89f1a5646ed5931fa70",
+    "semantic_hash": "45da472029eee89f1a5646ed5931fa70"
+  },
+  "gas/appsscript.json": {
+    "mtime": 1792292777.0073168,
+    "seen": 1792976640.0972528,
+    "ast_hash": "94fc573e624ddd2c6ac9a6ec13daa0e6",
+    "semantic_hash": "94fc573e624ddd2c6ac9a6ec13daa0e6"
+  },
+  "gas/bs-descansos.js": {
+    "mtime": 1792294744.6868367,
+    "seen": 1792976640.0972528,
+    "ast_hash": "fc058738edc47756a85b077e24086f05",
+    "semantic_hash": "fc058738edc47756a85b077e24086f05"
+  },
+  "gas/bs-ficha.js": {
+    "mtime": 1792298236.9179304,
+    "seen": 1792976640.0972528,
+    "ast_hash": "80651a5738db42e90b84cca4b55f699d",
+    "semantic_hash": "80651a5738db42e90b84cca4b55f699d"
+  },
+  "gas/bs-login-rl.js": {
+    "mtime": 1792971177.499504,
+    "seen": 1792976640.0972528,
+    "ast_hash": "71cc642d0114b0d5ce1c7644bbe53c91",
+    "semantic_hash": "71cc642d0114b0d5ce1c7644bbe53c91"
+  },
+  "gas/bs-mantenimiento.js": {
+    "mtime": 1792298953.9916513,
+    "seen": 1792976640.0972528,
+    "ast_hash": "f208a90db97dfc1329f6da8053df5cd7",
+    "semantic_hash": "f208a90db97dfc1329f6da8053df5cd7"
+  }
+}
