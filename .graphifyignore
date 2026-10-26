@@ -1,0 +1,12 @@
+# Graphify: excluir lo que no es codigo fuente del sistema
+lib/
+**/lib/
+node_modules/
+**/node_modules/
+_to_delete/
+_bak_*/
+*.bak
+*.bak*
+*.bak-*
+*.20*.bak
+graphify-out/
