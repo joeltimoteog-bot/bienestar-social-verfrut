@@ -841,13 +841,13 @@ function _avisarAccidenteRegistrado(datos){
         _fila('Diagnostico', g('diagnostico'))+
       '</table>'+
       '<p style="margin:16px 0 0;font-size:13px;color:#b91c1c"><b>Recordatorio:</b> si es mortal o grave, la notificacion al MTPE (Sistema SAT) vence en 24 horas.</p>'+
-      '<p style="margin:14px 0 0"><a href="https://sistemarrll.com/bienestar-social-verfrut/panel.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Abrir panel</a></p>'+
+      '<p style="margin:14px 0 0"><a href="https://joeltimoteog-bot.github.io/bienestar-social-verfrut/panel.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Abrir panel</a></p>'+
       '</div>';
     var texto = 'Nuevo accidente de trabajo registrado en Bienestar Social.\n'+
                 'Trabajador: '+g('nombre')+' | DNI: '+g('dni')+' | Fundo: '+g('fundo')+'\n'+
                 'Fecha: '+g('dia_accidente')+' | Parte: '+g('parte_cuerpo')+' | Tipo: '+g('tipo_accidente')+'\n'+
                 'Si es mortal o grave, la notificacion al MTPE vence en 24 horas.\n'+
-                'Panel: https://sistemarrll.com/bienestar-social-verfrut/panel.html';
+                'Panel: https://joeltimoteog-bot.github.io/bienestar-social-verfrut/panel.html';
     MailApp.sendEmail({ to:to, subject:'Nuevo accidente registrado - Bienestar Social', body:texto, htmlBody:html });
   }catch(e){ /* si falla el correo, no se rompe el registro */ }
 }
@@ -884,11 +884,11 @@ function enviarResumenDiarioAlertas(){
       '<h2 style="color:#0033A0;margin:0 0 6px">Resumen de vencimientos - Bienestar Social</h2>'+
       '<p style="color:#64748b;margin:0">Casos que requieren atencion.</p>'+
       tabla('🔴 Vencidos','#b91c1c',rojos)+ tabla('🟡 Por vencer','#92400e',ambar)+
-      '<p style="margin:16px 0 0"><a href="https://sistemarrll.com/bienestar-social-verfrut/panel.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Abrir panel</a></p>'+
+      '<p style="margin:16px 0 0"><a href="https://joeltimoteog-bot.github.io/bienestar-social-verfrut/panel.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Abrir panel</a></p>'+
       '</div>';
     var texto = 'Resumen de vencimientos - Bienestar Social\n'+
                 'Vencidos: '+rojos.length+' | Por vencer: '+ambar.length+'\n'+
-                'Abra el panel para ver el detalle: https://sistemarrll.com/bienestar-social-verfrut/panel.html';
+                'Abra el panel para ver el detalle: https://joeltimoteog-bot.github.io/bienestar-social-verfrut/panel.html';
     MailApp.sendEmail({ to:to, subject:'Vencimientos Bienestar: '+rojos.length+' vencidos, '+ambar.length+' por vencer', body:texto, htmlBody:html });
   }catch(e){ Logger.log('Error resumen: '+e); }
 }
@@ -1450,7 +1450,7 @@ function _avisarSugerenciaRegistrada(datos) {
         _fila('Modulo/Area', g('modulo')) + _fila('Prioridad', g('prioridad')) +
       '</table>' +
       '<p style="margin:12px 0 0;color:#334155"><b>Descripcion:</b><br>' + g('descripcion') + '</p>' +
-      '<p style="margin:14px 0 0"><a href="https://sistemarrll.com/bienestar-social-verfrut/modulos/sugerencias.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Ver sugerencias</a></p>' +
+      '<p style="margin:14px 0 0"><a href="https://joeltimoteog-bot.github.io/bienestar-social-verfrut/modulos/sugerencias.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Ver sugerencias</a></p>' +
       '</div>';
     var texto = 'Nueva sugerencia de mejora - Bienestar Social\n' +
                 'Titulo: ' + g('titulo') + '\n' +
@@ -1620,7 +1620,7 @@ function bs_alertasSeguimientoQuejas() {
       html += '<h3 style="color:#d97706;margin:12px 0 4px">Por vencer (' + porVencer.length + ')</h3>' +
         '<table style="border-collapse:collapse;font-size:13px">' + th + filas(porVencer, '#d97706') + '</table>';
     }
-    html += '<p style="margin:14px 0 0"><a href="https://sistemarrll.com/bienestar-social-verfrut/modulos/quejas.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Ver quejas</a></p></div>';
+    html += '<p style="margin:14px 0 0"><a href="https://joeltimoteog-bot.github.io/bienestar-social-verfrut/modulos/quejas.html" style="background:#0033A0;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Ver quejas</a></p></div>';
  
     MailApp.sendEmail({
       to: to,
