@@ -76,7 +76,7 @@ function bs_crearDescanso(usuario, d) {
     if (v) return { ok: false, message: v };
     var sh = _dmSheet_(true);
     var lastRow = sh.getLastRow();
-    var id = lastRow > 1 ? (parseInt(sh.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    var id = lastRow > 1 ? _bsSiguienteId_(sh) : 1;   /* _BS_IDS_V1 */
     var ini = _aFecha(d.fecha_inicio), fin = _aFecha(d.fecha_fin);
     var dias = _dmDias_(ini, fin);
     var hoy = _hoy();

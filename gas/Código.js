@@ -80,7 +80,7 @@ function bs_crearQueja(usuario, datos) {
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
                       .map(function(h){ return String(h).trim(); });
     const lastRow = sheet.getLastRow();
-    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    const id = lastRow > 1 ? _bsSiguienteId_(sheet) : 1;   /* _BS_IDS_V1: max(id)+1, no la ultima fila */
     const now = new Date();
 
     const v = {
@@ -291,7 +291,7 @@ function bs_crearSubsidio(usuario, datos) {
     const sheet = ss.getSheetByName(BS_CONFIG.HOJA_SUBSIDIOS);
     if (!sheet) return { ok: false, message: 'Hoja BS_Subsidios no existe' };
     const lastRow = sheet.getLastRow();
-    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    const id = lastRow > 1 ? _bsSiguienteId_(sheet) : 1;   /* _BS_IDS_V1: max(id)+1, no la ultima fila */
     const now = new Date();
     sheet.appendRow([
       id,
@@ -395,7 +395,7 @@ function bs_crearAccidente(usuario, datos) {
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
                       .map(function(h){ return String(h).trim(); });
     const lastRow = sheet.getLastRow();
-    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    const id = lastRow > 1 ? _bsSiguienteId_(sheet) : 1;   /* _BS_IDS_V1: max(id)+1, no la ultima fila */
     const now = new Date();
 
     const v = {
@@ -545,7 +545,7 @@ function bs_crearSeguimiento(usuario, id_caso, datos) {
     const sheet = ss.getSheetByName(BS_CONFIG.HOJA_ACC_SEGUIM);
     if (!sheet) return { ok: false, message: 'Hoja BS_Accidentes_Seguimientos no existe' };
     const lastRow = sheet.getLastRow();
-    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    const id = lastRow > 1 ? _bsSiguienteId_(sheet) : 1;   /* _BS_IDS_V1: max(id)+1, no la ultima fila */
 
     // Calcular numero_seguimiento (consecutivo dentro del caso)
     const existentes = bs_listarSeguimientos(id_caso);
@@ -1356,7 +1356,7 @@ function bs_crearSugerencia(usuario, datos) {
     if (!sheet) return { ok: false, message: 'Hoja BS_Sugerencias no existe. Ejecuta bs_setupSugerencias.' };
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h){ return String(h).trim(); });
     var lastRow = sheet.getLastRow();
-    var id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    var id = lastRow > 1 ? _bsSiguienteId_(sheet) : 1;   /* _BS_IDS_V1: max(id)+1, no la ultima fila */
     var now = new Date();
     datos = datos || {};
     var v = {
@@ -2253,7 +2253,7 @@ function bs_crearSeguimientoQueja(usuario, id_queja, datos) {
     if (!datos.fecha_seguimiento || !datos.detalle) return { ok: false, message: 'Completa fecha y detalle' };
  
     const lastRow = sheet.getLastRow();
-    const id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    const id = lastRow > 1 ? _bsSiguienteId_(sheet) : 1;   /* _BS_IDS_V1: max(id)+1, no la ultima fila */
  
     // numero_seguimiento (consecutivo dentro del hallazgo)
     const existentes = bs_listarSeguimientosQueja(id_queja);
@@ -2361,7 +2361,7 @@ function bs_crearRendicion(usuario, datos) {
     if (!sheet) return { ok: false, message: 'Hoja BS_Rendiciones no existe. Ejecuta bs_setupRendiciones.' };
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h){ return String(h).trim(); });
     var lastRow = sheet.getLastRow();
-    var id = lastRow > 1 ? (parseInt(sheet.getRange(lastRow, 1).getValue()) || 0) + 1 : 1;
+    var id = lastRow > 1 ? _bsSiguienteId_(sheet) : 1;   /* _BS_IDS_V1: max(id)+1, no la ultima fila */
     var now = new Date();
     datos = datos || {};
     var fecha = datos.fecha ? new Date(datos.fecha) : now;
