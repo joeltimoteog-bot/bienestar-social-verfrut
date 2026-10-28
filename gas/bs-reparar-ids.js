@@ -13,12 +13,20 @@
  *    Solo escribe en la columna id. No mueve ni borra filas.
  *************************************************************************/
 
-/* Siguiente id = mayor id de la columna A + 1 (usado al crear registros). */
+/* Siguiente id = mayor entre (id más alto de la columna A) y (último id entregado) + 1.
+   _BS_IDS_NOREUSO_V1 (28-oct-2026): el último id entregado se guarda en las Propiedades del script,
+   así un id de un registro ELIMINADO nunca se vuelve a usar (la auditoría no confunde registros). */
 function _bsSiguienteId_(sh) {
-  var n = sh.getLastRow(); if (n < 2) return 1;
-  var v = sh.getRange(2, 1, n - 1, 1).getValues(), m = 0;
-  for (var i = 0; i < v.length; i++) { var x = parseInt(v[i][0], 10); if (!isNaN(x) && x > m) m = x; }
-  return m + 1;
+  var n = sh.getLastRow(), m = 0;
+  if (n >= 2) {
+    var v = sh.getRange(2, 1, n - 1, 1).getValues();
+    for (var i = 0; i < v.length; i++) { var x = parseInt(v[i][0], 10); if (!isNaN(x) && x > m) m = x; }
+  }
+  var clave = 'BS_ULTIMO_ID_' + sh.getName(), props = null, ult = 0;
+  try { props = PropertiesService.getScriptProperties(); ult = parseInt(props.getProperty(clave), 10) || 0; } catch (e) {}
+  var id = Math.max(m, ult) + 1;
+  try { if (props) props.setProperty(clave, String(id)); } catch (e) {}
+  return id;
 }
 
 function _bsIdsRevisar_(escribir) {
