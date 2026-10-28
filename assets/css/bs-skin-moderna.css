@@ -1,0 +1,61 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   bs-skin-moderna.css — _BS_SKIN_MODERNA_V1 · estilo "app moderna" (claro, limpio, con aire)
+   Solo presentacion, encima de los estilos existentes. Para desactivar: quitar el <link>.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root{--sx-bg:#f4f6fb;--sx-card:#fff;--sx-line:#e8edf5;--sx-tx:#0f172a;--sx-mut:#64748b;--sx-r:18px}
+body{background:radial-gradient(1100px 380px at 85% -120px,rgba(37,99,235,.10),transparent),radial-gradient(900px 340px at -10% -140px,rgba(220,38,38,.07),transparent),var(--sx-bg)!important;color:var(--sx-tx)}
+/* barra superior: clara y translucida */
+.bs-topbar{background:rgba(255,255,255,.82)!important;backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px solid var(--sx-line)!important;box-shadow:0 1px 0 rgba(15,23,42,.03)!important}
+.bs-topbar::after,.bs-topbar::before{display:none!important}
+.bs-topbar,.bs-topbar *{color:var(--sx-tx)!important}
+.bs-topbar-brand{font-weight:800!important;letter-spacing:-.01em}
+.bs-topbar-inner button,.bs-topbar-inner a,.bs-topbar-user,.bs-topbar-logout{background:#f1f5f9!important;border:1px solid var(--sx-line)!important;border-radius:999px!important;box-shadow:none!important}
+.bs-topbar-logout{background:#fff1f2!important;color:#be123c!important;border-color:#fecdd3!important}
+/* saludo: discreto */
+#bsSaludoBar{background:#eef4ff!important;color:#1e3a8a!important;border:1px solid #dbe6ff!important;box-shadow:none!important;border-radius:14px!important;padding:8px 14px!important;font-size:13.5px!important}
+#bsSaludoBar *{color:#1e3a8a!important}
+/* encabezado del modulo: tarjeta blanca con acento de color */
+.bs-hero,.qx-hero{background:var(--sx-card)!important;border:1px solid var(--sx-line)!important;border-radius:22px!important;padding:22px 24px!important;box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 32px -18px rgba(15,23,42,.18)!important;position:relative;overflow:hidden}
+.bs-hero::before,.qx-hero::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--mod,var(--bs-mod-quejas,#1e3a8a))}
+.qx-hero{--mod:var(--bs-mod-quejas,#d97706)}
+.qx-deco{display:none!important}
+.bs-hero h1,.qx-hero h1{color:var(--sx-tx)!important;text-transform:none!important;letter-spacing:-.02em!important;font-size:26px!important;font-weight:800!important;margin:2px 0 4px!important}
+.bs-hero p,.qx-hero p,.qx-hero-lead,.bs-text-subtle{color:var(--sx-mut)!important}
+.bs-hero-crumbs,.qx-crumbs{color:var(--sx-mut)!important;font-size:11.5px!important;letter-spacing:.06em}
+.bs-hero-crumbs b,.qx-crumbs b{color:var(--mod,#1e3a8a)!important}
+.bs-hero-ico,.qx-hero-ico{width:58px!important;height:58px!important;border-radius:16px!important;display:grid!important;place-items:center;font-size:28px!important;background:color-mix(in srgb,var(--mod,#1e3a8a) 12%,#fff)!important;border:1px solid color-mix(in srgb,var(--mod,#1e3a8a) 22%,#fff)!important;box-shadow:none!important}
+.bs-hero .bs-btn,.qx-hero .bs-btn{border-radius:12px!important;font-weight:700!important;padding:10px 16px!important;box-shadow:none!important}
+.qx-hero .bs-btn,.qx-hero .qx-btn-ghost{background:#f8fafc!important;color:var(--sx-tx)!important;border:1px solid var(--sx-line)!important}
+.qx-hero .bs-btn:last-child{background:var(--mod)!important;color:#fff!important;border-color:transparent!important}
+/* tarjetas e indicadores */
+.bs-card{background:var(--sx-card)!important;border:1px solid var(--sx-line)!important;border-radius:var(--sx-r)!important;box-shadow:0 1px 2px rgba(15,23,42,.04)!important}
+.bskp-card{background:var(--sx-card)!important;border:1px solid var(--sx-line)!important;border-left-width:1px!important;border-radius:var(--sx-r)!important;box-shadow:0 1px 2px rgba(15,23,42,.04)!important;padding:16px 18px!important}
+.bskp-card::before,.bskp-card::after{opacity:.0!important}
+.bskp-card b,.bskp-card strong,.bskp-card [class*="num"],.bskp-card [class*="val"]{font-size:30px!important;letter-spacing:-.02em}
+/* filtros */
+.bs-select,.bs-input{border-radius:12px!important;background:#f8fafc!important;border:1px solid var(--sx-line)!important;min-height:42px}
+.bs-select:focus,.bs-input:focus{background:#fff!important;border-color:#93c5fd!important;box-shadow:0 0 0 4px rgba(59,130,246,.15)!important}
+#bsFiltroFecha button{border-radius:999px!important}
+/* tabla tipo app */
+.bs-table-wrap{border:1px solid var(--sx-line)!important;border-radius:var(--sx-r)!important;background:#fff!important;box-shadow:0 1px 2px rgba(15,23,42,.04)!important}
+.bs-table thead th{background:#f8fafc!important;color:#64748b!important;font-size:11px!important;font-weight:800!important;letter-spacing:.07em;border-bottom:1px solid var(--sx-line)!important}
+.bs-table thead th *{color:#64748b!important}
+.bs-table tbody td{border-bottom:1px solid #f1f5f9!important;padding-top:13px!important;padding-bottom:13px!important;font-size:13.5px}
+.bs-table tbody tr:nth-child(even) td{background:#fcfdff}
+.bs-table tbody tr:hover td{background:#f5f9ff!important}
+.bs-table td:last-child{background:inherit}
+.bs-badge{border-radius:999px!important;font-weight:700!important;letter-spacing:.02em}
+.bs-table td:last-child .bs-btn-outline{background:#fff!important;border:1px solid var(--sx-line)!important;color:#334155!important}
+.bs-table td:last-child .bs-btn-ghost{background:#fff1f2!important;border-radius:8px!important}
+/* pie */
+.bs-footer{background:transparent!important;color:var(--sx-mut)!important;border-top:1px solid var(--sx-line)!important}
+.bs-footer *{color:var(--sx-mut)!important}
+.bs-footer b,.bs-footer strong{color:#334155!important}
+
+/* refuerzo de especificidad: el tema anterior fuerza texto blanco en encabezados y botones */
+html body .bs-main .bs-table-wrap table.bs-table thead tr th,html body .bs-main .bs-table-wrap table.bs-table thead tr th *{color:#64748b!important;-webkit-text-fill-color:#64748b!important;background:#f8fafc!important}
+html body .bs-main .bs-table-wrap table.bs-table thead tr th{border-bottom:1px solid #e8edf5!important}
+html body .bs-main .bs-hero p,html body .bs-main .bs-hero .bs-text-subtle{color:#64748b!important}
+html body .bs-main .bs-hero .bs-btn,html body .bs-main .bs-hero .bs-btn[style*="border"],html body .bs-main .bs-hero .bs-btn-outline{background:#f8fafc!important;color:#0f172a!important;border:1px solid #e8edf5!important;backdrop-filter:none!important;box-shadow:none!important}
+html body .bs-main .bs-hero .bs-btn:not(.bs-btn-outline):not([style*="border"]){background:var(--mod,#1e3a8a)!important;color:#fff!important;border-color:transparent!important}
+html body .bs-main .bs-hero h1{color:#0f172a!important}
