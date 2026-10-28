@@ -35,17 +35,22 @@
     }
     function _fechaCorta(v) {
       if (!v) return '-';
+      /* _REND_FECHAS_V1 (28-oct-2026): la fecha se lee del TEXTO (como el PDF y el Excel). Antes se pasaba
+         a hora de Lima y una fecha guardada como 27/10 00:00 UTC se mostraba 26/10. */
+      try { if (window.bsFechaDMY) return bsFechaDMY(v); } catch(e) {}
       try {
         const d = new Date(v);
-        return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
+        return ('0'+d.getUTCDate()).slice(-2)+'/'+('0'+(d.getUTCMonth()+1)).slice(-2)+'/'+d.getUTCFullYear();
       } catch(e) { return '-'; }
     }
     // Semana ISO a partir de una fecha (YYYY-MM-DD)
     function _isoWeek(str) {
       if (!str) return '';
-      const d = new Date(str);
-      if (isNaN(d.getTime())) return '';
-      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const ymd = window.bsFechaYMD ? bsFechaYMD(str) : String(str).slice(0, 10);   /* _REND_FECHAS_V1: sin cambio de zona */
+      const pz = String(ymd || '').split('-');
+      if (pz.length !== 3) return '';
+      const date = new Date(Date.UTC(+pz[0], +pz[1] - 1, +pz[2]));
+      if (isNaN(date.getTime())) return '';
       const dayNum = (date.getUTCDay() + 6) % 7;
       date.setUTCDate(date.getUTCDate() - dayNum + 3);
       const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
@@ -138,10 +143,10 @@
       if (q) items = items.filter(function(r){ return String(r.rendicion || '').toLowerCase().indexOf(q) >= 0; });
       if (dDesde || dHasta) items = items.filter(function(r){
         if (!r.fecha) return false;
-        const f = new Date(r.fecha);
-        if (isNaN(f.getTime())) return false;
-        if (dDesde && f < dDesde) return false;
-        if (dHasta && f > dHasta) return false;
+        const f = window.bsFechaYMD ? bsFechaYMD(r.fecha) : String(r.fecha).slice(0, 10);   /* _REND_FECHAS_V1: compara el dia, no la hora */
+        if (!f) return false;
+        if (desde && f < desde) return false;
+        if (hasta && f > hasta) return false;
         return true;
       });
 
