@@ -45,31 +45,79 @@
     var hoy = new Date(); doc.text('Emitido: ' + hoy.toLocaleDateString('es-PE') + ' ' + hoy.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }), W - MG, 12, { align: 'right' });
     var u = usuario(); if (u) { doc.setFont('helvetica', 'normal'); doc.text('Por: ' + limpio(u), W - MG, 18, { align: 'right' }); }
     y = 33;
-    /* filtros */
-    var F = (D.filtros || []).filter(function (f) { return f[1]; });
-    if (F.length) {
+    /* ── bloques reutilizables ── */
+    function rgbDe(c, def) {   /* "rgb(22, 163, 74)" o "#16a34a" -> [r,g,b] */
+      var m = String(c || '').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); if (m) return [+m[1], +m[2], +m[3]];
+      m = String(c || '').match(/^#([0-9a-f]{6})$/i); if (m) { var n = parseInt(m[1], 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+      return def || NAVY;
+    }
+    function dibujarKpis(lista, grande) {
+      var K = (lista || []).filter(function (k) { return k[1] !== '' && k[1] != null; }); if (!K.length) return;
+      var porFila = Math.min(K.length, 5), gap = 4, cw = (bW - gap * (porFila - 1)) / porFila, ch = grande ? 22 : 18;
+      K.forEach(function (k, n) {
+        var col = n % porFila; if (col === 0 && n) y += ch + gap; if (col === 0) salto(ch + 2);
+        var x = MG + col * (cw + gap), color = rgbDe(k[3], NAVY);
+        doc.setDrawColor.apply(doc, LINEA); doc.setFillColor(grande ? 255 : 248, grande ? 255 : 250, grande ? 255 : 252); doc.roundedRect(x, y, cw, ch, 2.5, 2.5, 'FD');
+        doc.setFillColor.apply(doc, color); doc.rect(x, y + 3, 1.3, ch - 6, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(grande ? 16 : 13.5); doc.setTextColor.apply(doc, k[3] ? color : TX);
+        doc.text(doc.splitTextToSize(limpio(k[1]), cw - 8)[0], x + 5, y + (grande ? 9.5 : 8));
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.4); doc.setTextColor.apply(doc, GRIS);
+        doc.text(doc.splitTextToSize(limpio(k[0]).toUpperCase(), cw - 8)[0], x + 5, y + (grande ? 14.5 : 12.8));
+        if (k[2]) { doc.setFont('helvetica', 'bold'); doc.setFontSize(7.2); doc.setTextColor.apply(doc, color); doc.text(doc.splitTextToSize(limpio(k[2]), cw - 8)[0], x + 5, y + (grande ? 19 : 16.3)); }
+      });
+      y += ch + 5;
+    }
+    function dibujarBarras(lista) {
+      (lista || []).forEach(function (b) {
+        var P = (b.partes || []).filter(function (x) { return x.pct > 0; }); if (!P.length) return;
+        salto(20);
+        doc.setDrawColor.apply(doc, LINEA); doc.setFillColor(255, 255, 255); doc.roundedRect(MG, y, bW, 17, 2.5, 2.5, 'FD');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor.apply(doc, NAVY); doc.text(limpio(b.titulo || '').toUpperCase(), MG + 4, y + 5.5);
+        var x = MG + 4, w = bW - 8, tot = P.reduce(function (s, x2) { return s + x2.pct; }, 0) || 1;
+        P.forEach(function (p, n) { var ww = w * p.pct / tot; doc.setFillColor.apply(doc, rgbDe(p.color)); doc.roundedRect(x, y + 7.5, Math.max(ww - (n < P.length - 1 ? 0.6 : 0), 1), 3, 1.5, 1.5, 'F'); x += ww; });
+        var lx = MG + 4; doc.setFontSize(7.4);
+        P.forEach(function (p) { doc.setFillColor.apply(doc, rgbDe(p.color)); doc.rect(lx, y + 12.6, 2.2, 2.2, 'F'); doc.setFont('helvetica', 'normal'); doc.setTextColor.apply(doc, TX); var t = limpio(p.label); doc.text(t, lx + 3.4, y + 14.4); lx += doc.getTextWidth(t) + 12; });
+        y += 21;
+      });
+    }
+    function dibujarFiltros() {
+      var F = (D.filtros || []).filter(function (f) { return f[1]; }); if (!F.length) return;
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
       var linea = F.map(function (f) { return f[0] + ': ' + f[1]; }).join('     ·     ');
       var ls = doc.splitTextToSize('Filtros aplicados  —  ' + limpio(linea), bW - 8);
-      doc.setFillColor(238, 242, 255); doc.roundedRect(MG, y - 4.5, bW, 4.6 * ls.length + 3, 2, 2, 'F');
-      doc.setTextColor(30, 58, 138); ls.forEach(function (l, i) { doc.text(l, MG + 4, y + i * 4.6); }); y += 4.6 * ls.length + 4;
+      salto(4.6 * ls.length + 6);
+      doc.setFillColor(238, 242, 255); doc.roundedRect(MG, y, bW, 4.6 * ls.length + 3, 2, 2, 'F');
+      doc.setTextColor(30, 58, 138); ls.forEach(function (l, n) { doc.text(l, MG + 4, y + 4.5 + n * 4.6); }); y += 4.6 * ls.length + 7;
     }
-    /* indicadores */
-    var K = (D.kpis || []).filter(function (k) { return k[1] !== '' && k[1] != null; });
-    if (K.length) {
-      var porFila = Math.min(K.length, 5), gap = 4, cw = (bW - gap * (porFila - 1)) / porFila, ch = 20;
-      K.forEach(function (k, i) {
-        var col = i % porFila; if (col === 0 && i) y += ch + gap; if (col === 0) salto(ch + 2);
-        var x = MG + col * (cw + gap);
-        doc.setDrawColor.apply(doc, LINEA); doc.setFillColor.apply(doc, SUAVE); doc.roundedRect(x, y, cw, ch, 2.5, 2.5, 'FD');
-        doc.setFillColor.apply(doc, NAVY); doc.rect(x, y + 3, 1.2, ch - 6, 'F');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor.apply(doc, TX); doc.text(doc.splitTextToSize(limpio(k[1]), cw - 8)[0], x + 5, y + 9);
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.6); doc.setTextColor.apply(doc, GRIS);
-        doc.text(doc.splitTextToSize(limpio(k[0]).toUpperCase(), cw - 8).slice(0, 2), x + 5, y + 13.8);
-        if (k[2]) { doc.setFontSize(7); doc.text(doc.splitTextToSize(limpio(k[2]), cw - 8)[0], x + 5, y + 18); }
+    /* tabla a la izquierda y grafico a la derecha, en la misma fila (como en pantalla) */
+    function dibujarMixto(lista) {
+      (lista || []).forEach(function (m) {
+        var im = m.grafico && imagen(m.grafico.canvas); if (!m.tabla || !m.tabla.table) return;
+        var wL = bW * 0.5 - 2.5, wR = bW - wL - 5, alto = 78;
+        salto(alto + 2);
+        var y0 = y;
+        doc.setDrawColor.apply(doc, LINEA); doc.setFillColor(255, 255, 255); doc.roundedRect(MG, y0, wL, alto, 2.5, 2.5, 'FD'); doc.roundedRect(MG + wL + 5, y0, wR, alto, 2.5, 2.5, 'FD');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor.apply(doc, NAVY);
+        doc.text(limpio(m.tabla.titulo || 'Resumen'), MG + 4, y0 + 6.3);
+        doc.autoTable({ html: m.tabla.table, startY: y0 + 10, margin: { left: MG + 3, right: W - MG - wL + 3 }, tableWidth: wL - 6, theme: 'grid', useCss: false,
+          headStyles: { fillColor: NAVY, textColor: 255, fontSize: 7.6 }, styles: { fontSize: 7.8, cellPadding: 1.8, textColor: TX, lineColor: LINEA },
+          alternateRowStyles: { fillColor: SUAVE },
+          didParseCell: function (h) { h.cell.text = (h.cell.text || []).map(limpio); if (h.column.index > 0) h.cell.styles.halign = 'right';
+            if (h.section === 'body' && /^TOTAL/i.test(String(h.row.raw && h.row.raw[0] && (h.row.raw[0].content || h.row.raw[0].innerText || '')))) h.cell.styles.fontStyle = 'bold'; } });
+        if (im) {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor.apply(doc, NAVY); doc.text(limpio(m.grafico.titulo || ''), MG + wL + 9, y0 + 6.3);
+          var cw2 = wR - 8, ch2 = alto - 14, wi = Math.min(cw2, ch2 * im.r), hi = wi / im.r; if (hi > ch2) { hi = ch2; wi = hi * im.r; }
+          doc.addImage(im.src, 'PNG', MG + wL + 5 + (wR - wi) / 2, y0 + 10, wi, hi, undefined, 'FAST');
+        }
+        y = Math.max(y0 + alto, (doc.lastAutoTable && doc.lastAutoTable.finalY) || 0) + 5;
       });
-      y += ch + 6;
     }
+    /* orden: tarjetas -> barras -> filtros -> indicadores -> tabla+grafico -> graficos -> tablas -> notas */
+    dibujarKpis(D.tarjetas, true);
+    dibujarBarras(D.barras);
+    dibujarFiltros();
+    dibujarKpis(D.kpis, false);
+    dibujarMixto(D.mixto);
     /* tablas (antes o despues de los graficos segun D.tablasPrimero) */
     function pintarTablas() {
     (D.tablas || []).forEach(function (t) {
@@ -190,11 +238,27 @@
     var d = v('filterDesde'), h = v('filterHasta');
     var filtros = [['Año', v('filterAnio') || 'Todos'], ['Empresa', v('filterEmpresa') || 'Todas'], ['Responsable', v('filterResponsable') || 'Todos'],
       ['Estado', v('filterEstado') || 'Todos'], ['Categoría', v('filterCategoria') || 'Todas'], ['Periodo', (d || h) ? (d || '…') + ' a ' + (h || '…') : '']];
+    /* tarjetas superiores (#kpiRendiciones) y barra "Monto por estado de deposito" */
+    var COL = [null, [22, 163, 74], [217, 119, 6], [37, 99, 235]];
+    var tarjetas = Array.prototype.map.call(document.querySelectorAll('#kpiRendiciones .bskp-card'), function (c, n) {
+      var col = COL[n] ? 'rgb(' + COL[n].join(',') + ')' : '';
+      return [txt(c.querySelector('.bskp-lbl')), txt(c.querySelector('.bskp-val')), txt(c.querySelector('.bskp-sub')), col];
+    });
+    var barras = Array.prototype.map.call(document.querySelectorAll('#kpiRendiciones .bskp-dist'), function (b) {
+      var segs = b.querySelectorAll('.bskp-bar > i'), leg = b.querySelectorAll('.bskp-leg > span');
+      return { titulo: txt(b.querySelector('.t')), partes: Array.prototype.map.call(segs, function (sg, n) {
+        return { pct: parseFloat(sg.style.width) || 0, color: sg.style.background || sg.style.backgroundColor, label: txt(leg[n]) }; }) };
+    });
+    /* indicadores del reporte (con descuadre en rojo) */
     var kpis = [], fila = cont.firstElementChild;
-    if (fila) Array.prototype.forEach.call(fila.querySelectorAll('.bs-card'), function (c) { var ds = c.children; if (ds.length >= 2) kpis.push([txt(ds[0]), txt(ds[1])]); });
-    var graficos = Array.prototype.map.call(cont.querySelectorAll('canvas'), function (cv) { var card = cv.closest('.bs-card'); var t = card && card.querySelector('.bs-text-sm'); return { titulo: txt(t), canvas: cv }; });
-    var tablas = Array.prototype.map.call(cont.querySelectorAll('table'), function (tb) { var card = tb.closest('.bs-card'); var t = card && card.querySelector('.bs-text-sm'); return { titulo: txt(t) || 'Resumen', table: tb }; });
-    return { titulo: 'Reporte de Rendiciones', subtitulo: 'Rendiciones de gastos · Bienestar Social', filtros: filtros, kpis: kpis, graficos: graficos, tablas: tablas, archivo: 'Reporte_Rendiciones', tablasPrimero: true };
+    if (fila) Array.prototype.forEach.call(fila.querySelectorAll('.bs-card'), function (c) { var ds = c.children; if (ds.length >= 2) kpis.push([txt(ds[0]), txt(ds[1]), '', getComputedStyle(ds[1]).color]); });
+    /* tabla + primer grafico lado a lado; el resto de graficos en filas */
+    var tabla = cont.querySelector('table'), cvs = Array.prototype.slice.call(cont.querySelectorAll('canvas'));
+    var tit = function (el) { var card = el && el.closest('.bs-card'); return txt(card && card.querySelector('.bs-text-sm')); };
+    var mixto = tabla ? [{ tabla: { titulo: tit(tabla) || 'Resumen por empresa y categoría', table: tabla }, grafico: cvs[0] ? { titulo: tit(cvs[0]), canvas: cvs[0] } : null }] : [];
+    var graficos = cvs.slice(tabla ? 1 : 0).map(function (cv) { return { titulo: tit(cv), canvas: cv }; });
+    return { titulo: 'Reporte de Rendiciones', subtitulo: 'Rendiciones de gastos · Bienestar Social', tarjetas: tarjetas, barras: barras, filtros: filtros, kpis: kpis,
+      mixto: mixto, graficos: graficos, tablas: [], archivo: 'Reporte_Rendiciones' };
   }
   function enganchePaginas() {
     var path = location.pathname;
