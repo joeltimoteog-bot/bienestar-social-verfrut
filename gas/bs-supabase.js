@@ -21,10 +21,32 @@
  *   2) Run -> bs_sbInstalarNoche   (programa la revisión de cada noche, 2 a. m.)
  *************************************************************************/
 
+/* Por modulo: como listar, que acciones tocan UN registro (y de donde sale su id),
+   cuales lo borran y cuales tocan MUCHOS (copia completa del modulo). */
 var BS_SB_MODULOS = {
   rendiciones: {
-    acciones: /^bs_(crear|actualizar|eliminar)Rendicion$/,
-    listar: function () { return bs_listarRendiciones({}); }
+    listar: function () { return bs_listarRendiciones({}); },
+    uno: { bs_crearRendicion: 'r.id', bs_actualizarRendicion: 'p.id' },
+    borra: { bs_eliminarRendicion: 'p.id' },
+    todos: []
+  },
+  quejas: {      /* _BS_SUPABASE_3MOD_V1 */
+    listar: function () { return bs_listarQuejas({}); },
+    uno: { bs_crearQueja: 'r.id', bs_actualizarQueja: 'p.id', bs_crearSeguimientoQueja: 'p.id_queja' },
+    borra: {},
+    todos: ['bs_cierreMasivoQuejas']
+  },
+  accidentes: {
+    listar: function () { return bs_listarAccidentes({}); },
+    uno: { bs_crearAccidente: 'r.id', bs_actualizarAccidente: 'p.id', bs_crearSeguimiento: 'p.id_caso' },
+    borra: {},
+    todos: ['bs_importarAccidentes']
+  },
+  subsidios: {
+    listar: function () { return bs_listarSubsidios({}); },
+    uno: { bs_crearSubsidio: 'r.id', bs_actualizarSubsidio: 'p.id', bs_generarSubsidioDesdeDM: 'r.id_subsidio' },
+    borra: {},
+    todos: ['bs_importarSubsidios']
   }
 };
 var BS_SB_PROHIBIDOS = ['hostigamiento'];
@@ -104,20 +126,28 @@ function bs_sbInstalarNoche() {
   return 'ok';
 }
 
-/* Llamado desde doPost después de cada acción: actualiza la copia del registro tocado. */
+/* Llamado desde doPost después de cada acción: actualiza la copia de lo que se tocó. */
 function bs_sbTrasEscritura_(action, params, result) {
-  if (!result || !result.ok) return;
+  if (!result || !result.ok || result.simulado) return;
   var cfg = _bsSbCfg_(); if (!cfg) return;
+  action = String(action); params = params || {};
+  var dato = function (ruta) { var o = ruta.charAt(0) === 'r' ? result : params; return o[ruta.slice(2)]; };
   Object.keys(BS_SB_MODULOS).forEach(function (m) {
-    if (!BS_SB_MODULOS[m].acciones.test(String(action))) return;
+    var M = BS_SB_MODULOS[m], id = null, borrar = false, todo = false;
+    if (M.uno[action]) id = dato(M.uno[action]);
+    else if (M.borra[action]) { id = dato(M.borra[action]); borrar = true; }
+    else if (M.todos.indexOf(action) >= 0) todo = true;
+    else if ((action === 'bs_anularRegistro' || action === 'bs_restaurarRegistro') && String(params.modulo || '').toLowerCase() === m) id = params.id;
+    else return;
     try {
-      if (/^bs_eliminar/.test(action)) { _bsSbBorrar_(cfg, m, [params.id]); return; }
-      var id = String(/^bs_crear/.test(action) ? result.id : params.id);
-      var res = BS_SB_MODULOS[m].listar();
-      var it = (res && res.items || []).filter(function (x) { return String(x.id) === id; })[0];
+      if (todo) { _bsSbResyncModulo_(cfg, m); return; }
+      if (id === null || id === undefined || id === '') return;
+      if (borrar) { _bsSbBorrar_(cfg, m, [id]); return; }
+      var res = M.listar();
+      var it = (res && res.items || []).filter(function (x) { return String(x.id) === String(id); })[0];
       if (it) _bsSbUpsert_(cfg, m, [it]);
     } catch (e) {
-      /* Si falla, se marca el módulo como no listo: el navegador vuelve a leer de Sheets hasta la próxima copia completa. */
+      /* Si falla, el modulo queda como no listo: el navegador lee de Sheets hasta la proxima copia completa. */
       try { PropertiesService.getScriptProperties().deleteProperty('SB_LISTO_' + m); } catch (e2) {}
       console.warn('[_BS_SUPABASE_V1] ' + m + ': ' + e.message);
     }

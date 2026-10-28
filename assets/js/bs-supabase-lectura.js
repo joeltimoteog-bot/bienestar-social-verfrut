@@ -3,7 +3,7 @@
  * falla, tarda más de 5 s o no tiene el módulo listo, se lee de Sheets como siempre. */
 (function () {
   if (window._BS_SB_LECTURA_V1) return; window._BS_SB_LECTURA_V1 = true;
-  var MAPA = { bs_listarRendiciones: 'rendiciones' };
+  var MAPA = { bs_listarRendiciones: 'rendiciones', bs_listarQuejas: 'quejas', bs_listarAccidentes: 'accidentes', bs_listarSubsidios: 'subsidios' };   /* _BS_SUPABASE_3MOD_V1 */
   var KEY = 'bs_sb_pase', APAGADO = 'bs_sb_apagado';
   var orig = window.api; if (typeof orig !== 'function') return;
 
