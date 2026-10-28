@@ -4206,7 +4206,7 @@ function bs_dashboardRapido(params) {
    datos viejos justo después de registrar. */
 function bs_invalidarDashboard_(action, result) {
   if (!result || !result.ok) return;
-  if (!/^bs_(crear|actualizar|eliminar|importar|anular|restaurar)/i.test(String(action))) return;
+  if (!/^bs_(crear|actualizar|eliminar|importar|anular|restaurar|cierre|generar|subir)/i.test(String(action))) return;   /* _BS_CACHE_ESCRITURA_V1: tambien cierre masivo, subsidio desde DM y documentos */
   try { CacheService.getScriptCache().removeAll(BS_DASH_CLAVES); } catch (e) {}
 }
  

@@ -91,12 +91,24 @@
       var poner = function () { document.body.appendChild(_pill); };
       if (document.body) poner(); else document.addEventListener('DOMContentLoaded', poner);
     }
+    /* _BS_CACHE_ESCRITURA_V1 (28-oct-2026): al guardar algo (crear/editar/eliminar/anular/importar...)
+       se borran las copias guardadas de listas y dashboards, para que la siguiente lectura traiga
+       el dato recien editado y no el anterior. */
+    var ESCRITURAS = /"action":"bs_(crear|actualizar|eliminar|importar|anular|restaurar|cierre|generar|subir|guardar|editar|registrar|cerrar)/i;
+    function limpiarCopias() {
+      try { for (var i = sessionStorage.length - 1; i >= 0; i--) { var k = sessionStorage.key(i); if (k && k.indexOf('bs_cache_') === 0) sessionStorage.removeItem(k); } } catch (e) {}
+      try { for (var j = localStorage.length - 1; j >= 0; j--) { var k2 = localStorage.key(j); if (k2 && k2.indexOf('bs_cache_') === 0) localStorage.removeItem(k2); } } catch (e) {}
+    }
     var _origFetch = window.fetch;
     window.fetch = function (u, o) {
       try {
         var url = (typeof u === 'string') ? u : (u && u.url) || '';
         var metodo = ((o && o.method) || 'GET').toUpperCase();
         var cuerpo = (o && typeof o.body === 'string') ? o.body : '';
+        if (url.indexOf('script.google.com/macros') >= 0 && metodo === 'POST' && ESCRITURAS.test(cuerpo)) {
+          limpiarCopias();
+          return _origFetch.apply(this, arguments).then(function (r) { limpiarCopias(); return r; });
+        }
         if (url.indexOf('script.google.com/macros') < 0 || metodo !== 'POST' || !LECTURAS.test(cuerpo)) {
           return _origFetch.apply(this, arguments);
         }
