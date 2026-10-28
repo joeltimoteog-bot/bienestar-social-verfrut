@@ -252,6 +252,7 @@ function doPost(e) {
 
       // 👇 NUEVO — Dashboard consolidado de Bienestar
       case 'bs_dashboard':       result = bs_dashboardRapido(params); break;
+      case 'bs_sbToken':         result = (typeof bs_sbToken_ === 'function') ? bs_sbToken_(params) : { ok: false, apagado: true }; break;   /* _BS_SUPABASE_V1 */
       case 'bs_clasificacion':   result = clasificarTrabajadores(); break;
       case 'bs_clasificarDni':   result = bs_clasificarDni(params.dni); break;
       case 'bs_casos_contrato': result = getCasosPorContrato(params.permisos || {}); break;
@@ -273,6 +274,7 @@ function doPost(e) {
 
        try { if (result && result.ok && /^bs_(crear|actualizar|eliminar|importar)/.test(action)) _notificarFirebase(action); } catch(e) {}
     try { bs_invalidarDashboard_(action, result); } catch (eInv) {}
+    try { if (typeof bs_sbTrasEscritura_ === 'function') bs_sbTrasEscritura_(action, params, result); } catch (eSb) {}   /* _BS_SUPABASE_V1: copia rapida */
     return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ ok: false, message: 'Error: ' + err.message })).setMimeType(ContentService.MimeType.JSON);
