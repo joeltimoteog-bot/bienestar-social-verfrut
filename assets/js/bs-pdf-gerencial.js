@@ -21,10 +21,90 @@
   function limpio(t) { return String(t == null ? '' : t).replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}️‍]/gu, '').replace(/≤/g, 'hasta ').replace(/≥/g, 'mín. ').replace(/[^\x00-\xFF•–—]/g, '').replace(/\s+/g, ' ').trim(); }
   function txt(el) { return el ? limpio(el.innerText || el.textContent) : ''; }
   function visible(el) { return !!(el && el.offsetParent !== null && el.getBoundingClientRect().width > 0); }
+  /* _BS_PDF_ETIQUETAS_V1 (28-oct-2026): en el PDF cada barra / punto / porcion lleva su valor
+     (S/ con 2 decimales si el grafico es de montos; entero si es de cantidades). Si el grafico ya muestra
+     sus etiquetas en pantalla (plugin datalabels activo), no se duplican. Solo se dibuja sobre la copia del PDF. */
+  function esMonto(ch) {
+    try {
+      var sc = ch.options && ch.options.scales || {}, ks = Object.keys(sc);
+      for (var i = 0; i < ks.length; i++) { var cb = sc[ks[i]] && sc[ks[i]].ticks && sc[ks[i]].ticks.callback; if (typeof cb === 'function' && /S\/|\$/.test(String(cb.call({ getLabelForValue: function (v) { return v; } }, 1000, 0, [])))) return true; }
+      var tt = ch.options && ch.options.plugins && ch.options.plugins.tooltip && ch.options.plugins.tooltip.callbacks && ch.options.plugins.tooltip.callbacks.label;
+      if (typeof tt === 'function') { var r = tt.call({}, { raw: 1000, parsed: { y: 1000, x: 1000 }, formattedValue: '1000', dataset: ch.data.datasets[0] || {}, label: '', chart: ch }); if (/S\/|\$/.test(String(r))) return true; }
+    } catch (e) {}
+    return false;
+  }
+  function yaEtiquetado(ch, i) {
+    try { var dl = ch.options.plugins && ch.options.plugins.datalabels; if (!dl) return false; var ds = ch.data.datasets[i] || {}; var d2 = ds.datalabels;
+      var disp = d2 && d2.display !== undefined ? d2.display : dl.display; if (disp === false) return false;
+      return !!(ch.config.plugins || []).some(function (p) { return p && p.id === 'datalabels'; }) || !!(window.Chart && Chart.registry && Chart.registry.plugins.get && Chart.registry.plugins.get('datalabels')); } catch (e) { return false; }
+  }
+  function etiquetar(canvas, ctx2, forzar) {
+    var Ch = window.Chart; if (!Ch || !Ch.getChart) return;
+    var ch = Ch.getChart(canvas); if (!ch) return;
+    var tipo = ch.config.type, dpr = ch.currentDevicePixelRatio || (canvas.width / (canvas.clientWidth || canvas.width)) || 1;
+    var monto = esMonto(ch), horiz = ch.options && ch.options.indexAxis === 'y';
+    var stack = !!(ch.options && ch.options.scales && ((ch.options.scales.x && ch.options.scales.x.stacked) || (ch.options.scales.y && ch.options.scales.y.stacked)));
+    var fmt = function (v) { v = Number(v) || 0; return monto ? 'S/ ' + v.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : (Math.round(v) === v ? v.toLocaleString('es-PE') : v.toLocaleString('es-PE', { maximumFractionDigits: 1 })); };
+    var redondo = tipo === 'doughnut' || tipo === 'pie' || tipo === 'polarArea';
+    /* _BS_PDF_ETIQ_GRUPO_V3: barras agrupadas (varias empresas por mes) -> valor vertical dentro de la barra; linea TOTAL encima del punto en su color */
+    var nBarras = ch.data.datasets.filter(function (d, j) { var m = ch.getDatasetMeta(j); return ch.isDatasetVisible(j) && (m.type || d.type || tipo) === 'bar'; }).length;
+    var esLinea = function (ds, meta) { return (meta.type || ds.type || tipo) === 'line'; };
+    ctx2.save(); ctx2.scale(dpr, dpr); ctx2.textAlign = 'center'; ctx2.textBaseline = 'bottom'; ctx2.lineJoin = 'round';
+    ch.data.datasets.forEach(function (ds, i) {
+      if (!ch.isDatasetVisible(i) || (!forzar && yaEtiquetado(ch, i))) return;
+      var meta = ch.getDatasetMeta(i), tot = 0;
+      if (redondo) (ds.data || []).forEach(function (v, k) { if (ch.getDataVisibility ? ch.getDataVisibility(k) : true) tot += Number(v) || 0; });
+      (meta.data || []).forEach(function (el, k) {
+        var raw = ds.data[k], v = raw && typeof raw === 'object' ? (horiz ? raw.x : raw.y) : raw; v = Number(v);
+        if (!v || !isFinite(v) || (ch.getDataVisibility && !ch.getDataVisibility(k))) return;
+        var t = fmt(v), x, y, size = 10.5;
+        if (redondo) { var pos = el.tooltipPosition(); x = pos.x; y = pos.y + 5; if (tot && v / tot < 0.04) return; t = t + ' (' + Math.round(v / tot * 100) + '%)'; size = 10; }
+        else if (esLinea(ds, meta)) { x = el.x; y = el.y - 7;
+          ctx2.font = '700 ' + size + 'px Inter, Segoe UI, Arial, sans-serif';
+          /* puntos muy juntos: monto sin centimos y etiquetas alternadas en dos alturas para que no se encimen */
+          var paso = meta.data.length > 1 ? Math.abs(meta.data[1].x - meta.data[0].x) : 999;
+          if (ctx2.measureText(t).width > paso - 4) { if (monto) t = 'S/ ' + Math.round(v).toLocaleString('es-PE'); if (ctx2.measureText(t).width > paso - 4 && k % 2) y -= size + 3; }
+          if (y - size < 1) y = el.y + size + 6; ctx2.strokeStyle = 'rgba(255,255,255,.97)'; ctx2.lineWidth = 4; ctx2.strokeText(t, x, y);
+          ctx2.fillStyle = (typeof ds.borderColor === 'string' ? ds.borderColor : '#0f172a'); ctx2.fillText(t, x, y); return; }
+        else if (!horiz && !stack && nBarras > 1) {
+          ctx2.font = '700 ' + (size - 1) + 'px Inter, Segoe UI, Arial, sans-serif';
+          var tw2 = ctx2.measureText(t).width, alto = Math.abs(el.base - el.y), cabe = alto > tw2 + 8;
+          if (el.width && tw2 < el.width - 2 && alto > size + 6) { ctx2.textAlign = 'center'; ctx2.textBaseline = 'top'; ctx2.fillStyle = '#ffffff'; ctx2.fillText(t, el.x, el.y + 3); ctx2.textBaseline = 'bottom'; return; }
+          ctx2.save(); ctx2.translate(el.x, cabe ? el.y + 5 : el.y - 4); ctx2.rotate(-Math.PI / 2); ctx2.textBaseline = 'middle'; ctx2.textAlign = cabe ? 'right' : 'left';
+          if (cabe) { ctx2.fillStyle = '#ffffff'; ctx2.fillText(t, 0, 0); } else { ctx2.strokeStyle = 'rgba(255,255,255,.95)'; ctx2.lineWidth = 3; ctx2.strokeText(t, 0, 0); ctx2.fillStyle = '#0f172a'; ctx2.fillText(t, 0, 0); }
+          ctx2.restore(); return; }
+        else if (horiz) { ctx2.textAlign = stack ? 'center' : 'left'; x = stack ? (el.x + el.base) / 2 : el.x + 4; y = el.y + 5; }
+        else { x = el.x; y = stack ? (el.y + el.base) / 2 + 5 : el.y - 3; }
+        ctx2.font = '700 ' + size + 'px Inter, Segoe UI, Arial, sans-serif';
+        /* _BS_PDF_ETIQ_BORDE_V2: si la etiqueta se saldria del lienzo (barra al tope), va dentro de la barra en blanco */
+        var dentro = false, cw = canvas.width / dpr, tw = ctx2.measureText(t).width;
+        if (!redondo && !stack && !horiz && y - size < 1) { y = Math.max(el.y + size + 3, size + 2); dentro = !(meta.type === 'line' || ds.type === 'line' || tipo === 'line'); }
+        if (!redondo && !stack && horiz && x + tw > cw - 2) { ctx2.textAlign = 'right'; x = el.x - 4; dentro = true; }
+        if (dentro) { ctx2.strokeStyle = 'rgba(15,23,42,.55)'; ctx2.lineWidth = 2.5; ctx2.strokeText(t, x, y); ctx2.fillStyle = '#ffffff'; ctx2.fillText(t, x, y); }
+        else { ctx2.strokeStyle = 'rgba(255,255,255,.95)'; ctx2.lineWidth = 3.5; ctx2.strokeText(t, x, y);
+        ctx2.fillStyle = '#0f172a'; ctx2.fillText(t, x, y); }
+        ctx2.textAlign = 'center';
+      });
+    });
+    ctx2.restore();
+  }
   function imagen(canvas) {
     var w = canvas.width, h = canvas.height; if (!w || !h) return null;
     var c = document.createElement('canvas'); c.width = w; c.height = h;
     var x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, h); x.drawImage(canvas, 0, 0);
+    /* _BS_PDF_ETIQ_GRUPO_V3: en barras/lineas (no apiladas) las etiquetas de pantalla se encimaban; para el PDF se
+       apagan un instante, se copia el grafico limpio y se rotulan ordenadas. La pantalla vuelve a quedar igual. */
+    var ch = null, dl = null, antes, forzar = false;
+    try {
+      ch = window.Chart && Chart.getChart && Chart.getChart(canvas);
+      var o = ch && ch.options, sc = o && o.scales || {}, apil = !!((sc.x && sc.x.stacked) || (sc.y && sc.y.stacked));
+      var t0 = ch && ch.config.type, cart = t0 === 'bar' || t0 === 'line';
+      dl = o && o.plugins && o.plugins.datalabels;
+      if (ch && cart && !apil && dl && yaEtiquetado(ch, 0)) { antes = dl.display; dl.display = false; ch.update('none'); forzar = true;
+        x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, h); x.drawImage(canvas, 0, 0); }
+    } catch (e) { forzar = false; }
+    try { etiquetar(canvas, x, forzar); } catch (e) { console.warn('[_BS_PDF_ETIQUETAS_V1]', e && e.message); }
+    if (forzar) { try { dl.display = antes; if (antes === undefined) delete dl.display; ch.update('none'); } catch (e) {} }
     return { src: c.toDataURL('image/png'), r: w / h };
   }
   function usuario() { try { var u = JSON.parse(localStorage.getItem('bienestarSocialAuth') || '{}'); return u.nombre || u.usuario || ''; } catch (e) { return ''; } }
