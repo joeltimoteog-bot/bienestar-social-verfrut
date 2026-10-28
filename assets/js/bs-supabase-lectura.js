@@ -17,18 +17,26 @@
   }
 
   async function leer(p, modulo) {
-    var todo = [], desde = 0, pag;
-    var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, 5000);
+    /* _BS_SB_PARALELO_V1: el primer bloque trae el total; los demás bloques de 1000 se piden a la vez */
+    var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, 8000);
+    var base = p.url + '/rest/v1/bs_registros?select=datos&modulo=eq.' + modulo + '&order=id&limit=1000&offset=';
+    var H = { apikey: p.publica, Authorization: 'Bearer ' + p.token };
+    var pedir = async function (desde, contar) {
+      var h = Object.assign({}, H); if (contar) h.Prefer = 'count=exact';
+      var res = await fetch(base + desde, { headers: h, signal: ctl.signal });
+      if (!res.ok && res.status !== 206) throw new Error('HTTP ' + res.status);
+      var filas = await res.json(); if (!Array.isArray(filas)) throw new Error('respuesta rara');
+      return { filas: filas, total: contar ? Number(String(res.headers.get('content-range') || '').split('/')[1]) : 0 };
+    };
     try {
-      do {
-        var res = await fetch(p.url + '/rest/v1/bs_registros?select=datos&modulo=eq.' + modulo + '&order=id&offset=' + desde + '&limit=1000',
-          { headers: { apikey: p.publica, Authorization: 'Bearer ' + p.token }, signal: ctl.signal });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        pag = await res.json(); if (!Array.isArray(pag)) throw new Error('respuesta rara');
-        pag.forEach(function (f) { todo.push(f.datos); }); desde += 1000;
-      } while (pag.length === 1000);
+      var r0 = await pedir(0, true), todo = r0.filas.map(function (f) { return f.datos; });
+      var total = r0.total || 0, extras = [];
+      if (total > 1000) for (var d = 1000; d < total; d += 1000) extras.push(pedir(d, false));
+      else if (!total && r0.filas.length === 1000) { var d2 = 1000, pg; do { pg = await pedir(d2, false); pg.filas.forEach(function (f) { todo.push(f.datos); }); d2 += 1000; } while (pg.filas.length === 1000); }
+      (await Promise.all(extras)).forEach(function (pg2) { pg2.filas.forEach(function (f) { todo.push(f.datos); }); });
+      if (total && todo.length !== total) throw new Error('llegaron ' + todo.length + ' de ' + total);
+      return todo;
     } finally { clearTimeout(t); }
-    return todo;
   }
 
   window.api = async function (action, payload) {
