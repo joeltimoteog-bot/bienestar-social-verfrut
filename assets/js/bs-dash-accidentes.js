@@ -47,9 +47,26 @@ window.BSDashAccidentes = (function () {
   function txt(v) { return String(v == null ? '' : v).trim(); }
   function num(v) { var n = parseFloat(String(v == null ? '' : v).replace(/[^\d.]/g, '')); return isNaN(n) ? 0 : n; }
   function esCerrado(c) { return /reincorpor|cerrad|finaliz|alta/i.test(txt(c.estado_caso)) && !/restric/i.test(txt(c.estado_caso)); }
+  /* _BSDA_DIAS_V2 (28-oct-2026): "descanso médico" es texto libre. Antes se le quitaban los separadores y un rango
+     "10/06/2026 - 11/06/2026" se leia como 1006202611062026 dias (dias perdidos e indices absurdos).
+     Ahora: rango de fechas -> dias entre ambas (inclusive) · numero ("5", "5 dias") -> ese numero · otro texto ("SI") -> 0
+     (y se calcula desde el accidente hasta la reincorporacion, como antes). */
+  function _fechaTxt(t) {
+    var m = String(t).match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+    if (m) { var y = +m[3]; if (y < 100) y += 2000; return new Date(y, +m[2] - 1, +m[1]); }
+    m = String(t).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+    return null;
+  }
+  function diasDeTexto(v) {
+    var s = String(v == null ? '' : v).trim(); if (!s) return 0;
+    var f = s.match(/\d{1,4}[\/\-.]\d{1,2}[\/\-.]\d{1,4}/g);
+    if (f && f.length >= 2) { var a = _fechaTxt(f[0]), b = _fechaTxt(f[f.length - 1]); if (a && b && b >= a) { var d = Math.round((b - a) / 86400000) + 1; return d <= 366 ? d : 0; } return 0; }
+    if (f && f.length === 1) return 0;   /* una sola fecha: no es una cantidad de dias */
+    var n = s.match(/^\s*(\d{1,3})(\s*d[ií]as?)?\s*$/i); return n ? +n[1] : 0;
+  }
   function diasPerdidos(c) {
     // Días de descanso médico (texto libre "Días de DM autorizados") + días de restricción
-    var dm = num(c.descanso_medico), rest = num(c.dias_restriccion);
+    var dm = diasDeTexto(c.descanso_medico), rest = diasDeTexto(c.dias_restriccion);
     if (!dm && c.dia_accidente && c.fecha_reincorporo) {
       var a = new Date(c.dia_accidente), b = new Date(c.fecha_reincorporo);
       if (!isNaN(a) && !isNaN(b) && b > a) dm = Math.round((b - a) / 86400000);
