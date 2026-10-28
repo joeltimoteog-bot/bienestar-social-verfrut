@@ -33,6 +33,10 @@ var BS_FICHA = {
 };
 
 /* ---------- BUSCAR CANDIDATOS (DNI o apellido) ---------- */
+/* _BS_OLMOS_V1 (28-oct-2026): la empresa sale del nombre de la hoja (Trabajadores_RAPEL / _VERFRUT / _OLMOS).
+   Antes: 'si no dice RAPEL es VERFRUT' (OLMOS habria salido como VERFRUT). */
+function _bsEmpDeHoja_(nombreHoja) { var e = String(nombreHoja || '').replace(/^Trabajadores_/i, '').trim().toUpperCase(); return e || 'VERFRUT'; }
+
 function bs_fichaBuscar(d) {
   try {
     var q = String((d && d.q) || '').trim().toUpperCase();
@@ -47,7 +51,7 @@ function bs_fichaBuscar(d) {
       if (!sh) return;
       var lr = sh.getLastRow(); if (lr < 2) return;
       var data = sh.getRange(2, 1, lr - 1, sh.getLastColumn()).getValues();
-      var emp = nombreHoja.indexOf('RAPEL') >= 0 ? 'RAPEL' : 'VERFRUT';
+      var emp = _bsEmpDeHoja_(nombreHoja);   /* _BS_OLMOS_V1 */
       for (var i = 0; i < data.length && items.length < BS_FICHA.MAX_CANDIDATOS; i++) {
         var r = data[i];
         var dni = String(r[C.COL_DNI] || '').trim();
@@ -224,7 +228,7 @@ function _fichaPadron_(dni) {
       if (String(col[i][0]).trim() === dni) {
         var r = sh.getRange(i + 2, 1, 1, sh.getLastColumn()).getValues()[0];
         // A=dni F=inicio G=sexo H=cargo I=régimen K=zona L=cumple/dirección N=empresa O=nombre P=ruta Q=código R=término
-        return { dni: dni, nombre: String(r[C.COL_NOMBRE] || ''), empresa: String(r[C.COL_EMPRESA] || (C.HOJAS[h].indexOf('RAPEL') >= 0 ? 'RAPEL' : 'VERFRUT')), sexo: String(r[6] || ''), cargo: String(r[7] || ''), regimen: String(r[8] || ''), zona: String(r[10] || ''), ruta: String(r[15] || ''), codigo: String(r[16] || ''), fecha_inicio: _ymd(_aFecha(r[C.COL_INICIO])), fecha_termino: _ymd(_aFecha(r[C.COL_TERMINO])) };
+        return { dni: dni, nombre: String(r[C.COL_NOMBRE] || ''), empresa: String(r[C.COL_EMPRESA] || _bsEmpDeHoja_(C.HOJAS[h])), sexo: String(r[6] || ''), cargo: String(r[7] || ''), regimen: String(r[8] || ''), zona: String(r[10] || ''), ruta: String(r[15] || ''), codigo: String(r[16] || ''), fecha_inicio: _ymd(_aFecha(r[C.COL_INICIO])), fecha_termino: _ymd(_aFecha(r[C.COL_TERMINO])) };
       }
     }
   }

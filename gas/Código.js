@@ -936,7 +936,7 @@ function _listarTriggers(){
 // ============================================================
 var PADRON_CONFIG = {
   SPREADSHEET_ID: '1q79u2S3ZI_Qc-YnDzgnQwyv4jL7pxTuARiXICPPXgZw', // <-- confirma que aqui estan Trabajadores_RAPEL/VERFRUT
-  HOJAS: ['Trabajadores_RAPEL', 'Trabajadores_VERFRUT'],
+  HOJAS: ['Trabajadores_RAPEL', 'Trabajadores_VERFRUT', 'Trabajadores_OLMOS'],   /* _BS_OLMOS_V1 (28-oct): OLMOS se lee si la hoja existe */
   COL_DNI: 0, COL_INICIO: 5, COL_TERMINO: 17, COL_EMPRESA: 13, COL_NOMBRE: 14, // A,F,R,N,O (0-based)
   PERIODO_PRUEBA_DIAS: 90,      // periodo de prueba (3 meses)
   INDETERMINADO_MESES: 54,      // 4 años 6 meses
@@ -963,7 +963,7 @@ function clasificarTrabajadores(){
       if(!sh) return;
       var lr = sh.getLastRow(); if(lr<2) return;
       var data = sh.getRange(2,1,lr-1,sh.getLastColumn()).getValues(); // desde fila 2 (sin encabezado)
-      var emp = nombreHoja.indexOf('RAPEL')>=0 ? 'RAPEL' : 'VERFRUT';
+      var emp = _bsEmpDeHoja_(nombreHoja);   /* _BS_OLMOS_V1 */
       data.forEach(function(r){
         var dni = String(r[C.COL_DNI]||'').trim(); if(!dni) return;
         total++;
@@ -1013,7 +1013,7 @@ function bs_clasificarDni(dni){
       var data=sh.getRange(2,1,lr-1,sh.getLastColumn()).getValues();
       for(var i=0;i<data.length;i++){
         if(String(data[i][C.COL_DNI]||'').trim()===dni){
-          var emp=C.HOJAS[k].indexOf('RAPEL')>=0?'RAPEL':'VERFRUT';
+          var emp=_bsEmpDeHoja_(C.HOJAS[k]);   /* _BS_OLMOS_V1 */
           var nombre=String(data[i][C.COL_NOMBRE]||'').trim();
           var ini=_aFecha(data[i][C.COL_INICIO]);
           if(!ini) return { ok:true, encontrado:true, dni:dni, nombre:nombre, empresa:emp, tipo:'sinFecha', etiqueta:'Sin fecha de inicio' };
