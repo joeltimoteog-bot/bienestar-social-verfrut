@@ -70,6 +70,18 @@
       });
       y += ch + 6;
     }
+    /* tablas (antes o despues de los graficos segun D.tablasPrimero) */
+    function pintarTablas() {
+    (D.tablas || []).forEach(function (t) {
+      if (!t.table || !t.table.rows || t.table.rows.length < 2) return;
+      salto(22); doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor.apply(doc, NAVY); doc.text(limpio(t.titulo || 'Detalle'), MG, y + 4); y += 7;
+      doc.autoTable({ html: t.table, startY: y, margin: { left: MG, right: MG }, theme: 'grid', useCss: false,
+        headStyles: { fillColor: NAVY, textColor: 255, fontSize: 7.8 }, styles: { fontSize: 7.5, cellPadding: 1.6, textColor: TX, lineColor: LINEA, overflow: 'linebreak' },
+        alternateRowStyles: { fillColor: SUAVE }, didParseCell: function (h) { h.cell.text = (h.cell.text || []).map(limpio); } });
+      y = doc.lastAutoTable.finalY + 6;
+    });
+    }
+    if (D.tablasPrimero) pintarTablas();
     /* graficos: filas de 3 (redondos/cuadrados), de 2 (medianos) o a todo el ancho (series largas) */
     var G = (D.graficos || []).map(function (g) { var im = imagen(g.canvas); return im ? { t: limpio(g.titulo), im: im } : null; }).filter(Boolean);
     var tipo = function (g) { return g.im.r > 2.4 ? 'L' : g.im.r > 1.55 ? 'M' : 'S'; };
@@ -90,15 +102,7 @@
       });
       y += cardH + 4; i += fila.length;
     }
-    /* tablas */
-    (D.tablas || []).forEach(function (t) {
-      if (!t.table || !t.table.rows || t.table.rows.length < 2) return;
-      salto(22); doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor.apply(doc, NAVY); doc.text(limpio(t.titulo || 'Detalle'), MG, y + 4); y += 7;
-      doc.autoTable({ html: t.table, startY: y, margin: { left: MG, right: MG }, theme: 'grid', useCss: false,
-        headStyles: { fillColor: NAVY, textColor: 255, fontSize: 7.8 }, styles: { fontSize: 7.5, cellPadding: 1.6, textColor: TX, lineColor: LINEA, overflow: 'linebreak' },
-        alternateRowStyles: { fillColor: SUAVE }, didParseCell: function (h) { h.cell.text = (h.cell.text || []).map(limpio); } });
-      y = doc.lastAutoTable.finalY + 6;
-    });
+    if (!D.tablasPrimero) pintarTablas();
     /* notas */
     (D.notas || []).filter(Boolean).forEach(function (n) {
       doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor.apply(doc, GRIS);
@@ -178,17 +182,35 @@
     });
     return { titulo: titulo, subtitulo: 'Reporte gerencial', filtros: filtros, kpis: kpis, graficos: graficos, tablas: tablas, archivo: titulo };
   }
+  /* ── 3) Rendiciones: el reporte en vivo (#reporteContainer) ── */
+  function datosRendiciones() {
+    var cont = document.getElementById('reporteContainer');
+    if (!cont || !cont.innerHTML.trim()) throw new Error('No hay datos para el reporte con los filtros actuales.');
+    var v = function (id) { var e = document.getElementById(id); return e ? (e.tagName === 'SELECT' ? (e.value ? txt(e.options[e.selectedIndex]) : '') : e.value) : ''; };
+    var d = v('filterDesde'), h = v('filterHasta');
+    var filtros = [['Año', v('filterAnio') || 'Todos'], ['Empresa', v('filterEmpresa') || 'Todas'], ['Responsable', v('filterResponsable') || 'Todos'],
+      ['Estado', v('filterEstado') || 'Todos'], ['Categoría', v('filterCategoria') || 'Todas'], ['Periodo', (d || h) ? (d || '…') + ' a ' + (h || '…') : '']];
+    var kpis = [], fila = cont.firstElementChild;
+    if (fila) Array.prototype.forEach.call(fila.querySelectorAll('.bs-card'), function (c) { var ds = c.children; if (ds.length >= 2) kpis.push([txt(ds[0]), txt(ds[1])]); });
+    var graficos = Array.prototype.map.call(cont.querySelectorAll('canvas'), function (cv) { var card = cv.closest('.bs-card'); var t = card && card.querySelector('.bs-text-sm'); return { titulo: txt(t), canvas: cv }; });
+    var tablas = Array.prototype.map.call(cont.querySelectorAll('table'), function (tb) { var card = tb.closest('.bs-card'); var t = card && card.querySelector('.bs-text-sm'); return { titulo: txt(t) || 'Resumen', table: tb }; });
+    return { titulo: 'Reporte de Rendiciones', subtitulo: 'Rendiciones de gastos · Bienestar Social', filtros: filtros, kpis: kpis, graficos: graficos, tablas: tablas, archivo: 'Reporte_Rendiciones', tablasPrimero: true };
+  }
   function enganchePaginas() {
     var path = location.pathname;
     if (/\/panel\.html$/.test(path) && !window._bspgPanel) { window._bspgPanel = true;
       window.exportarPDF = function () { var b = document.querySelector('[onclick*="exportarPDF"]'); seguro(function () { return datosPagina('Panel de Bienestar Social'); }, b); }; }
+    if (/rendiciones\.html$/.test(path)) {   /* el boton "📄 Reporte PDF" lo crea la pagina: se le cambia la accion */
+      var bR = document.getElementById('btnPDF');
+      if (bR && !bR._bspg) { bR._bspg = true; bR.onclick = function () { seguro(datosRendiciones, bR); }; }
+    }
     if (/estadisticas\.html$/.test(path) && !window._bspgEst) { window._bspgEst = true;
       window.exportPDF = function () { var b = document.querySelector('[onclick*="exportPDF"]'); seguro(function () { return datosPagina('Estadísticas de Bienestar Social'); }, b); }; }
   }
 
   window.BSPdfGerencial = { exportar: exportar, datosOverlay: datosOverlay, datosPagina: datosPagina };
   function iniciar() {
-    vigilar(); enganchePaginas();
+    vigilar(); enganchePaginas(); setTimeout(enganchePaginas, 1500);
     if (window.MutationObserver) new MutationObserver(function () { vigilar(); }).observe(document.body, { childList: true, subtree: false });
     setInterval(vigilar, 1500);
   }
