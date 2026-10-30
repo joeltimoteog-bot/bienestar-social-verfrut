@@ -56,6 +56,10 @@
     .main{padding:22px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px));min-width:0}
     .wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
     .top{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+    /* _BS_ENCABEZADO_FIJO_V1 (29-oct-2026): el encabezado (saludo, buscador, alertas, cerrar sesion) queda fijo al bajar */
+    .main .top{position:sticky;top:0;z-index:60;margin:-22px -14px 0;padding:14px 14px 12px;background:color-mix(in srgb,var(--p-bg) 92%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(12px);backdrop-filter:saturate(1.4) blur(12px);border-radius:0 0 16px 16px;border-bottom:1px solid transparent;transition:box-shadow .2s,border-color .2s}
+    .main .top.pegado{box-shadow:0 10px 28px rgba(15,23,42,.10);border-bottom-color:var(--p-line)}
+    .main .top h1{transition:font-size .2s} .main .top.pegado h1{font-size:22px}
     .top h1{font-family:var(--p-display);font-size:30px;font-weight:700;margin:0;text-wrap:balance;line-height:1.05}
     .top h1 .nm{color:var(--p-primary)}
     .top p{margin:2px 0 0;color:var(--p-muted)}
@@ -249,6 +253,8 @@
   <div class="toast" id="toast"></div>
 
   <script src="assets/js/paginas/portal-01.js?v=1"></script>  <!-- _BS_MODULAR_V1: antes inline (linea 251) -->
-  <script src="assets/js/bs-portal-pro.js?v=1"></script>  <!-- _BS_PORTAL_PRO_V1 (27-oct): atrasos con filtros + pantalla "¿eres tú?" moderna -->
+  <script src="assets/js/bs-portal-pro.js?v=1"></script>
+  <script>/* _BS_ENCABEZADO_FIJO_V1: sombra del encabezado cuando ya se bajo */
+  (function(){var t=document.querySelector('.main .top');if(!t)return;var f=function(){t.classList.toggle('pegado',window.scrollY>10);};window.addEventListener('scroll',f,{passive:true});f();})();</script>  <!-- _BS_PORTAL_PRO_V1 (27-oct): atrasos con filtros + pantalla "¿eres tú?" moderna -->
 </body>
 </html>
