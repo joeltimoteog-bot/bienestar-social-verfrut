@@ -202,6 +202,7 @@ function doPost(e) {
     switch(action) {
       case 'bs_login':           result = bs_login(params.usuario, params.password);
         if ((!result || !result.ok) && params.rl_token && typeof bs_loginConRL_ === 'function') result = bs_loginConRL_(params.usuario, params.rl_token);   /* _BS_LOGIN_RL_V1 */
+        if (result && result.ok && typeof bs_aplicarAccesosRL_ === 'function') result = bs_aplicarAccesosRL_(result, params);   /* _ACCESOS_CENTRAL_V1 */
         break;
       case 'bs_crearQueja':      result = bs_crearQueja(params.usuario, params.datos); break;
       case 'bs_listarQuejas':    result = bs_listarQuejas(params.filtros); break;
@@ -265,7 +266,7 @@ function doPost(e) {
       if (action === 'bs_login' && result && result.ok && result.user) {
         result.user.token = bs_emitirToken(result.user);
         /* _BS_AZURE_SESION_V1 (25-oct-2026): sesion de RR.LL. para que Bienestar consulte Azure (busqueda de trabajadores) */
-        try { result.user.rl_token = params.rl_token || (typeof bs_rlTokenPorClave_ === 'function' ? bs_rlTokenPorClave_(params.usuario, params.password) : ''); } catch (eRT) {}
+        try { result.user.rl_token = params.rl_token || params._rlTk || (typeof bs_rlTokenPorClave_ === 'function' ? bs_rlTokenPorClave_(params.usuario, params.password) : ''); } catch (eRT) {}
       }
     } catch(errTok) {}
 

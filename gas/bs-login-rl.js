@@ -26,6 +26,14 @@ function bs_loginConRL_(usuario, rlToken) {
     if (r.getResponseCode() !== 200 || !j || !j.success || !j.user ||
         String(j.user.usuario || '').toLowerCase().trim() !== u) return NO;
 
+    /* _ACCESOS_CENTRAL_V1: si el administrador configuro a este usuario en "Acceso a Modulos" del RR.LL., mandan esos permisos. */
+    var acc = j.user.accesos;
+    if (acc && acc.definido) {
+      if (!acc.activo || !acc.bs || !acc.bs.acceso) return { ok: false, message: 'Tu usuario no tiene acceso a Bienestar Social. Solicítalo al administrador.' };
+      var fila = _bsFilaUsuario_(u) || {};
+      return { ok: true, via: 'rrll', _accesosAplicados: true, user: { usuario: fila.usuario || u, nombre: fila.nombre || u.toUpperCase(), rol: acc.bs.admin ? 'admin' : 'usuario',
+        email: fila.email || '', permisos: acc.bs.permisos, loginAt: new Date().toISOString() } };
+    }
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BS_CONFIG.HOJA_USUARIOS);
     if (!sheet) return { ok: false, message: 'Hoja Usuarios no existe' };
     var data = sheet.getDataRange().getValues();
@@ -62,6 +70,39 @@ function bs_loginConRL_(usuario, rlToken) {
     try { console.warn('[_BS_LOGIN_RL_V1] ' + e.message); } catch (e2) {}
     return NO;
   }
+}
+
+/* _ACCESOS_CENTRAL_V1 (29-oct-2026) — RR.LL. como panel unico de usuarios.
+   Despues de un ingreso correcto, si el usuario tiene sesion de RR.LL. y el administrador lo configuro en
+   "Acceso a Modulos" (claves bs_*), los permisos y el rol salen de ahi; si lo desactivo, no entra.
+   Si no esta configurado alla o Azure no responde, se queda con lo de la hoja Usuarios (como siempre). */
+function _bsFilaUsuario_(u) {
+  try {
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BS_CONFIG.HOJA_USUARIOS); if (!sh) return null;
+    var data = sh.getDataRange().getValues(), H = data[0].map(function (h) { return String(h).trim(); });
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][H.indexOf('usuario')] || '').toLowerCase().trim() === u)
+        return { usuario: data[i][H.indexOf('usuario')], nombre: data[i][H.indexOf('nombre')], email: H.indexOf('email') >= 0 ? data[i][H.indexOf('email')] : '' };
+    }
+  } catch (e) {}
+  return null;
+}
+function bs_aplicarAccesosRL_(result, params) {
+  try {
+    if (!result || !result.ok || !result.user || result._accesosAplicados) return result;
+    var u = String(result.user.usuario || '').toLowerCase().trim();
+    var tk = params.rl_token || (params._rlTk = bs_rlTokenPorClave_(params.usuario, params.password));
+    if (!tk) return result;
+    var r = UrlFetchApp.fetch(BS_RL_SSO_URL, { method: 'post', contentType: 'application/json', payload: JSON.stringify({ accion: 'sesion', token: tk }), muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) return result;
+    var j = JSON.parse(r.getContentText()), acc = j && j.success && j.user && j.user.accesos;
+    if (!acc || !acc.definido || String(j.user.usuario || '').toLowerCase().trim() !== u) return result;
+    if (!acc.activo || !acc.bs || !acc.bs.acceso) return { ok: false, message: 'Tu usuario no tiene acceso a Bienestar Social. Solicítalo al administrador.' };
+    result.user.permisos = acc.bs.permisos;
+    result.user.rol = acc.bs.admin ? 'admin' : (/admin/i.test(String(result.user.rol || '')) ? 'usuario' : (result.user.rol || 'usuario'));
+    result.via = (result.via || 'hoja') + '+rrll';
+    return result;
+  } catch (e) { try { console.warn('[_ACCESOS_CENTRAL_V1] ' + e.message); } catch (e2) {} return result; }
 }
 
 /* _BS_AZURE_SESION_V1 (25-oct-2026): con las mismas credenciales, pide a Azure (auth/login de RR.LL.) una sesion firmada.
