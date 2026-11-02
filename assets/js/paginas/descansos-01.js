@@ -131,7 +131,7 @@
     }
 
     // ===== TABS =====
-    document.getElementById('tabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-t]'); if (!b) return; document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); ['lista', 'alertas', 'dash'].forEach(function (k) { document.getElementById('p-' + k).hidden = k !== b.dataset.t; }); });
+    document.getElementById('tabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-t]'); if (!b) return; document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); ['lista', 'alertas', 'dash', 'azure'].forEach(function (k) { var pk = document.getElementById('p-' + k); if (pk) pk.hidden = k !== b.dataset.t; }); });
 
     // ===== FORMULARIO =====
     var CAMPOS = ['dni', 'nombre', 'empresa', 'sector', 'tipo', 'origen', 'citt_estado', 'citt_numero', 'fecha_inicio', 'fecha_fin', 'diagnostico', 'cie10', 'centro', 'medico', 'id_accidente', 'observaciones'];
