@@ -91,7 +91,15 @@ function bs_fichaTrabajador(d) {
     var out = { ok: true, dni: dni, padron: null, contrato: null, kpis: {}, alertas: [], accidentes: [], subsidios: [], hostigamiento: [], descansos: [], documentos: [], timeline: [], permisos: { accidentes: puede('accidentes'), subsidios: puede('subsidios'), hostigamiento: puede('hostigamiento'), descansos: puede('descansos') } };
 
     /* --- 1. Padrón + clasificación de contrato --- */
-    out.padron = _fichaPadron_(dni);
+    /* _FICHA_AZURE_PADRON_V1 (01-nov-2026): si el frontend ya trae el padrón desde Azure (padron_azure),
+       no se abre ni recorre el libro del padrón en Google (era el paso más lento de la ficha). */
+    var _t0 = Date.now(), _ms = {};
+    var pa = d && d.padron_azure;
+    if (pa && String(pa.dni || '').trim() === dni && pa.nombre) {
+      out.padron = { dni: dni, nombre: String(pa.nombre || ''), empresa: String(pa.empresa || ''), sexo: String(pa.sexo || ''), cargo: String(pa.cargo || ''), regimen: String(pa.regimen || ''),
+        zona: String(pa.zona || ''), ruta: String(pa.ruta || ''), codigo: String(pa.codigo || ''), fecha_inicio: pa.fecha_inicio ? _ymd(_aFecha(pa.fecha_inicio)) : '', fecha_termino: pa.fecha_termino ? _ymd(_aFecha(pa.fecha_termino)) : '', fuente: 'azure' };
+    } else out.padron = _fichaPadron_(dni);
+    _ms.padron = Date.now() - _t0;
     if (out.padron) out.contrato = _fichaContrato_(out.padron, hoy);
     if (out.contrato) {
       if (out.contrato.porVencerDias !== null && out.contrato.porVencerDias >= 0 && out.contrato.porVencerDias <= PADRON_CONFIG.POR_VENCER_DIAS) {
@@ -121,6 +129,7 @@ function bs_fichaTrabajador(d) {
       });
     }
 
+    _ms.acc = Date.now() - _t0;
     /* --- 3. Subsidios (columna "numero" = DNI) --- */
     if (puede('subsidios')) {
       var sub = _fichaLeerHoja_(ss, BS_CONFIG.HOJA_SUBSIDIOS, function (o) { return String(o.numero) === dni && !_fichaAnulado_(o); });
@@ -148,6 +157,7 @@ function bs_fichaTrabajador(d) {
       out.kpis.subsidios_no_recuperable = Math.round(noRec * 100) / 100;
     }
 
+    _ms.sub = Date.now() - _t0;
     /* --- 4. Hostigamiento (ambas sedes; nombres enmascarados siempre) --- */
     if (puede('hostigamiento')) {
       var hojas = BS_HOSTIG_HOJAS || { PIURA: BS_CONFIG.HOJA_HOSTIG };
@@ -163,6 +173,7 @@ function bs_fichaTrabajador(d) {
       out.kpis.hostigamiento_total = out.hostigamiento.length;
     }
 
+    _ms.hos = Date.now() - _t0;
     /* --- 4b. Descansos médicos (hoja BS_Descansos, si existe) --- */
     if (puede('descansos') && typeof _dmLeer_ === 'function') {
       try {
@@ -184,6 +195,7 @@ function bs_fichaTrabajador(d) {
       } catch (eDm) {}
     }
 
+    _ms.dm = Date.now() - _t0;
     /* --- 5. Documentos de sus casos --- */
     try {
       if (typeof _bsSheetDocs_ === 'function') {
@@ -204,10 +216,12 @@ function bs_fichaTrabajador(d) {
     } catch (eDoc) {}
     out.kpis.documentos = out.documentos.length;
 
+    _ms.docs = Date.now() - _t0;
     /* --- 6. Línea de tiempo ordenada (más reciente primero) --- */
     out.timeline.sort(function (a, b) { return String(b.fecha || '').localeCompare(String(a.fecha || '')); });
     out.alertas.sort(function (a, b) { return (a.nivel === 'rojo' ? 0 : 1) - (b.nivel === 'rojo' ? 0 : 1); });
 
+    out._ms = _ms; out._ms.total = Date.now() - _t0;
     try { CacheService.getScriptCache().put(claveCache, JSON.stringify(out), BS_FICHA.CACHE_SEG); } catch (e9) {}
     return out;
   } catch (e) {

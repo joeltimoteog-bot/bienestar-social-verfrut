@@ -77,10 +77,17 @@
     var c = cache[dni];
     if (c && Date.now() - c.t < CACHE_MS) { setTimeout(function () { seccionAtenciones(dni); }, 0); return c.r; }
     /* 1) vista previa: Azure en paralelo con Google; se pinta solo si Google aún no respondió */
-    var pendiente = true;
-    if (ok8) azGet('trabajadores/buscar?dni=' + encodeURIComponent(dni), 5000).then(function (j) { if (pendiente) vistaPrevia(dni, j && j.trabajadores && j.trabajadores[0] || null); });
+    var pendiente = true, args = Array.prototype.slice.call(arguments), tIni = Date.now();
+    if (ok8) {
+      /* Azure primero (≈0.3 s): pinta la vista previa y entrega el padrón a Google para que no recorra el libro del padrón */
+      var j = await azGet('trabajadores/buscar?dni=' + encodeURIComponent(dni), 4000);
+      var t = j && j.trabajadores && j.trabajadores[0] || null;
+      vistaPrevia(dni, t);
+      if (t) args[1] = Object.assign({}, payload, { padron_azure: { dni: dni, nombre: nombreDe(t), empresa: empDe(t), sexo: String(t.sexo || ''), cargo: String(t.oficio || t.cargo || ''), regimen: String(t.tipo_regimen || ''), zona: String(t.zona_labor || t.fundo || ''), ruta: String(t.ruta || ''), codigo: String(t.codigo_trab || t.cod || ''), fecha_inicio: t.fecha_inicio || '', fecha_termino: t.fecha_termino || '' } });
+    }
     var res;
-    try { res = await previo.apply(this, arguments); } finally { pendiente = false; }
+    try { res = await previo.apply(this, args); } finally { pendiente = false; }
+    try { console.log('[ficha] Google respondió en ' + (Date.now() - tIni) + ' ms', res && res._ms ? res._ms : '', res && res.cache ? '(caché GAS)' : ''); } catch (e) {}
     if (res && res.ok) { cache[dni] = { t: Date.now(), r: res }; if (ok8) setTimeout(function () { seccionAtenciones(dni); }, 0); }
     return res;
   };
