@@ -76,8 +76,23 @@
     /* 3) caché 5 min */
     var c = cache[dni];
     if (c && Date.now() - c.t < CACHE_MS) { setTimeout(function () { seccionAtenciones(dni); }, 0); return c.r; }
+    /* 0) _BS_AZURE_V1: ficha completa desde Azure (bs/ficha). Si Azure ya tiene las hojas cargadas, no se llama a Google. */
+    var tIni = Date.now();
+    if (ok8 && localStorage.getItem('bs_ficha_azure') !== 'off') {
+      try {
+        var u = {}; try { u = JSON.parse(localStorage.getItem('bienestarSocialAuth') || '{}') || {}; } catch (e) {}
+        var fz = await azGet('bs/ficha?dni=' + encodeURIComponent(dni) + '&permisos=' + encodeURIComponent(JSON.stringify(u.permisos || {})), 8000);
+        var cg = fz && fz.cargadas || {};
+        if (fz && fz.ok && cg.accidentes && cg.subsidios && cg.hostigamiento) {
+          try { console.log('[ficha] Azure respondió en ' + (Date.now() - tIni) + ' ms', fz._ms || ''); } catch (e) {}
+          cache[dni] = { t: Date.now(), r: fz }; setTimeout(function () { seccionAtenciones(dni); }, 0);
+          return fz;
+        }
+        try { console.log('[ficha] Azure sin tablas de Bienestar cargadas; se usa Google', cg); } catch (e) {}
+      } catch (e) {}
+    }
     /* 1) vista previa: Azure en paralelo con Google; se pinta solo si Google aún no respondió */
-    var pendiente = true, args = Array.prototype.slice.call(arguments), tIni = Date.now();
+    var pendiente = true, args = Array.prototype.slice.call(arguments);
     if (ok8) {
       /* Azure primero (≈0.3 s): pinta la vista previa y entrega el padrón a Google para que no recorra el libro del padrón */
       var j = await azGet('trabajadores/buscar?dni=' + encodeURIComponent(dni), 4000);

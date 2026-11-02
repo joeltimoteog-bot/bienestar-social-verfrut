@@ -272,6 +272,8 @@ function doPost(e) {
 
     // ===== AUDITORÍA: registrar automáticamente toda acción de escritura =====
     try { if (result && result.ok) bs_auditoriaAuto(params, result); } catch(eAud) {}
+    /* _BS_AZURE_V1 (01-nov-2026): tras una escritura, sube a Azure solo las hojas del modulo tocado (copia central) */
+    try { if (result && result.ok && typeof bsAzureSyncDespuesDe_ === 'function' && /^bs_(crear|actualizar|eliminar|importar|subir|anular|restaurar)/.test(action)) bsAzureSyncDespuesDe_(action, params); } catch(eAz) {}
 
        try { if (result && result.ok && /^bs_(crear|actualizar|eliminar|importar)/.test(action)) _notificarFirebase(action); } catch(e) {}
     try { bs_invalidarDashboard_(action, result); } catch (eInv) {}
