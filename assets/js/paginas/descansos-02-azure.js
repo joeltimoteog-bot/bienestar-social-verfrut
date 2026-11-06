@@ -47,15 +47,15 @@
 
   function filaAzure(a) {
     var dur = a.fecha_inicio_doc && a.fecha_termino_doc ? diasEntre(a.fecha_inicio_doc, a.fecha_termino_doc) : null;
+    /* _DM_PANTALLA_V2 (06-nov): 6 columnas agrupadas y con salto de linea -> todo visible sin desplazar a los lados */
+    var vig = a.fecha_inicio_doc || a.fecha_termino_doc ? fecha(a.fecha_inicio_doc) + ' → ' + fecha(a.fecha_termino_doc) + (dur ? ' <small>(' + dur + ' día' + (dur === 1 ? '' : 's') + ')</small>' : '') : '<small>sin vigencia</small>';
     return '<tr>' +
-      '<td>' + esc(a.nro || a.id) + '</td>' +
-      '<td>' + fecha(a.fecha_atencion) + '</td>' +
-      '<td>' + esc(a.detalle_documento || '—') + '</td>' +
-      '<td>' + fecha(a.fecha_inicio_doc) + ' → ' + fecha(a.fecha_termino_doc) + (dur ? '<br><small>' + dur + ' día' + (dur === 1 ? '' : 's') + '</small>' : '') + '</td>' +
-      '<td>' + estadoChip(a.estado) + ' ' + vigencia(a) + '</td>' +
+      '<td><b>' + esc(a.nro || a.id) + '</b><br><small>' + fecha(a.fecha_atencion) + '</small></td>' +
+      '<td>' + esc(a.detalle_documento || '—') + '<br><small>Vigencia: </small>' + vig + '</td>' +
+      '<td>' + estadoChip(a.estado) + '<div style="margin-top:4px">' + vigencia(a) + '</div></td>' +
       '<td>' + esc(a.empresa || '') + (a.fundo ? ' · ' + esc(a.fundo) : '') + '</td>' +
       '<td>' + esc(a.supervisor || '—') + '<br><small>Recepción: ' + esc(a.responsable_recepcion || '—') + '</small></td>' +
-      '<td>' + esc(a.observaciones || '') + '</td>' +
+      '<td>' + (esc(a.observaciones || '') || '<small>—</small>') + '</td>' +
       '</tr>';
   }
 
@@ -95,12 +95,12 @@
 
     h += '<h4 class="az-h">Atenciones en RR.LL. (base central) · ventana ' + esc(resp.ventana_dias) + ' días</h4>';
     if (lista.length) {
-      h += '<div class="bs-table-wrap"><table class="bs-table az-tabla"><thead><tr><th>N°</th><th>Fecha atención</th><th>Documento</th><th>Vigencia del documento</th><th>Estado</th><th>Empresa / Fundo</th><th>Supervisor</th><th>Observaciones</th></tr></thead><tbody>' + lista.map(filaAzure).join('') + '</tbody></table></div>';
+      h += '<div class="bs-table-wrap"><table class="bs-table az-tabla"><thead><tr><th>N° / Fecha</th><th>Documento y vigencia</th><th>Estado</th><th>Empresa / Fundo</th><th>Supervisor</th><th>Observaciones</th></tr></thead><tbody>' + lista.map(filaAzure).join('') + '</tbody></table></div>';
     } else h += '<p class="bs-text-muted">Sin registros.</p>';
 
     h += '<h4 class="az-h">Registros propios de Bienestar Social para este DNI</h4>';
     if (bs.length) {
-      h += '<div class="bs-table-wrap"><table class="bs-table az-tabla"><thead><tr><th>ID</th><th>Tipo</th><th>Periodo</th><th>Días</th><th>Estado</th><th>CITT</th><th>Subsidio</th></tr></thead><tbody>' + bs.map(filaBS).join('') + '</tbody></table></div>';
+      h += '<div class="bs-table-wrap"><table class="bs-table az-tabla az-bs"><thead><tr><th>ID</th><th>Tipo</th><th>Periodo</th><th>Días</th><th>Estado</th><th>CITT</th><th>Subsidio</th></tr></thead><tbody>' + bs.map(filaBS).join('') + '</tbody></table></div>';
     } else h += '<p class="bs-text-muted">Bienestar no tiene descansos registrados para este DNI' + (!window.DATA ? ' (lista aún no cargada)' : '') + '.</p>';
 
     if (bs.length && lista.length) {
@@ -139,6 +139,9 @@
       '.az-chip{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.78rem;font-weight:600;margin:2px 4px 2px 0;white-space:nowrap}.az-ok{background:#dcfce7;color:#166534}.az-warn{background:#fef3c7;color:#92400e}.az-info{background:#dbeafe;color:#1e40af}.az-off{background:#f1f5f9;color:#475569}' +
       '.az-h{margin:16px 0 8px;font-size:.95rem;color:#0f2748}.az-tabla td,.az-tabla th{font-size:.85rem;vertical-align:top}.az-tabla small{color:#64748b}' +
       /* _DM_PANTALLA_V1 (06-nov): en esta tabla la ultima columna (Observaciones) no va pegada a la derecha: tapaba Estado */
+      '.bs-main .bs-table.az-tabla{table-layout:fixed;width:100%}.bs-main .bs-table.az-tabla tbody td{white-space:normal!important;max-width:none!important;overflow:visible!important;overflow-wrap:anywhere;line-height:1.35}' +
+      '.az-tabla .az-chip{display:inline-block;max-width:100%}.az-tabla small{display:inline}.az-tabla td:first-child small{white-space:nowrap}' +
+      '.az-tabla:not(.az-bs) th:nth-child(1){width:11%}.az-tabla:not(.az-bs) th:nth-child(2){width:25%}.az-tabla:not(.az-bs) th:nth-child(3){width:17%}.az-tabla:not(.az-bs) th:nth-child(4){width:15%}.az-tabla:not(.az-bs) th:nth-child(5){width:14%}.az-tabla:not(.az-bs) th:nth-child(6){width:18%}' +
       '.bs-main .bs-table.az-tabla th:last-child,.bs-main .bs-table.az-tabla tbody td:last-child{right:auto;box-shadow:none;white-space:normal;text-align:left;width:auto;min-width:180px}.bs-main .bs-table.az-tabla tbody td:last-child{position:static}.az-tabla .az-chip{white-space:normal}';
     document.head.appendChild(st);
   }
