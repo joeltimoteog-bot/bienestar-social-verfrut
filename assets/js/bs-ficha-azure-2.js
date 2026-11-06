@@ -54,15 +54,24 @@
       if (!j) { box.innerHTML = '<div class="bs-text-sm bs-text-muted">☁️ Atenciones RR.LL.: la base central no respondió (sin sesión o sin conexión).</div>'; return; }
       var lista = [].concat(j.en_proceso || [], j.finalizadas_recientes || []).sort(function (a, b) { return new Date(b.fecha_atencion) - new Date(a.fecha_atencion); });
       var enProc = (j.en_proceso || []).length;
-      var h = '<div class="bs-card" style="padding:14px 16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px"><b style="color:#0f2748">☁️ Atenciones RR.LL. (Azure) · últimos 3 años</b>' +
+      var h = '<div class="bs-card" style="padding:14px 16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px"><b style="color:#0f2748">☁️ Atenciones RR.LL. (base central) · últimos 3 años</b>' +
         '<span class="bs-text-sm">' + lista.length + ' registro(s) · ' + (enProc ? '<b style="color:#b45309">' + enProc + ' en proceso</b>' : '<b style="color:#15803d">todas finalizadas</b>') + '</span></div>';
       if (!lista.length) h += '<div class="bs-text-sm bs-text-muted">Sin atenciones registradas en RR.LL. para este DNI.</div>';
       else {
-        h += '<div style="overflow:auto"><table class="bs-table" style="font-size:.85rem"><thead><tr><th>Fecha</th><th>Documento</th><th>Vigencia doc.</th><th>Estado</th><th>Supervisor</th><th>Observaciones</th></tr></thead><tbody>' +
+        /* _FICHA_PANTALLA_V1 (06-nov): mismo formato que Descansos -> 5 columnas con salto de linea, todo visible sin desplazar */
+        if (!$('fiAtCss')) { var st = document.createElement('style'); st.id = 'fiAtCss';
+          st.textContent = '.bs-table.fi-at{table-layout:fixed;width:100%;font-size:.85rem}.bs-table.fi-at tbody td{white-space:normal!important;max-width:none!important;overflow:visible!important;overflow-wrap:anywhere;line-height:1.35;vertical-align:top}' +
+            '.bs-table.fi-at th:last-child,.bs-table.fi-at tbody td:last-child{right:auto;box-shadow:none;white-space:normal;text-align:left;width:auto}.bs-table.fi-at tbody td:last-child{position:static}' +
+            '.fi-at .fi-chip{white-space:normal;display:inline-block;max-width:100%}.fi-at small{color:#64748b}.fi-at td:first-child small{white-space:nowrap}' +
+            '.fi-at th:nth-child(1){width:12%}.fi-at th:nth-child(2){width:32%}.fi-at th:nth-child(3){width:17%}.fi-at th:nth-child(4){width:17%}.fi-at th:nth-child(5){width:22%}';
+          document.head.appendChild(st); }
+        h += '<div><table class="bs-table fi-at"><thead><tr><th>N° / Fecha</th><th>Documento y vigencia</th><th>Estado</th><th>Supervisor</th><th>Observaciones</th></tr></thead><tbody>' +
           lista.slice(0, 25).map(function (a) {
-            return '<tr><td>' + fecha(a.fecha_atencion) + '</td><td>' + esc(a.detalle_documento || '—') + '</td><td>' + (a.fecha_inicio_doc ? fecha(a.fecha_inicio_doc) + ' → ' + fecha(a.fecha_termino_doc) : '—') + '</td><td>' + estadoChip(a.estado) + '</td><td>' + esc(a.supervisor || '—') + '</td><td>' + esc(a.observaciones || '') + '</td></tr>';
+            var vig = a.fecha_inicio_doc || a.fecha_termino_doc ? fecha(a.fecha_inicio_doc) + ' → ' + fecha(a.fecha_termino_doc) : 'sin vigencia';
+            return '<tr><td><b>' + esc(a.nro || a.id || '') + '</b><br><small>' + fecha(a.fecha_atencion) + '</small></td><td>' + esc(a.detalle_documento || '—') + '<br><small>Vigencia: ' + vig + '</small></td><td>' + estadoChip(a.estado) + '</td>' +
+              '<td>' + esc(a.supervisor || '—') + (a.responsable_recepcion ? '<br><small>Recepción: ' + esc(a.responsable_recepcion) + '</small>' : '') + '</td><td>' + (esc(a.observaciones || '') || '<small>—</small>') + '</td></tr>';
           }).join('') + '</tbody></table></div>';
-        if (lista.length > 25) h += '<div class="bs-text-sm bs-text-muted" style="margin-top:6px">Mostrando 25 de ' + lista.length + '. Para el detalle completo: Descansos Médicos → Consulta RR.LL. (Azure).</div>';
+        if (lista.length > 25) h += '<div class="bs-text-sm bs-text-muted" style="margin-top:6px">Mostrando 25 de ' + lista.length + '. Para el detalle completo: Descansos Médicos → Consulta RR.LL.</div>';
       }
       box.innerHTML = h + '</div>';
     });
