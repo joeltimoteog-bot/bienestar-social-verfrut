@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   bs-tablas-legibles.css — _BS_TABLAS_LEGIBLES_V1 (06-nov-2026)
+   bs-tablas-legibles.css — _BS_TABLAS_LEGIBLES_V1/V2 (06-nov-2026)
    Todas las tablas de Bienestar: que se vean TODOS los datos, sin "…" ni columnas encimadas.
    - El texto largo pasa a una segunda línea en vez de cortarse con puntos suspensivos.
    - Las etiquetas (estado, clasificación, vencido…) ya no invaden la columna de al lado.
@@ -27,3 +27,29 @@
 .bs-main .bs-table tbody td:last-child:has(button, a, .bs-btn, select) { white-space: nowrap !important; }
 /* textos cortos (montos, fechas, códigos, DNI): siempre en una línea — la marca la pone bs-tablas-legibles.js */
 .bs-main .bs-table tbody td.t-corto { white-space: nowrap !important; }
+
+/* ── _BS_TABLAS_LEGIBLES_V2 (06-nov): distribución empresarial ─────────────────────────────────────────── */
+/* 1) Área de trabajo más ancha en pantallas grandes (antes 1280 px fijos: quedaba una franja angosta) */
+@media (min-width: 1400px) {
+  .bs-main, .bs-topbar-inner { max-width: min(1640px, 94vw) !important; }
+}
+/* 2) Tabla compacta y ordenada: misma letra, filas parejas */
+.bs-main .bs-table { font-size: .84rem; }
+.bs-main .bs-table thead th { font-size: .66rem; letter-spacing: .06em; padding: .6rem .65rem; white-space: nowrap; vertical-align: bottom; }
+.bs-main .bs-table tbody td { padding: .55rem .65rem !important; vertical-align: middle; max-width: 300px !important; }
+/* 3) Etiquetas en UNA línea (no en 3 renglones); solo las muy largas bajan de línea */
+.bs-main .bs-table .bs-badge, .bs-main .bs-table [class*="chip"], .bs-main .bs-table [class*="badge"] {
+  white-space: nowrap !important; font-size: .64rem !important; padding: .2rem .5rem !important; letter-spacing: .02em;
+}
+.bs-main .bs-table td:has(.bs-badge, [class*="chip"], [class*="badge"]) { white-space: nowrap !important; }
+/* 4) Columna de acciones: angosta, botones pequeños en fila y separada con línea, no tapa la columna anterior */
+.bs-main .bs-table tbody td:last-child:has(button, a, .bs-btn, select) { width: 1% !important; padding-left: .5rem !important; }
+.bs-main .bs-table tbody td:last-child .bs-btn, .bs-main .bs-table tbody td:last-child button { padding: .28rem .55rem !important; font-size: .74rem !important; margin: 1px; }
+.bs-table-wrap { overflow-x: auto; }
+/* 5) Pantallas medianas (laptop): aprovechar todo el ancho y que las acciones NO tapen columnas al desplazar */
+@media (max-width: 1399px) {
+  .bs-main { max-width: 100% !important; padding-left: 14px !important; padding-right: 14px !important; }
+  .bs-main .bs-table th:last-child, .bs-main .bs-table tbody td:last-child { position: static !important; box-shadow: none !important; }
+}
+/* textos (nombres, sectores, detalle): mínimo legible, como mucho 2–3 renglones */
+.bs-main .bs-table:not(.az-tabla):not(.fi-at) tbody td:not(.t-corto):not(:first-child):not(:last-child):not(:has(.bs-badge, [class*="chip"], [class*="badge"])) { min-width: 140px; }
