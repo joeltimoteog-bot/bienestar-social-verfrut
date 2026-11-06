@@ -5,7 +5,7 @@
    y la hoja de Google sigue siendo la copia de respaldo y, por ahora, donde se escribe.
 
    Propiedades del script (Archivo → Configuración del proyecto → Propiedades):
-     AZURE_API_URL   = https://rl-fn-verfrut.azurewebsites.net/api
+     AZURE_API_URL   = https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api   (06-nov: antes Azure)
      AZURE_HOST_KEY  = (misma llave de funciones que usa el Apps Script de RR.LL.)
 
    Funciones:
@@ -121,3 +121,6 @@ function _bsAzClavesModulo_(modulo) {
   if (/descan/.test(m)) return ['bs_descansos'];
   return Object.keys(BS_AZ_HOJAS);
 }
+
+/* _BS_SUPABASE_API_V1 (06-nov): subir TODAS las hojas a Supabase (sin argumentos, para el menu Ejecutar) */
+function bsSupabaseSubirTodo() { return bsAzureSyncTodo(true); }

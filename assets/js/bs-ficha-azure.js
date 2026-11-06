@@ -10,7 +10,7 @@
 (function () {
   'use strict';
   if (window._BS_FICHA_AZURE_V1) return; window._BS_FICHA_AZURE_V1 = true;
-  var URL = 'https://rl-fn-verfrut.azurewebsites.net/api/trabajadores/buscar', MAX = 15;
+  var URL = 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api/trabajadores/buscar', MAX = 15;
   var previo = window.api; if (typeof previo !== 'function') return;
 
   function token() { try { return (JSON.parse(localStorage.getItem('bienestarSocialAuth') || '{}') || {}).rl_token || ''; } catch (e) { return ''; } }

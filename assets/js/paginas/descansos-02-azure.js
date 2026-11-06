@@ -6,7 +6,7 @@
    Solo lectura: no escribe en Azure ni en Sheets. */
 (function () {
   'use strict';
-  var AZ = 'https://rl-fn-verfrut.azurewebsites.net/api/';
+  var AZ = 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api/';
   var RX_DM = /CITT|DESCANSO|D\.?M\.?\b|LICENCIA|MATERNIDAD|INCAPACIDAD|SUBSIDIO|ESSALUD|MEDIC/i;
 
   function $(id) { return document.getElementById(id); }

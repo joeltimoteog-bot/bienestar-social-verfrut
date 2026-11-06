@@ -5,7 +5,7 @@
 // Autor: Joel Angel Timoteo Gonza · Unifrutti Group
 // =========================================================
 
-const BS_TRABAJADORES_API = 'https://rl-fn-verfrut.azurewebsites.net/api/trabajadores/buscar';
+const BS_TRABAJADORES_API = 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api/trabajadores/buscar';
 
 /**
  * Busca un trabajador por DNI en Azure SQL.

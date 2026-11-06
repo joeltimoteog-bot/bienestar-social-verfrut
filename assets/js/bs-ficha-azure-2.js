@@ -8,7 +8,7 @@
 (function () {
   'use strict';
   if (window._BS_FICHA_AZURE_V2) return; window._BS_FICHA_AZURE_V2 = true;
-  var AZ = 'https://rl-fn-verfrut.azurewebsites.net/api/';
+  var AZ = 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api/';
   var CACHE_MS = 5 * 60 * 1000, cache = {};
   var previo = window.api; if (typeof previo !== 'function') return;
 
