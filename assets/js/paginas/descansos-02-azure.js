@@ -85,7 +85,7 @@
 
     var resumen;
     if (!lista.length) resumen = '<div class="az-res az-res-off">Sin atenciones ' + (soloDM ? 'de descanso médico ' : '') + 'registradas en RR.LL. para este DNI en los últimos 3 años.</div>';
-    else if (enProc.length) resumen = '<div class="az-res az-res-warn"><b>' + enProc.length + '</b> atención' + (enProc.length === 1 ? '' : 'es') + ' EN PROCESO: el trabajador aún no cerró / no regularizó la documentación en RR.LL.</div>';
+    else if (enProc.length) resumen = '<div class="az-res az-res-warn"><b>' + enProc.length + '</b> ' + (enProc.length === 1 ? 'atención' : 'atenciones') + ' EN PROCESO: el trabajador aún no cerró / no regularizó la documentación en RR.LL.</div>';
     else resumen = '<div class="az-res az-res-ok">Todas las atenciones (' + fin.length + ') están FINALIZADAS: documentación regularizada y cerrada en RR.LL.</div>';
 
     var h = '<div class="az-card">' +
@@ -93,7 +93,7 @@
       '<div class="az-kpis"><span>Total <b>' + lista.length + '</b></span><span>En proceso <b class="t-warn">' + enProc.length + '</b></span><span>Finalizadas <b class="t-ok">' + fin.length + '</b></span><span>Reg. Bienestar <b>' + bs.length + '</b></span></div></div>' +
       resumen + '</div>';
 
-    h += '<h4 class="az-h">Atenciones en RR.LL. (Azure) · ventana ' + esc(resp.ventana_dias) + ' días</h4>';
+    h += '<h4 class="az-h">Atenciones en RR.LL. (base central) · ventana ' + esc(resp.ventana_dias) + ' días</h4>';
     if (lista.length) {
       h += '<div class="bs-table-wrap"><table class="bs-table az-tabla"><thead><tr><th>N°</th><th>Fecha atención</th><th>Documento</th><th>Vigencia del documento</th><th>Estado</th><th>Empresa / Fundo</th><th>Supervisor</th><th>Observaciones</th></tr></thead><tbody>' + lista.map(filaAzure).join('') + '</tbody></table></div>';
     } else h += '<p class="bs-text-muted">Sin registros.</p>';
@@ -116,7 +116,7 @@
   async function consultar() {
     var dni = ($('azDni').value || '').replace(/\D/g, '');
     if (dni.length < 8) { $('azOut').innerHTML = '<div class="az-res az-res-warn">Ingrese un DNI válido (8 dígitos o más).</div>'; return; }
-    if (!token()) { $('azOut').innerHTML = '<div class="az-res az-res-warn">Su sesión no tiene credencial de RR.LL. Cierre sesión y vuelva a ingresar para consultar Azure.</div>'; return; }
+    if (!token()) { $('azOut').innerHTML = '<div class="az-res az-res-warn">Su sesión no tiene credencial de RR.LL. Cierre sesión y vuelva a ingresar para consultar la base central.</div>'; return; }
     var b = $('azBuscar'); b.disabled = true; b.textContent = 'Consultando…';
     $('azOut').innerHTML = '<div class="bs-text-muted" style="padding:1rem 0">Consultando la base de datos central…</div>';
     try {
@@ -127,7 +127,7 @@
       var t = rs[0]; var trab = (t && t.success && t.trabajadores && t.trabajadores[0]) || null;
       render(dni, trab, rs[1] || {}, $('azSoloDM').checked);
     } catch (e) {
-      $('azOut').innerHTML = '<div class="az-res az-res-warn">' + (e.message === 'SESION' ? 'Azure rechazó la sesión (401). Cierre sesión y vuelva a ingresar.' : 'No se pudo consultar Azure: ' + esc(e.message)) + '</div>';
+      $('azOut').innerHTML = '<div class="az-res az-res-warn">' + (e.message === 'SESION' ? 'La base central rechazó la sesión (401). Cierre sesión y vuelva a ingresar.' : 'No se pudo consultar la base central: ' + esc(e.message)) + '</div>';
     } finally { b.disabled = false; b.textContent = 'Consultar'; }
   }
 
@@ -137,7 +137,9 @@
       '.az-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:14px}.az-trab{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.az-kpis{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:#475569}.az-kpis b{font-size:1.1rem;color:#0f2748;margin-left:4px}.t-warn{color:#b45309!important}.t-ok{color:#15803d!important}' +
       '.az-res{padding:10px 12px;border-radius:8px;font-size:.9rem;margin-top:6px}.az-res-ok{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}.az-res-warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a}.az-res-off{background:#f8fafc;color:#475569;border:1px solid #e2e8f0}' +
       '.az-chip{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.78rem;font-weight:600;margin:2px 4px 2px 0;white-space:nowrap}.az-ok{background:#dcfce7;color:#166534}.az-warn{background:#fef3c7;color:#92400e}.az-info{background:#dbeafe;color:#1e40af}.az-off{background:#f1f5f9;color:#475569}' +
-      '.az-h{margin:16px 0 8px;font-size:.95rem;color:#0f2748}.az-tabla td,.az-tabla th{font-size:.85rem;vertical-align:top}.az-tabla small{color:#64748b}';
+      '.az-h{margin:16px 0 8px;font-size:.95rem;color:#0f2748}.az-tabla td,.az-tabla th{font-size:.85rem;vertical-align:top}.az-tabla small{color:#64748b}' +
+      /* _DM_PANTALLA_V1 (06-nov): en esta tabla la ultima columna (Observaciones) no va pegada a la derecha: tapaba Estado */
+      '.bs-main .bs-table.az-tabla th:last-child,.bs-main .bs-table.az-tabla tbody td:last-child{right:auto;box-shadow:none;white-space:normal;text-align:left;width:auto;min-width:180px}.bs-main .bs-table.az-tabla tbody td:last-child{position:static}.az-tabla .az-chip{white-space:normal}';
     document.head.appendChild(st);
   }
 

@@ -35,7 +35,7 @@
       '<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><div style="width:48px;height:48px;border-radius:50%;background:#0f2748;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">' + (t ? esc(nombreDe(t).split(/\s+/).slice(0, 2).map(function (x) { return x.charAt(0); }).join('')) : '?') + '</div>' +
       '<div style="flex:1;min-width:200px"><div style="font-weight:700;font-size:1.05rem;color:#0f2748">' + esc(t ? nombreDe(t) : 'DNI ' + dni + ' (no está en el padrón de Azure)') + '</div>' +
       '<div class="bs-text-sm bs-text-muted" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px"><span>DNI: <b>' + esc(dni) + '</b></span>' + meta.filter(function (m) { return m[1]; }).map(function (m) { return '<span>' + esc(m[0]) + ': <b>' + esc(m[1]) + '</b></span>'; }).join('') + '</div></div>' +
-      '<span class="fi-chip sin_fecha" title="Datos del padrón leídos de Azure">☁️ Azure</span></div>' +
+      '<span class="fi-chip sin_fecha" title="Datos del padrón leídos de la base central (Supabase)">☁️ Base central</span></div>' +
       '<div style="display:flex;gap:10px;align-items:center;margin-top:12px" class="bs-text-sm bs-text-muted"><div class="bs-spinner bs-spinner-dark" style="width:16px;height:16px"></div>Armando el historial (casos, subsidios, descansos) desde el servidor de Bienestar…</div></div>';
   }
 
@@ -49,9 +49,9 @@
   function seccionAtenciones(dni) {
     var ancla = $('fAlertas'); if (!ancla) return;
     var box = $('fAzureAt'); if (!box) { box = document.createElement('div'); box.id = 'fAzureAt'; box.style.margin = '12px 0'; ancla.parentNode.insertBefore(box, ancla.nextSibling); }
-    box.innerHTML = '<div class="bs-text-sm bs-text-muted">☁️ Consultando atenciones de RR.LL. en Azure…</div>';
+    box.innerHTML = '<div class="bs-text-sm bs-text-muted">☁️ Consultando atenciones de RR.LL. en la base central…</div>';
     azGet('atenciones/by-dni?dni=' + encodeURIComponent(dni) + '&dias=1095&completo=1', 8000).then(function (j) {
-      if (!j) { box.innerHTML = '<div class="bs-text-sm bs-text-muted">☁️ Atenciones RR.LL.: Azure no respondió (sin sesión o sin conexión).</div>'; return; }
+      if (!j) { box.innerHTML = '<div class="bs-text-sm bs-text-muted">☁️ Atenciones RR.LL.: la base central no respondió (sin sesión o sin conexión).</div>'; return; }
       var lista = [].concat(j.en_proceso || [], j.finalizadas_recientes || []).sort(function (a, b) { return new Date(b.fecha_atencion) - new Date(a.fecha_atencion); });
       var enProc = (j.en_proceso || []).length;
       var h = '<div class="bs-card" style="padding:14px 16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px"><b style="color:#0f2748">☁️ Atenciones RR.LL. (Azure) · últimos 3 años</b>' +

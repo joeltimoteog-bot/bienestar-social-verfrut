@@ -10,6 +10,8 @@
     const esAdmin = /admin|geren/i.test(user.rol || '') || ['jtimoteo', 'ovilela'].indexOf((user.usuario || '').toLowerCase()) >= 0;
     if (!esAdmin && !(user.permisos && user.permisos.descansos)) { appAlert('No tienes acceso al módulo Descansos Médicos.'); window.location.href = '../portal.html'; }
     document.getElementById('userName').textContent = user.nombre || user.usuario;
+    /* _DM_PANTALLA_V1 (06-nov): el filtro Año no tenia opciones; 'Todos' primero = mismo resultado de antes */
+    (function () { var s = document.getElementById('fAnio'); if (!s || s.options.length) return; var y = new Date().getFullYear(); s.add(new Option('Todos', '')); for (var a = y + 1; a >= 2024; a--) s.add(new Option(String(a), String(a))); })();
 
     // api(): compartida en assets/js/bs-core.js
     // esc(): compartida en assets/js/bs-core.js)();
