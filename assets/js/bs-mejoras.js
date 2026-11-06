@@ -434,22 +434,23 @@
     var box = document.createElement('div');
     box.id = 'bsmAtrasos';
     if (!rojos) box.className = 'ambar';
-    var items = ATR.slice(0, 6).map(function (a) {
-      var dr = Number(a.diasRestantes || 0);
-      var txt = dr < 0 ? Math.abs(dr) + 'd de atraso' : (dr === 0 ? 'vence HOY' : 'vence en ' + dr + 'd');
-      return '<div class="it"><span>' + esc(window.bsDescAlerta(a)) +
-        (a.fechaLimite ? ' · límite: ' + esc(a.fechaLimite) : '') + '</span>' +
-        '<span class="d ' + a.estado + '">' + txt + '</span></div>';
-    }).join('');
-    var extra = ATR.length > 6 ? '<div class="it"><span>… y ' + (ATR.length - 6) + ' más (ver Panel)</span></div>' : '';
+    /* _BS_ATR_PANEL_V1 (06-nov): barra compacta de una linea + panel lateral con la lista completa (igual que el inicio) */
+    bsaCss();
+    var ord = ATR.slice().sort(function (x, y) { if (x.estado !== y.estado) return x.estado === 'rojo' ? -1 : 1; return Number(x.diasRestantes || 0) - Number(y.diasRestantes || 0); });
+    ATR = ord;
+    var amb = ATR.length - rojos, p0 = ATR[0], d0 = Number(p0.diasRestantes || 0);
+    box.className = 'bsa' + (rojos ? '' : ' ambar');
     box.innerHTML =
-      '<div class="h">' + (rojos ? '🚨 ' + rojos + ' caso(s) vencido(s) en este módulo' : '⏳ Casos por vencer en este módulo') +
-      (ATR.length - rojos > 0 ? ' · ' + (ATR.length - rojos) + ' por vencer' : '') + '</div>' +
-      items + extra +
-      '<div class="acts">' +
+      '<div class="bsa-fila"><span class="bsa-ico">' + (rojos ? '🚨' : '⏳') + '</span>' +
+      '<div class="bsa-txt"><div class="bsa-tit">' + (rojos ? '<b>' + rojos + '</b> caso' + (rojos === 1 ? '' : 's') + ' vencido' + (rojos === 1 ? '' : 's') : '') +
+      (amb ? (rojos ? ' · ' : '') + '<b class="a">' + amb + '</b> por vencer' : '') + ' <span>en este módulo</span></div>' +
+      '<div class="bsa-sub">' + (p0.estado === 'rojo' ? 'Más antiguo: ' : 'Próximo a vencer: ') + '<b>' + esc(window.bsDescAlerta(p0)) + '</b>' +
+      (p0.fechaLimite ? ' · límite ' + esc(p0.fechaLimite) : '') + ' · <em>' + (d0 < 0 ? Math.abs(d0) + ' días de atraso' : (d0 === 0 ? 'vence HOY' : 'vence en ' + d0 + ' días')) + '</em></div></div>' +
+      '<div class="acts"><button class="b-ver">📋 Ver detalle (' + ATR.length + ')</button>' +
       '<button class="b-wsp">📱 WhatsApp</button>' +
       '<button class="b-mail">✉️ Correo</button>' +
-      '<button class="b-copy">📋 Copiar reporte</button></div>';
+      '<button class="b-copy">📋 Copiar reporte</button></div></div>';
+    box.querySelector('.b-ver').onclick = bsaAbrir;
     box.querySelector('.b-wsp').onclick = function () { enviarReporte('whatsapp'); };
     box.querySelector('.b-mail').onclick = function () { enviarReporte('correo'); };
     box.querySelector('.b-copy').onclick = function () { enviarReporte('copiar'); };
@@ -458,6 +459,75 @@
     if (saludo && saludo.parentNode === host) host.insertBefore(box, saludo.nextSibling);
     else host.insertBefore(box, host.firstChild);
     box.style.display = 'block';
+  }
+
+  function bsaCss() {
+    if (document.getElementById('bsaCss')) return;
+    var st = document.createElement('style'); st.id = 'bsaCss';
+    st.textContent =
+      '#bsmAtrasos.bsa{padding:12px 16px!important;border-radius:12px}' +
+      '#bsmAtrasos .bsa-fila{display:flex;align-items:center;gap:14px;flex-wrap:wrap}' +
+      '#bsmAtrasos .bsa-ico{font-size:1.5rem;line-height:1}' +
+      '#bsmAtrasos .bsa-txt{flex:1;min-width:260px}' +
+      '#bsmAtrasos .bsa-tit{font-size:.95rem;color:#0f172a;font-weight:600}#bsmAtrasos .bsa-tit b{color:#b91c1c;font-size:1.15rem}#bsmAtrasos .bsa-tit b.a{color:#b45309}#bsmAtrasos .bsa-tit span{color:#64748b;font-weight:500}' +
+      '#bsmAtrasos .bsa-sub{font-size:.8rem;color:#64748b;margin-top:2px}#bsmAtrasos .bsa-sub b{color:#334155}#bsmAtrasos .bsa-sub em{font-style:normal;font-weight:700;color:#b91c1c}' +
+      '#bsmAtrasos .acts{margin-top:0!important}#bsmAtrasos .b-ver{background:#0f2748!important;color:#fff!important}' +
+      '#bsaPanel{position:fixed;inset:0;z-index:6000;display:none;font-family:Inter,system-ui,sans-serif}#bsaPanel.open{display:block}' +
+      '#bsaPanel .f{position:absolute;inset:0;background:rgba(10,20,45,.45);backdrop-filter:blur(2px)}' +
+      '#bsaPanel .h{position:absolute;top:0;right:0;height:100%;width:min(820px,100vw);background:#f3f5fa;box-shadow:-20px 0 50px rgba(0,0,0,.25);display:flex;flex-direction:column;animation:bsaIn .25s cubic-bezier(.2,.9,.3,1)}' +
+      '@keyframes bsaIn{from{transform:translateX(40px)}to{transform:none}}' +
+      '#bsaPanel .cab{display:flex;align-items:center;gap:12px;padding:16px 22px;background:#fff;border-bottom:1px solid #dde3ef}#bsaPanel .cab h3{margin:0;font-size:1.15rem;color:#0f2748}#bsaPanel .cab small{color:#64748b}' +
+      '#bsaPanel .x{margin-left:auto;border:1px solid #dde3ef;background:#fff;border-radius:10px;width:38px;height:38px;font-size:16px;cursor:pointer}' +
+      '#bsaPanel .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px 22px 0}' +
+      '#bsaPanel .seg{display:inline-flex;background:#fff;border:1px solid #dde3ef;border-radius:999px;padding:3px}#bsaPanel .seg button{border:0;background:transparent;font:inherit;font-size:12.5px;font-weight:700;padding:6px 13px;border-radius:999px;cursor:pointer;color:#13213f}#bsaPanel .seg button.on{background:#0f2748;color:#fff}' +
+      '#bsaPanel .bar input{margin-left:auto;min-width:220px;padding:8px 12px;border:1px solid #dde3ef;border-radius:10px;font:inherit;font-size:13px}' +
+      '#bsaPanel .cu{flex:1;overflow-y:auto;padding:12px 22px}' +
+      '#bsaPanel .lis{background:#fff;border:1px solid #dde3ef;border-radius:12px}' +
+      '#bsaPanel .row{display:grid;grid-template-columns:1fr 150px 160px;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid #eef1f6;border-left:4px solid #dc2626;font-size:13.5px}#bsaPanel .row.ambar{border-left-color:#d97706}#bsaPanel .row:last-child{border-bottom:0}#bsaPanel .row:hover{background:#f8fafc}' +
+      '#bsaPanel .row .c{font-weight:600;color:#0f172a}#bsaPanel .row .l{color:#64748b;font-size:12.5px}#bsaPanel .row .d{text-align:right;font-weight:700;color:#b91c1c}#bsaPanel .row.ambar .d{color:#b45309}' +
+      '#bsaPanel .vac{padding:16px;text-align:center;color:#64748b}' +
+      '#bsaPanel .pie{display:flex;gap:8px;flex-wrap:wrap;padding:12px 22px;background:#fff;border-top:1px solid #dde3ef}#bsaPanel .pie button{border:none;border-radius:8px;padding:8px 14px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit}' +
+      '#bsaPanel .p-wsp{background:#25d366;color:#fff}#bsaPanel .p-mail{background:#1e3a8a;color:#fff}#bsaPanel .p-copy{background:#e2e8f0;color:#334155}' +
+      '@media (max-width:700px){#bsaPanel .row{grid-template-columns:1fr auto}#bsaPanel .row .l{display:none}}';
+    document.head.appendChild(st);
+  }
+  var bsaFiltro = 'todos', bsaQ = '';
+  function bsaPintar() {
+    var cont = document.querySelector('#bsaPanel .lis'); if (!cont) return;
+    var vis = ATR.filter(function (a) {
+      if (bsaFiltro !== 'todos' && a.estado !== bsaFiltro) return false;
+      if (bsaQ && (window.bsDescAlerta(a) + ' ' + (a.fechaLimite || '') + ' ' + (a.empresa || '')).toLowerCase().indexOf(bsaQ) < 0) return false;
+      return true;
+    });
+    cont.innerHTML = vis.length ? vis.map(function (a) {
+      var dr = Number(a.diasRestantes || 0);
+      return '<div class="row ' + a.estado + '"><span class="c">' + esc(window.bsDescAlerta(a)) + (a.empresa ? ' <span class="l">· ' + esc(a.empresa) + '</span>' : '') + '</span>' +
+        '<span class="l">' + (a.fechaLimite ? 'Límite: ' + esc(a.fechaLimite) : '') + '</span>' +
+        '<span class="d">' + (dr < 0 ? Math.abs(dr) + ' día' + (dr === -1 ? '' : 's') + ' de atraso' : (dr === 0 ? 'vence HOY' : 'vence en ' + dr + ' día' + (dr === 1 ? '' : 's'))) + '</span></div>';
+    }).join('') : '<div class="vac">Sin resultados con ese filtro.</div>';
+  }
+  function bsaAbrir() {
+    var p = document.getElementById('bsaPanel');
+    if (!p) {
+      p = document.createElement('div'); p.id = 'bsaPanel';
+      var rojos = ATR.filter(function (a) { return a.estado === 'rojo'; }).length;
+      p.innerHTML = '<div class="f"></div><aside class="h" role="dialog"><div class="cab"><div><h3>🚨 Casos vencidos y por vencer</h3><small>' + esc(document.title.split('·')[0].trim()) + ' · plazos en días hábiles</small></div><button class="x" title="Cerrar (Esc)">✕</button></div>' +
+        '<div class="bar"><div class="seg"><button data-e="todos" class="on">Todos (' + ATR.length + ')</button><button data-e="rojo">🔴 Vencidos (' + rojos + ')</button><button data-e="ambar">🟡 Por vencer (' + (ATR.length - rojos) + ')</button></div><input type="search" placeholder="🔍 Buscar caso, fecha, empresa…"></div>' +
+        '<div class="cu"><div class="lis"></div></div>' +
+        '<div class="pie"><button class="p-wsp">📱 Enviar por WhatsApp</button><button class="p-mail">✉️ Enviar por correo</button><button class="p-copy">📋 Copiar reporte</button></div></aside>';
+      document.body.appendChild(p);
+      var cerrar = function () { p.classList.remove('open'); document.documentElement.style.overflow = ''; };
+      p.querySelector('.f').onclick = cerrar; p.querySelector('.x').onclick = cerrar;
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrar(); });
+      Array.prototype.forEach.call(p.querySelectorAll('.seg button'), function (b) {
+        b.onclick = function () { bsaFiltro = b.getAttribute('data-e'); Array.prototype.forEach.call(p.querySelectorAll('.seg button'), function (x) { x.classList.toggle('on', x === b); }); bsaPintar(); };
+      });
+      p.querySelector('.bar input').oninput = function (e) { bsaQ = String(e.target.value || '').toLowerCase().trim(); bsaPintar(); };
+      p.querySelector('.p-wsp').onclick = function () { enviarReporte('whatsapp'); };
+      p.querySelector('.p-mail').onclick = function () { enviarReporte('correo'); };
+      p.querySelector('.p-copy').onclick = function () { enviarReporte('copiar'); };
+    }
+    bsaPintar(); p.classList.add('open'); document.documentElement.style.overflow = 'hidden';
   }
 
   function textoReporte() {
