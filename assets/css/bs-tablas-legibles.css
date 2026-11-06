@@ -1,0 +1,29 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   bs-tablas-legibles.css — _BS_TABLAS_LEGIBLES_V1 (06-nov-2026)
+   Todas las tablas de Bienestar: que se vean TODOS los datos, sin "…" ni columnas encimadas.
+   - El texto largo pasa a una segunda línea en vez de cortarse con puntos suspensivos.
+   - Las etiquetas (estado, clasificación, vencido…) ya no invaden la columna de al lado.
+   - La última columna sigue fija a la derecha SOLO si tiene botones (Ver / Editar / Acciones).
+   Se carga al final; para volver atrás basta quitar su <link>. No cambia datos ni lógica.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.bs-main .bs-table tbody td {
+  white-space: normal !important; overflow: visible !important; text-overflow: clip !important;
+  max-width: 340px !important; overflow-wrap: break-word; word-break: normal; line-height: 1.35;
+}
+/* números cortos (ID, DNI, N°) en una sola línea */
+.bs-main .bs-table tbody td:first-child { white-space: nowrap !important; }
+/* etiquetas: completas, sin "…", y si son largas bajan de línea dentro de su celda */
+.bs-main .bs-table .bs-badge, .bs-main .bs-table [class*="chip"], .bs-main .bs-table [class*="badge"] {
+  max-width: 100% !important; overflow: visible !important; text-overflow: clip !important; white-space: normal !important;
+  display: inline-block; line-height: 1.25; vertical-align: middle;
+}
+/* última columna SIN botones (p. ej. Observaciones, Total): columna normal, no pegada a la derecha */
+.bs-main .bs-table:not(:has(tbody td:last-child :is(button, a, .bs-btn, select))) th:last-child,
+.bs-main .bs-table tbody td:last-child:not(:has(button, a, .bs-btn, select)) {
+  position: static !important; right: auto !important; box-shadow: none !important; text-align: left; width: auto !important;
+}
+.bs-main .bs-table:not(:has(tbody td:last-child :is(button, a, .bs-btn, select))) th:last-child { position: sticky !important; top: 0; }
+/* columna de acciones: los botones nunca se parten */
+.bs-main .bs-table tbody td:last-child:has(button, a, .bs-btn, select) { white-space: nowrap !important; }
+/* textos cortos (montos, fechas, códigos, DNI): siempre en una línea — la marca la pone bs-tablas-legibles.js */
+.bs-main .bs-table tbody td.t-corto { white-space: nowrap !important; }
