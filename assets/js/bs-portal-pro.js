@@ -50,7 +50,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   /* ═══ 1) ATRASOS ═══ */
-  var LIMITE = 12, estado = 'todos', modulo = '', q = '', verTodo = false, pintando = false;
+  var LIMITE = 100000,   /* _BS_ATR_PANEL_V1 (06-nov): en el panel lateral se ven todos */  estado = 'todos', modulo = '', q = '', verTodo = false, pintando = false;
   function items() { var l = document.getElementById('atrLista'); return l ? Array.prototype.slice.call(l.querySelectorAll('.atr-item')) : []; }
   function modDe(it) { var m = it.querySelector('.mod'); return m ? String(m.textContent || '').split('·')[0].trim() : ''; }
   function asegurarUI() {
