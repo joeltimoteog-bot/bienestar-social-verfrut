@@ -82,6 +82,14 @@ function bsModuloPasarASupabase_(claves) {
   });
   var msg = out.join('\n'); Logger.log(msg); return msg;
 }
+/* Módulo 2 · Accidentes: casos + seguimientos. El correo "Nuevo accidente registrado" lo sigue mandando Google:
+   el navegador llama a bs_notificarCasoNuevo justo después de guardar el caso en Supabase. */
+function bsAccidentesPasarASupabase() { return bsModuloPasarASupabase_(['bs_accidentes_casos', 'bs_accidentes_seguim']); }
+function bsAccidentesVolverAHoja() { ['bs_accidentes_casos', 'bs_accidentes_seguim'].forEach(function (k) { bsFuentePoner(k, 'hoja'); }); return 'ok'; }
+function bs_notificarCasoNuevo(p) {
+  try { if (p && p.datos && typeof _avisarAccidenteRegistrado === 'function') _avisarAccidenteRegistrado(p.datos); } catch (e) {}
+  return { ok: true };
+}
 /* Módulo 1 · Hallazgos: quejas + seguimientos + buzones */
 function bsHallazgosPasarASupabase() { return bsModuloPasarASupabase_(['bs_quejas', 'bs_quejas_seguim', 'bs_buzones']); }
 /* marcha atrás de emergencia (la hoja vuelve a mandar; lo guardado en Supabase mientras tanto NO está en la hoja) */

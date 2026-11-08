@@ -1,5 +1,5 @@
 /* =========================================================================
- * _BS_GUARDA_SUPABASE_V1 (08-nov-2026) · Bienestar Social guarda y lee DIRECTO en Supabase
+ * _BS_GUARDA_SUPABASE_V1 (08-nov-2026) · Bienestar Social guarda y lee DIRECTO en Supabase  · v2: + Accidentes
  * -------------------------------------------------------------------------
  * Envuelve window.api(): para los módulos listados en BS_SUPABASE_MODULOS, las acciones del
  * Apps Script (bs_listarQuejas, bs_crearQueja, …) se convierten en llamadas a la Edge Function
@@ -19,7 +19,7 @@
   var EDGE = window.BS_EDGE_URL || 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api';
 
   /* módulos que ya guardan en Supabase (se agregan uno a uno conforme avanza el plan) */
-  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas'];
+  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas', 'accidentes'];
 
   var CLAVE_DE_MODULO = { quejas: 'bs_quejas', accidentes: 'bs_accidentes_casos', subsidios: 'bs_subsidios', hostigamiento: 'bs_hostigamiento', descansos: 'bs_descansos', rendiciones: 'bs_rendiciones', sugerencias: 'bs_sugerencias' };
 
@@ -89,11 +89,44 @@
       });
       return { ok: true, total: total, sectores: orden.map(function (k) { return mapa[k]; }) };
     },
+    /* ---- ACCIDENTES (casos + seguimientos + importación) ---- */
+    bs_listarAccidentes: async function (p) {
+      var r = await tabla('bs_accidentes_casos', true); if (r === CAE_A_GOOGLE || !r.ok) return r;
+      var items = (r.items || []).slice();
+      if (p && p.empresa) items = items.filter(function (i) { return i.empresa === p.empresa; });
+      if (p && p.estado_caso) items = items.filter(function (i) { return i.estado_caso === p.estado_caso; });
+      if (p && p.dni) items = items.filter(function (i) { return String(i.dni) === String(p.dni); });
+      items.sort(function (a, b) { return num(b.id) - num(a.id); });
+      return { ok: true, items: items, total: items.length, fuente: 'supabase' };
+    },
+    bs_crearAccidente: async function (p) {
+      var r = await guardar('bs_accidentes_casos', 'crear', { datos: p.datos || {} });
+      if (r !== CAE_A_GOOGLE && r.ok) { try { orig('bs_notificarCasoNuevo', { id: r.id, datos: p.datos || {} })['catch'](function () {}); } catch (e) {} }   /* el correo lo sigue mandando Google */
+      if (r !== CAE_A_GOOGLE && r.ok && !r.message) r.message = 'Caso registrado';
+      return r;
+    },
+    bs_actualizarAccidente: async function (p) { var r = await guardar('bs_accidentes_casos', 'actualizar', { id: p.id, datos: p.datos || {} }); if (r !== CAE_A_GOOGLE && r.ok && !r.message) r.message = 'Caso actualizado'; return r; },
+    bs_listarSeguimientos: async function (p) {
+      var r = await tabla('bs_accidentes_seguim', true); if (r === CAE_A_GOOGLE || !r.ok) return r;
+      var id = String(p.id_caso == null ? p : p.id_caso).trim();
+      var items = (r.items || []).filter(function (s) { return String(s.id_caso == null ? '' : s.id_caso).trim() === id; })
+        .sort(function (a, b) { return num(a.numero_seguimiento) - num(b.numero_seguimiento); });
+      return { ok: true, items: items, total: items.length };
+    },
+    bs_listarTodosSeguimientos: async function (p) {
+      var r = await tabla('bs_accidentes_seguim', true); if (r === CAE_A_GOOGLE || !r.ok) return r;
+      var items = r.items || [];
+      if (p && p.id_caso) { var idc = String(p.id_caso); items = items.filter(function (x) { return String(x.id_caso) === idc; }); }
+      return { ok: true, items: items };
+    },
+    bs_crearSeguimiento: function (p) { return guardar('bs_accidentes_seguim', 'seguimiento', { id: p.id_caso, datos: p.datos || {} }); },
+    bs_importarAccidentes: function (p) { return guardar('bs_accidentes_casos', 'importar', { filas: p.filas || [] }); },
     /* anular / restaurar son genéricos: solo se redirigen si el módulo del registro ya está en Supabase */
     bs_anularRegistro: function (p) { var c = CLAVE_DE_MODULO[p.modulo]; return c && activo(p.modulo) ? guardar(c, 'anular', { id: p.id, motivo: p.motivo }) : CAE_A_GOOGLE; },
     bs_restaurarRegistro: function (p) { var c = CLAVE_DE_MODULO[p.modulo]; return c && activo(p.modulo) ? guardar(c, 'restaurar', { id: p.id, motivo: p.motivo }) : CAE_A_GOOGLE; }
   };
-  var MODULO_DE_ACCION = { bs_listarQuejas: 'quejas', bs_crearQueja: 'quejas', bs_actualizarQueja: 'quejas', bs_listarSeguimientosQueja: 'quejas', bs_crearSeguimientoQueja: 'quejas', bs_cierreMasivoQuejas: 'quejas', bs_listarBuzones: 'quejas' };
+  var MODULO_DE_ACCION = { bs_listarQuejas: 'quejas', bs_crearQueja: 'quejas', bs_actualizarQueja: 'quejas', bs_listarSeguimientosQueja: 'quejas', bs_crearSeguimientoQueja: 'quejas', bs_cierreMasivoQuejas: 'quejas', bs_listarBuzones: 'quejas',
+    bs_listarAccidentes: 'accidentes', bs_crearAccidente: 'accidentes', bs_actualizarAccidente: 'accidentes', bs_listarSeguimientos: 'accidentes', bs_listarTodosSeguimientos: 'accidentes', bs_crearSeguimiento: 'accidentes', bs_importarAccidentes: 'accidentes' };
 
   var orig = window.api;
   if (typeof orig !== 'function') return;
