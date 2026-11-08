@@ -95,7 +95,10 @@
       var r = await fetch(EDGE + '/bs/tabla?clave=' + encodeURIComponent(clave) + (clave === 'bs_auditoria' ? '&hora=1' : ''), { headers: { Authorization: 'Bearer ' + tk }, signal: ctl.signal });
       if (r.status === 403) return { items: [], prohibido: true };
       var j = await r.json(); if (!j || !j.success) throw new Error(j && j.error || 'HTTP ' + r.status);
-      return { items: j.cargada ? (j.items || []) : [], cargada: !!j.cargada };
+      /* _BS_DATOS_FIX_V2 (07-nov): si la tabla aun no fue sincronizada a Supabase (cargada=false) NO es "0 registros":
+         se avisa como error para que el modulo caiga a Google y se marque como parcial (antes Auditoria mostraba 0 eventos e "Integro"). */
+      if (!j.cargada) throw new Error(clave + ' aún no está sincronizada en Supabase');
+      return { items: j.items || [], cargada: true };
     } finally { clearTimeout(t); }
   }
   async function padron(tk) {
@@ -142,5 +145,5 @@
   }
   window.BSDatos = { cargar: cargar, padron: padron, evento: evento, sesion: sesion, puede: puede };
   window.BSReglas = { R: R, estado: estado, alertasDe: alertasDe, ymd: ymd, hoy: hoy, dias: dias, emp: emp, txt: txt, up: up, num: num, mesNum: mesNum, catSub: catSub, montoSub: montoSub, conting: conting, esAnulado: esAnulado };
-  console.log('[_BS_DATOS_PRO_V1] listo');
+  console.log('[_BS_DATOS_PRO_V1 + _BS_DATOS_FIX_V2] listo');
 })();
