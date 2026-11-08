@@ -1,0 +1,35 @@
+/* _BS_DASH_PRO_V1 (07-nov-2026) — Dashboards de indicadores de Bienestar Social (Hallazgos, Accidentes, Hostigamiento, Subsidios)
+   Shell común: barra superior con filtros, KPIs, cuadrícula de gráficos, pie con fuente y hora. Solo presentación. */
+.bsdp-ov{position:fixed;inset:0;z-index:10060;background:#eef2f7;display:none;flex-direction:column;font-family:Inter,system-ui,sans-serif;color:#0f172a;font-size:13px;overflow:hidden}
+.bsdp-ov.on{display:flex}
+.bsdp-bar{background:#fff;border-bottom:1px solid #e2e8f0;padding:9px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:none}
+.bsdp-bar .lg{width:34px;height:34px;border-radius:8px;background:var(--mod,#c8102e);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:.95rem}
+.bsdp-bar h1{margin:0;font-size:15px;font-weight:800;line-height:1.1}.bsdp-bar small{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;font-weight:700}
+.bsdp-f{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:10px}
+.bsdp-f select{border:1px solid #cbd5e1;border-radius:7px;padding:6px 28px 6px 10px;background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%2394a3b8' stroke-width='1.5'/></svg>") no-repeat right 10px center;font:600 12px Inter,system-ui,sans-serif;color:#0f172a;appearance:none;-webkit-appearance:none;cursor:pointer;min-width:0}
+.bsdp-seg{display:flex;border:1px solid #cbd5e1;border-radius:7px;overflow:hidden}.bsdp-seg button{border:0;background:#fff;padding:6px 11px;font:600 12px Inter,system-ui,sans-serif;color:#475569;cursor:pointer;border-right:1px solid #e2e8f0}.bsdp-seg button:last-child{border-right:0}.bsdp-seg button.on{background:#0f2748;color:#fff}
+.bsdp-r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.bsdp-btn{border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:7px 12px;font:600 12px Inter,system-ui,sans-serif;cursor:pointer;color:#0f172a;display:inline-flex;align-items:center;gap:6px}
+.bsdp-btn.d{background:#0f2748;color:#fff;border-color:#0f2748}.bsdp-btn:hover{filter:brightness(.97)}
+.bsdp-x{width:32px;height:32px;border-radius:8px;background:#f1f5f9;border:0;color:#475569;cursor:pointer;font-size:1rem}
+.bsdp-main{flex:1;overflow:auto;padding:14px 20px 18px;position:relative}
+.bsdp-load{position:absolute;inset:0;background:rgba(238,242,247,.85);display:flex;align-items:center;justify-content:center;color:#475569;font-weight:600;z-index:5}
+.bsdp-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.bsdp-kc{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;position:relative;overflow:hidden;min-height:78px}
+.bsdp-kc:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,#0f2748)}
+.bsdp-kc .l{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#64748b;font-weight:700}
+.bsdp-kc .v{font-size:24px;font-weight:800;margin:3px 0 1px;letter-spacing:-.02em;line-height:1.1}
+.bsdp-kc .d{font-size:11px;font-weight:600;color:#64748b}.bsdp-kc .d b{color:#15803d}.bsdp-kc .d b.m{color:#b91c1c}.bsdp-kc .d b.n{color:#334155}
+.bsdp-g{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+.bsdp-c{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px 8px;display:flex;flex-direction:column;min-width:0}
+.bsdp-c .h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px}.bsdp-c .h b{font-size:12.5px;font-weight:700}.bsdp-c .h span{font-size:10.5px;color:#94a3b8;font-weight:600;white-space:nowrap}
+.bsdp-c .b{position:relative;height:200px}.bsdp-c.alta .b{height:250px}
+.bsdp-c .vacio{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;font-weight:600}
+.s3{grid-column:span 3}.s4{grid-column:span 4}.s6{grid-column:span 6}.s8{grid-column:span 8}.s12{grid-column:span 12}
+.bsdp-dn{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;padding-bottom:26px}.bsdp-dn b{font-size:22px;font-weight:800}.bsdp-dn span{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#64748b;font-weight:700}
+.bsdp-rk{display:flex;flex-direction:column;gap:6px;padding-top:4px;flex:1;justify-content:flex-start}.bsdp-rk div{display:flex;align-items:center;gap:9px;font-size:11.5px}.bsdp-rk .n{width:14px;color:#94a3b8;font-weight:700;flex:none}.bsdp-rk .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bsdp-rk .p{height:8px;border-radius:4px;background:#e2e8f0;flex:1.3;overflow:hidden}.bsdp-rk .p i{display:block;height:100%}.bsdp-rk .q{min-width:40px;text-align:right;font-weight:800;flex:none;white-space:nowrap}
+.bsdp-ft{margin-top:12px;font-size:10.5px;color:#94a3b8;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.bsdp-ft b{color:#64748b}.bsdp-nota{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:7px 12px;font-size:11.5px;font-weight:600;margin-bottom:10px}
+@media(max-width:1100px){.s3{grid-column:span 6}.s4{grid-column:span 6}.s8{grid-column:span 12}}
+@media(max-width:700px){.s3,.s4,.s6{grid-column:span 12}.bsdp-f{margin-left:0}}
+@media print{.bsdp-ov{position:static;overflow:visible}.bsdp-bar .bsdp-r{display:none}}
