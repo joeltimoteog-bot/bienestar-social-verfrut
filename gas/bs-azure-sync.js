@@ -25,7 +25,10 @@ var BS_AZ_HOJAS = {
   bs_documentos:          'BS_Documentos',
   bs_quejas:              'BS_Quejas',
   bs_quejas_seguim:       'BS_Quejas_Seguimientos',
-  bs_descansos:           'BS_Descansos'
+  bs_descansos:           'BS_Descansos',
+  bs_rendiciones:         'BS_Rendiciones',        /* _BS_GUARDA_SUPABASE_V1 (08-nov): las tres hojas que faltaban */
+  bs_sugerencias:         'BS_Sugerencias',
+  bs_buzones:             'BS_Buzones'
   /* _BS_GUARDA_SUPABASE_V1 (08-nov): bs_auditoria ya NO se sube desde la hoja: cada evento va directo a Supabase (bs-supabase-escritura.js).
      La hoja BS_Auditoria queda solo como copia local; la última subida completa la hace bsAuditoriaPasarASupabase(). */
 };
@@ -36,6 +39,9 @@ var BS_AZ_POR_ACCION = [
   [/subsidio/i,                        ['bs_subsidios']],
   [/hostig/i,                          ['bs_hostigamiento', 'bs_hostigamiento_olmos']],
   [/queja/i,                           ['bs_quejas', 'bs_quejas_seguim']],
+  [/rendicion/i,                       ['bs_rendiciones']],
+  [/sugerencia/i,                      ['bs_sugerencias']],
+  [/buzon/i,                           ['bs_buzones']],
   [/descanso/i,                        ['bs_descansos']],
   [/documento/i,                       ['bs_documentos']],
   [/anularRegistro|restaurarRegistro/i, null]   /* módulo variable: se resuelve con params.modulo */

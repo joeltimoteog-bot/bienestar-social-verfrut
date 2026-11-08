@@ -69,6 +69,24 @@ function bsAuditoriaPasarASupabase() {
   Logger.log(msg); return msg;
 }
 
+/* ---- UNA VEZ por módulo: la(s) tabla(s) pasan a guardarse en Supabase ----
+   1) última subida completa de cada hoja  2) fuente = supabase (desde ahí la hoja ya no la reemplaza).
+   El navegador (bs-guardar-supabase.js) empieza a guardar en Supabase en cuanto la fuente cambia. */
+function bsModuloPasarASupabase_(claves) {
+  var out = [];
+  claves.forEach(function (k) {
+    var ya = bsFuenteVer_()[k] === 'supabase';
+    var sub = ya ? 'ya estaba en Supabase' : _bsAzCargar_(k, true);
+    var r = ya ? { fuente: 'supabase' } : _bsApiPedir_('fuente', { clave: k, fuente: 'supabase' });
+    out.push(k + ': ' + sub + ' → fuente ' + r.fuente);
+  });
+  var msg = out.join('\n'); Logger.log(msg); return msg;
+}
+/* Módulo 1 · Hallazgos: quejas + seguimientos + buzones */
+function bsHallazgosPasarASupabase() { return bsModuloPasarASupabase_(['bs_quejas', 'bs_quejas_seguim', 'bs_buzones']); }
+/* marcha atrás de emergencia (la hoja vuelve a mandar; lo guardado en Supabase mientras tanto NO está en la hoja) */
+function bsHallazgosVolverAHoja() { ['bs_quejas', 'bs_quejas_seguim', 'bs_buzones'].forEach(function (k) { bsFuentePoner(k, 'hoja'); }); return 'ok'; }
+
 /* ---- fuente por tabla ---- */
 function bsFuenteVer_() { var r = _bsApiPedir_('fuente'), m = {}; (r.tablas || []).forEach(function (t) { m[t.clave] = t.fuente; }); return m; }
 function bsFuenteVer() { var m = bsFuenteVer_(); Logger.log(JSON.stringify(m, null, 1)); return m; }
