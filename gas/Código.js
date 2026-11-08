@@ -59,7 +59,7 @@ function bs_crearUsuarioAdmin() {
   const existe = data.slice(1).some(function(row) { return row[0] === 'jtimoteo'; });
   if (existe) { SpreadsheetApp.getUi().alert('El usuario jtimoteo ya existe.'); return; }
   const now = new Date();
-  sheet.appendRow(['jtimoteo', bs_hashPassword('jtimoteo2026'), 'Joel Angel Timoteo Gonza', 'admin', 'jtimoteo@unifrutti.com', '', true, true, true, true, true, now, now]);
+  sheet.appendRow(['jtimoteo', bs_hashPassword(Utilities.getUuid()) /* _SEG_V1: sin clave fija; el ingreso es con la clave del RR.LL. */, 'Joel Angel Timoteo Gonza', 'admin', 'jtimoteo@unifrutti.com', '', true, true, true, true, true, now, now]);
   SpreadsheetApp.getUi().alert('Usuario admin creado.');
 }
 
@@ -2938,6 +2938,10 @@ function bs_provisionarUsuariosBienestar() {
 // ---------- C) bs_login NUEVO (borra el antiguo y deja este) ----------
 function bs_login(usuario, password) {
   if (!usuario || !password) return { ok: false, message: 'Faltan campos' };
+  /* _SEG_LOGIN_RL_V1 (08-nov-2026): la identidad es el Sistema RR.LL. (bs-login-rl.js valida el rl_token alli, con
+     bcrypt y bloqueo de intentos). La clave propia de la hoja Usuarios (SHA-256 sin sal, claves iniciales
+     previsibles) queda DESACTIVADA salvo emergencia: propiedad del script BS_LOGIN_LOCAL = 'on'. */
+  try { if (PropertiesService.getScriptProperties().getProperty('BS_LOGIN_LOCAL') !== 'on') return { ok: false, message: 'Usuario o contrasena incorrectos', _localOff: true }; } catch (eP) {}
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(BS_CONFIG.HOJA_USUARIOS);
   if (!sheet) return { ok: false, message: 'Hoja Usuarios no existe' };
@@ -3509,33 +3513,8 @@ function bs_privatizarEvidencias() {
   }
   Logger.log('Privatizados: ' + ok + ' · Errores: ' + err);
 }
- function bs_corregirCbecerra() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(BS_CONFIG.HOJA_USUARIOS);
-  var data = sh.getDataRange().getValues();
-  var H = data[0].map(function(x){ return String(x).trim(); });
-  var iU = H.indexOf('usuario'), iP = H.indexOf('password_hash'), iN = H.indexOf('nombre'),
-      iA = H.indexOf('activo'), iUp = H.indexOf('updated_at');
-  for (var r = 1; r < data.length; r++) {
-    var u = String(data[r][iU] || '').trim().toLowerCase();
-    if (u === 'cbeserra') {
-      sh.getRange(r+1, iU+1).setValue('cbecerra');
-      sh.getRange(r+1, iP+1).setValue(bs_hashPassword('cbecerra2026'));
-      if (iN >= 0) sh.getRange(r+1, iN+1).setValue('C. BECERRA');
-      if (iA >= 0) sh.getRange(r+1, iA+1).setValue(true);
-      if (iUp >= 0) sh.getRange(r+1, iUp+1).setValue(new Date());
-      Logger.log('✅ Corregido: cbeserra → cbecerra (clave: cbecerra2026)');
-      return;
-    }
-    if (u === 'cbecerra') {
-      sh.getRange(r+1, iP+1).setValue(bs_hashPassword('cbecerra2026'));
-      if (iA >= 0) sh.getRange(r+1, iA+1).setValue(true);
-      Logger.log('✅ cbecerra ya existía: clave restablecida a cbecerra2026 y cuenta activada.');
-      return;
-    }
-  }
-  Logger.log('❌ No se encontró ni cbeserra ni cbecerra en la hoja Usuarios.');
-}
+ /* _SEG_V1 (08-nov-2026): bs_corregirCbecerra se retiro: restablecia una cuenta a una clave fija conocida. Las claves se gestionan solo desde el Sistema RR.LL. */
+function bs_corregirCbecerra() { Logger.log('Retirada por seguridad (_SEG_V1). Use el Sistema RR.LL. para restablecer claves.'); }
 function bs_resetearClave() {
   var USUARIO = 'jtimoteo';           // ← usuario a corregir
   var NUEVA   = 'marciatimoteo2026';   // ← la misma clave que usas en el RR.LL
