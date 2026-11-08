@@ -239,6 +239,7 @@ function doPost(e) {
       case 'bs_anularRegistro':    result = bs_anularRegistro(params); break;
       case 'bs_restaurarRegistro': result = bs_restaurarRegistro(params); break;
       case 'bs_listarAuditoria':   result = bs_listarAuditoria(params); break;
+      case 'bs_registrarEvento':   result = bs_registrarEvento(params); break;   /* _BS_AUDITORIA_EXTRA_V1 (07-nov): eventos ACCESO/EXPORTAR desde el frontend */
       case 'bs_importarAccidentes':result = bs_importarAccidentes(params); break;
       case 'bs_verDocumento':      result = bs_verDocumento(params); break;
       case 'bs_fichaBuscar':      result = bs_fichaBuscar(params); break;
@@ -269,6 +270,8 @@ function doPost(e) {
         try { result.user.rl_token = params.rl_token || params._rlTk || (typeof bs_rlTokenPorClave_ === 'function' ? bs_rlTokenPorClave_(params.usuario, params.password) : ''); } catch (eRT) {}
       }
     } catch(errTok) {}
+    /* _BS_AUDITORIA_EXTRA_V1 (07-nov): registra INICIAR SESIÓN en BS_Auditoria */
+    try { if (action === 'bs_login' && result && result.ok && result.user && typeof bs_auditarLogin_ === 'function') bs_auditarLogin_(result.user, params); } catch (eL) {}
 
     // ===== AUDITORÍA: registrar automáticamente toda acción de escritura =====
     try { if (result && result.ok) bs_auditoriaAuto(params, result); } catch(eAud) {}
