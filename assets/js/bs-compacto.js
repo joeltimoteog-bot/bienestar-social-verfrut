@@ -175,6 +175,7 @@
   function pasada() {
     try {
       document.body.classList.add('bsc');
+      domarPill();
       botones();
       if (!soloCabecera) { filtros(); moverBloques(); }
     } catch (e) { console.warn('[_BS_COMPACTO_V1] pasada:', e); }
@@ -189,6 +190,18 @@
       obs.observe(document.body, { childList: true, subtree: true });
     }
     console.log('[_BS_COMPACTO_V1] listo' + (soloCabecera ? ' (solo cabecera)' : ''));
+  }
+  /* _BSC_PILL_V1 (07-nov): la pastilla "Hay información nueva" de bs-mejoras.js tapaba la cabecera. Se convierte en un chip
+     pequeño abajo al centro, con ✕, por debajo de los paneles, y se oculta sola a los 25 s. Sigue recargando al tocarla. */
+  function domarPill() {
+    $$('body > button').forEach(function (b) {
+      if (b.getAttribute('data-bsc-pill') || !/informaci[oó]n nueva/i.test(b.textContent || '')) return;
+      b.setAttribute('data-bsc-pill', '1'); b.className = 'bsc-pill';
+      b.style.cssText = ''; b.innerHTML = '🔄 Hay datos nuevos · <u>actualizar</u>';
+      var x = document.createElement('span'); x.className = 'x'; x.textContent = '✕'; x.title = 'Cerrar';
+      x.onclick = function (e) { e.stopPropagation(); b.remove(); }; b.appendChild(x);
+      setTimeout(function () { if (b.parentNode) b.classList.add('ir'); setTimeout(function () { if (b.parentNode) b.remove(); }, 400); }, 25000);
+    });
   }
   window.bscAbrir = abrir; window.bscCerrar = cerrar;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();

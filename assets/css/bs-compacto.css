@@ -93,3 +93,9 @@ body.bsc #bscDr .bsc-sec{font-size:.62rem;letter-spacing:.12em;text-transform:up
 /* ajustes v1 */
 body.bsc .bsc-filtros .bsc-periodo,body.bsc #bsFiltroFecha.bsc-periodo{border:0!important;background:none!important;padding:0!important;box-shadow:none!important;margin:0!important;border-radius:0!important}
 body.bsc .bsc-filtros .bs-form-group{max-width:220px}
+
+/* _BSC_PILL_V1: aviso de datos nuevos, discreto */
+body.bsc .bsc-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9500;background:#0f2748;color:#fff;border:0;border-radius:999px;padding:7px 12px 7px 14px;font:600 12px Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.25);display:inline-flex;align-items:center;gap:10px;opacity:.95;transition:opacity .35s,transform .35s}
+body.bsc .bsc-pill:hover{opacity:1}
+body.bsc .bsc-pill .x{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.18);font-size:10px}
+body.bsc .bsc-pill.ir{opacity:0;transform:translateX(-50%) translateY(8px)}
