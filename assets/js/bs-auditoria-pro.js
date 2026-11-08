@@ -33,6 +33,11 @@
     var hero = main.querySelector('.bs-hero');
     /* ocultar la vista anterior (filtros, kpis, tabla) sin borrarla */
     ['#audKpis', '#tablaContainer'].forEach(function (s) { var e = main.querySelector(s); if (e) e.style.display = 'none'; });
+    /* _BS_AUD_FIX_V2 (07-nov): la pagina anterior (auditoria-01.js) volvia a mostrar sus 4 KPIs al terminar su carga y
+       pintaba su tabla en #tablaContainer oculto: indicadores duplicados. Se fija con CSS !important y se redirigen sus
+       funciones globales a esta vista, asi el boton/filtros antiguos (si quedara alguno) actuan sobre la vista nueva. */
+    if (!document.getElementById('bsAudFixCss')) { var st = document.createElement('style'); st.id = 'bsAudFixCss'; st.textContent = 'body.bsp-pagina #audKpis,body.bsc.bsp-pagina #bscDr #audKpis[data-bsc-kpi],body.bsp-pagina #tablaContainer,body.bsp-pagina main.bs-main>.bs-card:not(#bsAud),body.bsp-pagina .bsc-filtros{display:none!important}.bsp-ocupado{position:relative}.bsp-ocupado::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.55);border-radius:10px}.bsp-prog{height:3px;background:linear-gradient(90deg,#0f2748,#2563eb,#0f2748);background-size:200% 100%;animation:bspProg .9s linear infinite;border-radius:2px;margin:-4px 0 8px;display:none}.bsp-prog.on{display:block}@keyframes bspProg{to{background-position:-200% 0}}.bsp-chip{display:inline-flex;align-items:center;gap:6px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:8px}'; document.head.appendChild(st); }
+    window.cargarAuditoria = function () { cargar(true); }; window.renderAuditoria = function () { render(); };
     var cards = main.querySelectorAll(':scope > .bs-card'); Array.prototype.forEach.call(cards, function (c) { if (!c.closest('#bsAud')) c.style.display = 'none'; });
     document.body.classList.add('bsp-pagina');
     var root = document.createElement('div'); root.id = 'bsAud'; root.className = 'bsp';
@@ -44,6 +49,7 @@
       '<select data-f="modulo"><option value="">Módulo: Todos</option></select><select data-f="accion"><option value="">Acción: Todas</option></select><select data-f="usuario"><option value="">Usuario: Todos</option></select>' +
       '<input type="search" data-f="q" placeholder="🔍 ID, DNI, detalle…" style="width:200px"><button class="bsp-btn" data-a="limpiar">Limpiar</button></div>' +
       '<div class="bsp-acts"><button class="bsp-btn" data-a="refrescar">↻ Actualizar</button><button class="bsp-btn" data-a="csv">📊 CSV</button><button class="bsp-btn d" data-a="pdf">⬇ Informe de auditoría PDF</button></div></div>' +
+      '<div class="bsp-prog" id="bsAudProg"></div>' +
       '<div class="bsp-nota" id="bsAudNota" style="display:none"></div>' +
       '<div class="bsp-k" id="bsAudK"></div>' +
       '<div class="bsp-g">' +
@@ -54,20 +60,36 @@
       '</div>' +
       '<div class="bsp-ft"><span id="bsAudFu"></span><span id="bsAudAc"></span></div>';
     if (hero && hero.parentNode === main) main.insertBefore(root, hero.nextSibling); else main.insertBefore(root, main.firstChild);
-    root.querySelectorAll('[data-f]').forEach(function (el) { el.addEventListener(el.tagName === 'INPUT' && el.type === 'search' ? 'input' : 'change', function () { S.F[el.getAttribute('data-f')] = el.value; S.pag = 1; render(); }); });
-    root.querySelector('[data-a="limpiar"]').onclick = function () { S.F = { desde: '', hasta: '', modulo: '', accion: '', usuario: '', q: '' }; root.querySelectorAll('[data-f]').forEach(function (el) { el.value = ''; }); S.pag = 1; render(); };
+    root.querySelectorAll('[data-f]').forEach(function (el) { el.addEventListener(el.tagName === 'INPUT' && el.type === 'search' ? 'input' : 'change', function () { S.F[el.getAttribute('data-f')] = el.value; S.pag = 1; filtrarConAviso(); }); });
+    root.querySelector('[data-a="limpiar"]').onclick = function () { S.F = { desde: '', hasta: '', modulo: '', accion: '', usuario: '', q: '' }; root.querySelectorAll('[data-f]').forEach(function (el) { el.value = ''; }); S.pag = 1; filtrarConAviso(); };
     root.querySelector('[data-a="refrescar"]').onclick = function () { cargar(true); };
+    root.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target && e.target.getAttribute('data-f')) { S.F[e.target.getAttribute('data-f')] = e.target.value; S.pag = 1; filtrarConAviso(); } });
     root.querySelector('[data-a="csv"]').onclick = csv;
     root.querySelector('[data-a="pdf"]').onclick = pdf;
     return root;
   }
 
   /* ── datos ─────────────────────────────────────────────────────────── */
+  var _tmrF = null;
+  function ocupado(on, txt) {
+    var b = document.querySelector('#bsAud [data-a="refrescar"]'), p = document.getElementById('bsAudProg');
+    if (b) { b.disabled = !!on; b.textContent = on ? (txt || '⏳ Actualizando…') : '↻ Actualizar'; }
+    if (p) p.classList.toggle('on', !!on);
+    ['bsAudK', 'bsAudA', 'bsAudM', 'bsAudT'].forEach(function (id) { var e = document.getElementById(id); if (e) e.classList.toggle('bsp-ocupado', !!on); });
+  }
+  function filtrarConAviso() {   /* el filtro es en memoria (instantaneo); se muestra la barra un instante para que se vea que respondio */
+    ocupado(true, '⏳ Filtrando…'); clearTimeout(_tmrF);
+    _tmrF = setTimeout(function () { try { render(); } finally { ocupado(false); } }, 60);
+  }
   async function cargar(fresco) {
     var t0 = Date.now(), nota = document.getElementById('bsAudNota'); document.getElementById('bsAudT').innerHTML = '<div class="bsp-load">Cargando el registro de auditoría…</div>';
-    var D = await BSDatos.cargar({ modulos: ['auditoria'], fresco: true });
+    ocupado(true, fresco ? '⏳ Actualizando…' : '⏳ Cargando…');
+    var D;
+    try { D = await BSDatos.cargar({ modulos: ['auditoria'], fresco: true }); }
+    catch (e) { ocupado(false); nota.style.display = ''; nota.className = 'bsp-nota err'; nota.textContent = 'No se pudo cargar la auditoría: ' + (e && e.message || e); document.getElementById('bsAudT').innerHTML = ''; return; }
+    if (D.prohibidos.indexOf('auditoria') >= 0) ocupado(false);
     if (D.prohibidos.indexOf('auditoria') >= 0) { nota.style.display = ''; nota.className = 'bsp-nota err'; nota.textContent = 'Solo administradores pueden ver la auditoría.'; document.getElementById('bsAudT').innerHTML = ''; return; }
-    S.todos = normalizar(D.auditoria || []); S.origen = D.origen; S.completo = D.origen === 'Supabase' && D.faltantes.indexOf('auditoria') < 0;
+    S.todos = normalizar(D.auditoria || []).sort(function (a, b) { return b.fecha.localeCompare(a.fecha); }); S.origen = D.origen; S.completo = D.origen === 'Supabase' && D.faltantes.indexOf('auditoria') < 0;
     S.todos.sort(function (a, b) { return b.fecha.localeCompare(a.fecha); });
     if (!S.completo) { nota.style.display = ''; nota.className = 'bsp-nota'; nota.innerHTML = '⚠️ La copia completa en Supabase aún no está disponible: se muestran los <b>últimos 500 eventos</b> desde Google. Ejecuta <b>bsSupabaseSubirTodo()</b> en el Apps Script (con la hoja BS_Auditoria en la lista) para tener el histórico íntegro.'; }
     else nota.style.display = 'none';
@@ -76,7 +98,7 @@
     var uniq = function (f) { var o = {}; S.todos.forEach(function (x) { if (x[f]) o[x[f]] = 1; }); return Object.keys(o).sort(); };
     sel('modulo', uniq('modulo'), 'Módulo: '); sel('accion', uniq('accion'), 'Acción: '); sel('usuario', uniq('usuario'), 'Usuario: ');
     document.getElementById('bsAudFu').innerHTML = 'Fuente: <b>' + esc(S.completo ? 'Supabase (copia íntegra de BS_Auditoria)' : 'Google Sheets (últimos 500)') + '</b> · ' + n0(S.todos.length) + ' eventos · solo lectura · cargado en ' + (Date.now() - t0) + ' ms';
-    await G.libs(); render();
+    await G.libs(); render(); ocupado(false);
   }
 
   function filtrar() {
@@ -120,10 +142,11 @@
     var tot = V.length, pags = Math.max(1, Math.ceil(tot / POR_PAG)); if (S.pag > pags) S.pag = pags;
     var ini = (S.pag - 1) * POR_PAG, fila = V.slice(ini, ini + POR_PAG);
     var th = function (col, lbl) { return '<th class="ord ' + (S.ord.col === col ? (S.ord.asc ? 'asc' : 'desc') : '') + '" data-col="' + col + '">' + lbl + '</th>'; };
-    document.getElementById('bsAudSubT').textContent = n0(tot) + ' · orden: ' + S.ord.col + (S.ord.asc ? ' ↑' : ' ↓') + ' · ' + POR_PAG + ' por página';
+    var nf = ['modulo', 'accion', 'usuario', 'q'].filter(function (k) { return S.F[k]; }).length + ((S.F.desde || S.F.hasta) ? 1 : 0);
+    document.getElementById('bsAudSubT').innerHTML = esc(n0(tot) + ' · orden: ' + S.ord.col + (S.ord.asc ? ' ↑' : ' ↓') + ' · ' + POR_PAG + ' por página') + (nf ? '<span class="bsp-chip">🔎 ' + nf + ' filtro' + (nf > 1 ? 's' : '') + ' activo' + (nf > 1 ? 's' : '') + '</span>' : '');
     document.getElementById('bsAudT').innerHTML = tot ? '<div style="overflow:auto"><table><thead><tr>' + th('fecha', 'Fecha y hora') + th('usuario', 'Usuario') + th('accion', 'Acción') + th('modulo', 'Módulo') + th('registro', 'Registro') + '<th>Detalle</th><th></th></tr></thead><tbody>' +
       fila.map(function (x) { return '<tr><td style="white-space:nowrap">' + esc(fmtF(x.fecha)) + '</td><td><b>' + esc(x.usuario) + '</b></td><td><span class="tag ' + ACC_CLASE(x.accion) + '">' + esc(x.accion) + '</span></td><td>' + esc(x.modulo) + '</td><td style="white-space:nowrap">' + esc(x.registro || '—') + '</td><td>' + esc(x.detalle) + '</td><td>' + (x.registro ? '<button class="bsp-btn sm" data-tr="' + esc(x.modulo) + '|' + esc(x.registro) + '">Trazar</button>' : '') + '</td></tr>'; }).join('') + '</tbody></table></div>'
-      : '<div class="bsp-load">Sin eventos con los filtros actuales.</div>';
+      : '<div class="bsp-load">Sin eventos con los filtros actuales.' + (S.todos.length ? '<br><span style="font-weight:500;font-size:12px">Los datos disponibles van del <b>' + fmtF(S.todos[S.todos.length - 1].fecha).slice(0, 10) + '</b> al <b>' + fmtF(S.todos[0].fecha).slice(0, 10) + '</b>' + (S.completo ? '' : ' (últimos 500 eventos desde Google; el histórico completo aparecerá al sincronizar con Supabase)') + '. Revisa el rango de fechas o pulsa <b>Limpiar</b>.</span>' : '') + '</div>';
     document.getElementById('bsAudP').innerHTML = tot ? '<span>' + n0(ini + 1) + '–' + n0(Math.min(ini + POR_PAG, tot)) + ' de ' + n0(tot) + '</span><button class="bsp-btn sm" data-p="-1" ' + (S.pag <= 1 ? 'disabled' : '') + '>← Anterior</button><span>' + S.pag + ' / ' + pags + '</span><button class="bsp-btn sm" data-p="1" ' + (S.pag >= pags ? 'disabled' : '') + '>Siguiente →</button>' : '';
     document.querySelectorAll('#bsAudT th.ord').forEach(function (t) { t.onclick = function () { var col = t.getAttribute('data-col'); if (S.ord.col === col) S.ord.asc = !S.ord.asc; else { S.ord.col = col; S.ord.asc = col !== 'fecha'; } render(); }; });
     document.querySelectorAll('#bsAudP [data-p]').forEach(function (b) { b.onclick = function () { S.pag += +b.getAttribute('data-p'); render(); }; });
@@ -175,6 +198,6 @@
     BSDatos.evento('EXPORTAR', 'Auditoría', 'PDF ' + f + ' · ' + S.vista.length + ' eventos');
   }
 
-  function iniciar() { if (!montar()) return; cargar(false); console.log('[_BS_AUDITORIA_PRO_V1] listo'); }
+  function iniciar() { if (!montar()) return; cargar(false); console.log('[_BS_AUDITORIA_PRO_V1 + _BS_AUD_FIX_V2] listo'); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 })();
