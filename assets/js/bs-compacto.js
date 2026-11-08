@@ -203,6 +203,8 @@
       setTimeout(function () { if (b.parentNode) b.classList.add('ir'); setTimeout(function () { if (b.parentNode) b.remove(); }, 400); }, 25000);
     });
   }
+  /* _BSC_AUD_ACCESO_V1 (07-nov): el ingreso al módulo de Hostigamiento (confidencial) queda en la auditoría, una vez por sesión */
+  try { if (/hostigamiento\.html$/i.test(location.pathname) && typeof window.api === 'function' && !sessionStorage.getItem('bsc_acc_h')) { sessionStorage.setItem('bsc_acc_h', '1'); window.api('bs_registrarEvento', { accion: 'ACCESO', modulo: 'Hostigamiento', detalle: 'ingreso al módulo' }).catch(function () {}); } } catch (e) {}
   window.bscAbrir = abrir; window.bscCerrar = cerrar;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 })();

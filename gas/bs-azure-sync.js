@@ -25,7 +25,8 @@ var BS_AZ_HOJAS = {
   bs_documentos:          'BS_Documentos',
   bs_quejas:              'BS_Quejas',
   bs_quejas_seguim:       'BS_Quejas_Seguimientos',
-  bs_descansos:           'BS_Descansos'
+  bs_descansos:           'BS_Descansos',
+  bs_auditoria:           'BS_Auditoria'    /* _BS_AUDITORIA_SUPA_V1 (07-nov): el registro de auditoría también vive en Supabase (completo) */
 };
 /* qué hojas tocan las acciones de escritura de doPost */
 var BS_AZ_POR_ACCION = [
@@ -109,6 +110,7 @@ function bsAzureSyncDespuesDe_(action, params) {
       if (BS_AZ_POR_ACCION[i][0].test(action)) claves = BS_AZ_POR_ACCION[i][1] || _bsAzClavesModulo_(params && params.modulo);
     }
     if (!claves || !claves.length) return;
+    if (claves.indexOf('bs_auditoria') < 0) claves = claves.concat(['bs_auditoria']);   /* _BS_AUDITORIA_SUPA_V1: cada escritura deja rastro; se sube junto con el módulo */
     claves.forEach(function (k) { try { _bsAzCargar_(k, false); } catch (e) { Logger.log('bsAzureSync ' + k + ': ' + e.message); } });
   } catch (e) { Logger.log('bsAzureSyncDespuesDe_: ' + e.message); }
 }

@@ -1,0 +1,55 @@
+/* _BS_PRO_V1 (07-nov-2026) — estilos compartidos de las páginas gerenciales de Bienestar Social
+   (Panel, Estadísticas empresariales, Auditoría). Solo presentación. */
+.bsp{font-family:Inter,system-ui,sans-serif;color:#0f172a;font-size:13px}
+.bsp *{box-sizing:border-box}
+.bsp-hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-left:4px solid var(--c,#0f2748);border-radius:10px;padding:10px 16px;margin-bottom:12px}
+.bsp-hd h1{margin:0;font-size:16px;font-weight:800;line-height:1.1}.bsp-hd .cr{font-size:9.5px;letter-spacing:.12em;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px}
+.bsp-f{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:10px}
+.bsp-f select,.bsp-f input{border:1px solid #cbd5e1;border-radius:7px;padding:6px 10px;background:#fff;font:600 12px Inter,system-ui,sans-serif;color:#0f172a;height:32px}
+.bsp-f select{appearance:none;-webkit-appearance:none;padding-right:26px;background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%2394a3b8' stroke-width='1.5'/></svg>") no-repeat right 9px center;cursor:pointer}
+.bsp-seg{display:flex;border:1px solid #cbd5e1;border-radius:7px;overflow:hidden;height:32px}.bsp-seg button{border:0;background:#fff;padding:0 11px;font:600 12px Inter,system-ui,sans-serif;color:#475569;cursor:pointer;border-right:1px solid #e2e8f0}.bsp-seg button:last-child{border-right:0}.bsp-seg button.on{background:#0f2748;color:#fff}
+.bsp-acts{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
+.bsp-btn{border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:7px 12px;font:600 12px Inter,system-ui,sans-serif;cursor:pointer;color:#0f172a;display:inline-flex;align-items:center;gap:6px;height:32px;white-space:nowrap}
+.bsp-btn.d{background:#0f2748;color:#fff;border-color:#0f2748}.bsp-btn.sm{height:26px;padding:3px 9px;font-size:11px}.bsp-btn .bd{background:#dc2626;color:#fff;border-radius:999px;font-size:10px;padding:1px 7px;font-weight:700}.bsp-btn:hover{filter:brightness(.97)}
+.bsp-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px}
+.bsp-kc{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;position:relative;overflow:hidden;min-height:78px;cursor:default}
+.bsp-kc:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,#0f2748)}
+.bsp-kc .l{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#64748b;font-weight:700;display:flex;justify-content:space-between;gap:6px}.bsp-kc .l i{font-style:normal;background:#fee2e2;color:#b91c1c;border-radius:999px;padding:1px 7px;font-size:9.5px;white-space:nowrap}.bsp-kc .l i.a{background:#fef3c7;color:#b45309}
+.bsp-kc .v{font-size:23px;font-weight:800;margin:3px 0 1px;letter-spacing:-.02em;line-height:1.1}.bsp-kc .d{font-size:11px;font-weight:600;color:#64748b}.bsp-kc .d b{color:#15803d}.bsp-kc .d b.m{color:#b91c1c}.bsp-kc .d b.n{color:#334155}
+.bsp-kc.lk{opacity:.55}.bsp-kc a{color:inherit;text-decoration:none}
+.bsp-g{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+.bsp-c{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px 8px;display:flex;flex-direction:column;min-width:0}
+.bsp-c .h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px}.bsp-c .h b{font-size:12.5px;font-weight:700}.bsp-c .h span{font-size:10.5px;color:#94a3b8;font-weight:600;white-space:nowrap}
+.bsp-c .b{position:relative;height:200px}.bsp-c.alta .b{height:250px}.bsp-c.baja .b{height:160px}
+.bsp-c .vacio{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;font-weight:600}
+.bsp-c .dn{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;padding-bottom:26px}.bsp-c .dn b{font-size:22px;font-weight:800}.bsp-c .dn span{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#64748b;font-weight:700}
+.s3{grid-column:span 3}.s4{grid-column:span 4}.s5{grid-column:span 5}.s6{grid-column:span 6}.s7{grid-column:span 7}.s8{grid-column:span 8}.s12{grid-column:span 12}
+.bsp table{width:100%;border-collapse:collapse;font-size:12px}.bsp th{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#64748b;text-align:left;padding:7px 9px;background:#f8fafc;border-bottom:1px solid #e2e8f0;white-space:nowrap}.bsp td{padding:7px 9px;border-bottom:1px solid #f1f5f9;vertical-align:top}.bsp tr:hover td{background:#fbfdff}
+.bsp th.ord{cursor:pointer}.bsp th.ord:after{content:" ↕";color:#cbd5e1}.bsp th.ord.asc:after{content:" ↑";color:#0f2748}.bsp th.ord.desc:after{content:" ↓";color:#0f2748}
+.bsp .tag{border-radius:6px;padding:2px 7px;font-size:10.5px;font-weight:700;white-space:nowrap;display:inline-block}
+.bsp .tag.r{background:#fee2e2;color:#b91c1c}.bsp .tag.a{background:#fef3c7;color:#b45309}.bsp .tag.ok{background:#dcfce7;color:#15803d}.bsp .tag.z{background:#e0f2fe;color:#0369a1}.bsp .tag.n{background:#f1f5f9;color:#334155}.bsp .tag.p{background:#ede9fe;color:#6d28d9}
+.bsp-tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}.bsp-tabs button{border:0;padding:5px 10px;border-radius:999px;font:700 11px Inter,system-ui,sans-serif;background:#f1f5f9;color:#475569;cursor:pointer}.bsp-tabs button.on{background:#0f2748;color:#fff}.bsp-tabs button i{font-style:normal;background:#dc2626;color:#fff;border-radius:999px;padding:0 5px;margin-left:4px;font-size:9.5px}.bsp-tabs button i.a{background:#d97706}
+.bsp-tl div{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:11.5px;align-items:center}.bsp-tl .t{color:#94a3b8;width:112px;flex:none;font-weight:600}.bsp-tl .u{font-weight:700;width:100px;flex:none;overflow:hidden;text-overflow:ellipsis}
+.bsp-sem{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.bsp-ft{margin-top:10px;font-size:10.5px;color:#94a3b8;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.bsp-ft b{color:#64748b}
+.bsp-nota{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:7px 12px;font-size:11.5px;font-weight:600;margin-bottom:10px}
+.bsp-nota.err{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.bsp-pag{display:flex;align-items:center;gap:8px;justify-content:flex-end;font-size:11.5px;color:#64748b;padding-top:8px}
+.bsp-load{padding:30px;text-align:center;color:#64748b;font-weight:600}
+.bsp-rk div{display:flex;align-items:center;gap:9px;font-size:11.5px;padding:3px 0}.bsp-rk .n{width:14px;color:#94a3b8;font-weight:700;flex:none}.bsp-rk .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bsp-rk .p{height:8px;border-radius:4px;background:#e2e8f0;flex:1.3;overflow:hidden}.bsp-rk .p i{display:block;height:100%}.bsp-rk .q{min-width:40px;text-align:right;font-weight:800;flex:none;white-space:nowrap}
+/* panel lateral */
+.bsp-ov{position:fixed;inset:0;background:rgba(15,23,42,.38);z-index:10040;opacity:0;pointer-events:none;transition:opacity .2s}.bsp-ov.on{opacity:1;pointer-events:auto}
+.bsp-dr{position:fixed;top:0;right:0;bottom:0;width:min(640px,100vw);background:#fff;z-index:10041;box-shadow:-18px 0 48px rgba(0,0,0,.22);display:flex;flex-direction:column;transform:translateX(104%);transition:transform .24s ease}.bsp-dr.on{transform:none}
+.bsp-dr .h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid #e2e8f0}.bsp-dr .h b{font-size:.98rem}.bsp-dr .h small{display:block;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;font-weight:700}.bsp-dr .h .x{margin-left:auto;border:0;background:#f1f5f9;border-radius:8px;width:32px;height:32px;cursor:pointer;color:#475569;font-size:1rem}
+.bsp-dr .bd{flex:1;overflow:auto;padding:12px 18px}
+@media(max-width:1100px){.s3{grid-column:span 6}.s4{grid-column:span 6}.s5,.s7,.s8{grid-column:span 12}}
+@media(max-width:700px){.s3,.s4,.s6{grid-column:span 12}.bsp-f{margin-left:0}}
+@media print{.bsp-acts,.bsp-f,.bsp-ov,.bsp-dr{display:none!important}.bsp-c{break-inside:avoid}}
+
+/* en las páginas gerenciales la cabecera antigua y el saludo se ocultan (la nueva capa trae la suya) */
+body.bsp-pagina .bs-hero,body.bsp-pagina #bsSaludoBar,body.bsp-pagina #bsmAtrasos,body.bsp-pagina .bsmp-tg,body.bsp-pagina #bsFiltroFecha{display:none!important}
+/* panel.html: la vista anterior queda oculta mientras la nueva esté presente */
+body.bsp-pagina .wrap > .head-row,body.bsp-pagina #loading,body.bsp-pagina #errorBox,body.bsp-pagina #content{display:none!important}
+body.bsp-pagina .wrap{max-width:1500px!important}
+@media(min-width:1200px){#bsPanel .bsp-k{grid-template-columns:repeat(6,1fr)!important}}
+#bsPanel #fuerzaPanel .alertas-resumen{margin-bottom:6px}#bsPanel #fuerzaPanel canvas{max-height:200px}
