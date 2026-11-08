@@ -25,9 +25,11 @@ var BS_AZ_HOJAS = {
   bs_documentos:          'BS_Documentos',
   bs_quejas:              'BS_Quejas',
   bs_quejas_seguim:       'BS_Quejas_Seguimientos',
-  bs_descansos:           'BS_Descansos',
-  bs_auditoria:           'BS_Auditoria'    /* _BS_AUDITORIA_SUPA_V1 (07-nov): el registro de auditoría también vive en Supabase (completo) */
+  bs_descansos:           'BS_Descansos'
+  /* _BS_GUARDA_SUPABASE_V1 (08-nov): bs_auditoria ya NO se sube desde la hoja: cada evento va directo a Supabase (bs-supabase-escritura.js).
+     La hoja BS_Auditoria queda solo como copia local; la última subida completa la hace bsAuditoriaPasarASupabase(). */
 };
+var BS_AZ_HOJA_AUDITORIA = 'BS_Auditoria';
 /* qué hojas tocan las acciones de escritura de doPost */
 var BS_AZ_POR_ACCION = [
   [/accidente|seguimiento$/i,          ['bs_accidentes_casos', 'bs_accidentes_seguim']],
@@ -59,7 +61,7 @@ function _bsAzCelda_(v) {
   return v;
 }
 function _bsAzLeerHoja_(clave) {
-  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BS_AZ_HOJAS[clave]);
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BS_AZ_HOJAS[clave] || (clave === 'bs_auditoria' ? BS_AZ_HOJA_AUDITORIA : ''));
   var v = sh ? sh.getDataRange().getValues() : [[]];
   return { encabezado: (v[0] || []).map(_bsAzCelda_), filas: v.slice(1).filter(function (r) { return r.some(function (c) { return c !== '' && c !== null; }); }).map(function (r) { return r.map(_bsAzCelda_); }), ancho: (v[0] || []).length };
 }
@@ -74,7 +76,9 @@ function _bsAzCargar_(clave, forzar) {
     _bsAzPedir_(clave + '/inicio', {});
     var LOTE = 2000, otros = 0;
     for (var i = 0; i < h.filas.length; i += LOTE) otros += _bsAzPedir_(clave + '/lote', { desde: i, filas: h.filas.slice(i, i + LOTE) }).conOtros || 0;
-    var f = _bsAzPedir_(clave + '/fin', { encabezado: h.encabezado, ancho: h.ancho, total: h.filas.length, leidoMs: leidoMs });
+    var f;
+    try { f = _bsAzPedir_(clave + '/fin', { encabezado: h.encabezado, ancho: h.ancho, total: h.filas.length, leidoMs: leidoMs }); }
+    catch (e) { if (/directo en Supabase/.test(e.message)) { props.setProperty('BSAZ_HASH_' + clave, hash); return 'ya se guarda directo en Supabase (la hoja no la reemplaza)'; } throw e; }   /* _BS_GUARDA_SUPABASE_V1 */
     props.setProperty('BSAZ_HASH_' + clave, hash);
     return (f.filas != null ? f.filas : h.filas.length) + ' filas' + (otros ? ' (' + otros + ' celdas fuera de tipo, guardadas tal cual)' : '');
   } finally { if (mio) lock.releaseLock(); }
@@ -110,7 +114,7 @@ function bsAzureSyncDespuesDe_(action, params) {
       if (BS_AZ_POR_ACCION[i][0].test(action)) claves = BS_AZ_POR_ACCION[i][1] || _bsAzClavesModulo_(params && params.modulo);
     }
     if (!claves || !claves.length) return;
-    if (claves.indexOf('bs_auditoria') < 0) claves = claves.concat(['bs_auditoria']);   /* _BS_AUDITORIA_SUPA_V1: cada escritura deja rastro; se sube junto con el módulo */
+    /* _BS_GUARDA_SUPABASE_V1 (08-nov): la auditoría ya no se sube por hoja; cada evento viaja solo (bsAuditoriaEnviar_) */
     claves.forEach(function (k) { try { _bsAzCargar_(k, false); } catch (e) { Logger.log('bsAzureSync ' + k + ': ' + e.message); } });
   } catch (e) { Logger.log('bsAzureSyncDespuesDe_: ' + e.message); }
 }

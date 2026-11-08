@@ -4101,6 +4101,8 @@ function bs_registrarAuditoria(usuario, accion, modulo, registroId, detalle) {
       String(detalle || '').slice(0, 500)
     ]);
   } catch (e) { /* la auditoría nunca debe romper la operación principal */ }
+  /* _BS_GUARDA_SUPABASE_V1 (08-nov-2026): el mismo evento va a Supabase (bs/auditar); si no responde queda en cola (bs-supabase-escritura.js) */
+  try { if (typeof bsAuditoriaEnviar_ === 'function') bsAuditoriaEnviar_(usuario, accion, modulo, registroId, detalle); } catch (e2) {}
 }
  
 // Registra automáticamente cualquier acción de escritura que pase por doPost
