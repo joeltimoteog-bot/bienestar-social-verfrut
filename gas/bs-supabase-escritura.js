@@ -82,6 +82,17 @@ function bsModuloPasarASupabase_(claves) {
   });
   var msg = out.join('\n'); Logger.log(msg); return msg;
 }
+/* Módulo 3 · Subsidios */
+function bsSubsidiosPasarASupabase() { return bsModuloPasarASupabase_(['bs_subsidios']); }
+function bsSubsidiosVolverAHoja() { bsFuentePoner('bs_subsidios', 'hoja'); return 'ok'; }
+/* bs_generarSubsidioDesdeDM (descansos) crea el subsidio donde mande la fuente: Supabase (clave interna, autor = usuario) o la hoja */
+function bs_crearSubsidioDonde_(usuario, datos) {
+  var enSupabase = false;
+  try { enSupabase = bsFuenteVer_()['bs_subsidios'] === 'supabase'; } catch (e) { enSupabase = false; }
+  if (!enSupabase) return bs_crearSubsidio(usuario, datos);
+  try { var r = _bsApiPedir_('guardar', { clave: 'bs_subsidios', op: 'crear', usuario: usuario, datos: datos }); return { ok: true, id: r.id, message: 'Subsidio registrado' }; }
+  catch (e) { return { ok: false, message: e.message }; }
+}
 /* Módulo 2 · Accidentes: casos + seguimientos. El correo "Nuevo accidente registrado" lo sigue mandando Google:
    el navegador llama a bs_notificarCasoNuevo justo después de guardar el caso en Supabase. */
 function bsAccidentesPasarASupabase() { return bsModuloPasarASupabase_(['bs_accidentes_casos', 'bs_accidentes_seguim']); }

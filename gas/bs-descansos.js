@@ -175,7 +175,7 @@ function bs_generarSubsidioDesdeDM(usuario, id) {
     var nombres = partes.slice(2).join(' ') || partes.join(' ');
     var fin = _aFecha(dm.fecha_fin), ini = _aFecha(dm.fecha_inicio);
     var iniSub = dm.tipo === 'Maternidad' ? ini : new Date(fin.getTime() - (diasSub - 1) * 86400000);
-    var res = bs_crearSubsidio(usuario, {
+    var res = (typeof bs_crearSubsidioDonde_ === 'function' ? bs_crearSubsidioDonde_ : bs_crearSubsidio)(usuario, {   /* _BS_GUARDA_SUPABASE_V1: va a Supabase si bs_subsidios ya manda desde allí */
       anio: anio, mes: _dmMes_(iniSub), tipo: dm.tipo === 'Maternidad' ? 'MATERNIDAD' : 'INCAPACIDAD TEMPORAL',
       numero: dm.dni, apellido_paterno: partes[0] || '', apellido_materno: partes[1] || '', nombres: nombres,
       descripcion: (dm.tipo === 'Maternidad' ? 'Maternidad' : 'Incapacidad temporal') + ' · ' + (dm.diagnostico || '') + (dm.cie10 ? ' (' + dm.cie10 + ')' : ''),

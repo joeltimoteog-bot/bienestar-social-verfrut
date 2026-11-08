@@ -1,5 +1,5 @@
 /* =========================================================================
- * _BS_GUARDA_SUPABASE_V1 (08-nov-2026) · Bienestar Social guarda y lee DIRECTO en Supabase  · v2: + Accidentes
+ * _BS_GUARDA_SUPABASE_V1 (08-nov-2026) · Bienestar Social guarda y lee DIRECTO en Supabase  · v3: + Accidentes, Subsidios
  * -------------------------------------------------------------------------
  * Envuelve window.api(): para los módulos listados en BS_SUPABASE_MODULOS, las acciones del
  * Apps Script (bs_listarQuejas, bs_crearQueja, …) se convierten en llamadas a la Edge Function
@@ -19,7 +19,7 @@
   var EDGE = window.BS_EDGE_URL || 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api';
 
   /* módulos que ya guardan en Supabase (se agregan uno a uno conforme avanza el plan) */
-  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas', 'accidentes'];
+  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas', 'accidentes', 'subsidios'];
 
   var CLAVE_DE_MODULO = { quejas: 'bs_quejas', accidentes: 'bs_accidentes_casos', subsidios: 'bs_subsidios', hostigamiento: 'bs_hostigamiento', descansos: 'bs_descansos', rendiciones: 'bs_rendiciones', sugerencias: 'bs_sugerencias' };
 
@@ -121,12 +121,27 @@
     },
     bs_crearSeguimiento: function (p) { return guardar('bs_accidentes_seguim', 'seguimiento', { id: p.id_caso, datos: p.datos || {} }); },
     bs_importarAccidentes: function (p) { return guardar('bs_accidentes_casos', 'importar', { filas: p.filas || [] }); },
+    /* ---- SUBSIDIOS ---- */
+    bs_listarSubsidios: async function (p) {
+      var r = await tabla('bs_subsidios', true); if (r === CAE_A_GOOGLE || !r.ok) return r;
+      var items = (r.items || []).slice(), f = (p && p.filtros) || p || {};
+      if (f.empresa) items = items.filter(function (i) { return i.empresa === f.empresa; });
+      if (f.tipo) items = items.filter(function (i) { return i.tipo === f.tipo; });
+      if (f.anio) items = items.filter(function (i) { return String(i.anio) === String(f.anio); });
+      if (f.estado_general) items = items.filter(function (i) { return i.estado_general === f.estado_general; });
+      items.sort(function (a, b) { return num(b.id) - num(a.id); });
+      return { ok: true, items: items, total: items.length, fuente: 'supabase' };
+    },
+    bs_crearSubsidio: async function (p) { var r = await guardar('bs_subsidios', 'crear', { datos: p.datos || {} }); if (r !== CAE_A_GOOGLE && r.ok && !r.message) r.message = 'Subsidio registrado'; return r; },
+    bs_actualizarSubsidio: async function (p) { var r = await guardar('bs_subsidios', 'actualizar', { id: p.id, datos: p.datos || {} }); if (r !== CAE_A_GOOGLE && r.ok && !r.message) r.message = 'Subsidio actualizado'; return r; },
+    bs_importarSubsidios: function (p) { return guardar('bs_subsidios', 'importar', { filas: p.filas || [], modo: p.modo || 'upsert' }); },
     /* anular / restaurar son genéricos: solo se redirigen si el módulo del registro ya está en Supabase */
     bs_anularRegistro: function (p) { var c = CLAVE_DE_MODULO[p.modulo]; return c && activo(p.modulo) ? guardar(c, 'anular', { id: p.id, motivo: p.motivo }) : CAE_A_GOOGLE; },
     bs_restaurarRegistro: function (p) { var c = CLAVE_DE_MODULO[p.modulo]; return c && activo(p.modulo) ? guardar(c, 'restaurar', { id: p.id, motivo: p.motivo }) : CAE_A_GOOGLE; }
   };
   var MODULO_DE_ACCION = { bs_listarQuejas: 'quejas', bs_crearQueja: 'quejas', bs_actualizarQueja: 'quejas', bs_listarSeguimientosQueja: 'quejas', bs_crearSeguimientoQueja: 'quejas', bs_cierreMasivoQuejas: 'quejas', bs_listarBuzones: 'quejas',
-    bs_listarAccidentes: 'accidentes', bs_crearAccidente: 'accidentes', bs_actualizarAccidente: 'accidentes', bs_listarSeguimientos: 'accidentes', bs_listarTodosSeguimientos: 'accidentes', bs_crearSeguimiento: 'accidentes', bs_importarAccidentes: 'accidentes' };
+    bs_listarAccidentes: 'accidentes', bs_crearAccidente: 'accidentes', bs_actualizarAccidente: 'accidentes', bs_listarSeguimientos: 'accidentes', bs_listarTodosSeguimientos: 'accidentes', bs_crearSeguimiento: 'accidentes', bs_importarAccidentes: 'accidentes',
+    bs_listarSubsidios: 'subsidios', bs_crearSubsidio: 'subsidios', bs_actualizarSubsidio: 'subsidios', bs_importarSubsidios: 'subsidios' };
 
   var orig = window.api;
   if (typeof orig !== 'function') return;
