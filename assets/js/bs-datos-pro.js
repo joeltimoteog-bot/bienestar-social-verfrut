@@ -92,7 +92,10 @@
   async function tabla(clave, tk) {
     var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, 12000);
     try {
-      var r = await fetch(EDGE + '/bs/tabla?clave=' + encodeURIComponent(clave) + (clave === 'bs_auditoria' ? '&hora=1' : ''), { headers: { Authorization: 'Bearer ' + tk }, signal: ctl.signal });
+      /* _BS_PERMISOS_SERVIDOR_V1 (08-nov): el servidor decide con "Acceso a Modulos" del RR.LL.; los permisos de la hoja Usuarios
+         solo sirven de respaldo para usuarios aun no configurados alla (hostigamiento nunca por esta via). */
+      var permS = ''; try { permS = '&permisos=' + encodeURIComponent(JSON.stringify((sesion().permisos) || {})); } catch (e) {}
+      var r = await fetch(EDGE + '/bs/tabla?clave=' + encodeURIComponent(clave) + (clave === 'bs_auditoria' ? '&hora=1' : '') + permS, { headers: { Authorization: 'Bearer ' + tk }, signal: ctl.signal });
       if (r.status === 403) return { items: [], prohibido: true };
       var j = await r.json(); if (!j || !j.success) throw new Error(j && j.error || 'HTTP ' + r.status);
       /* _BS_DATOS_FIX_V2 (07-nov): si la tabla aun no fue sincronizada a Supabase (cargada=false) NO es "0 registros":
@@ -145,5 +148,5 @@
   }
   window.BSDatos = { cargar: cargar, padron: padron, evento: evento, sesion: sesion, puede: puede };
   window.BSReglas = { R: R, estado: estado, alertasDe: alertasDe, ymd: ymd, hoy: hoy, dias: dias, emp: emp, txt: txt, up: up, num: num, mesNum: mesNum, catSub: catSub, montoSub: montoSub, conting: conting, esAnulado: esAnulado };
-  console.log('[_BS_DATOS_PRO_V1 + _BS_DATOS_FIX_V2] listo');
+  console.log('[_BS_DATOS_PRO_V1 + _BS_DATOS_FIX_V2 + _BS_PERMISOS_SERVIDOR_V1] listo');
 })();

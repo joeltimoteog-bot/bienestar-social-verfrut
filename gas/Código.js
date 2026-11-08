@@ -197,6 +197,13 @@ function doPost(e) {
     if (!_acceso.ok) {
       return ContentService.createTextOutput(JSON.stringify(_acceso)).setMimeType(ContentService.MimeType.JSON);
     }
+    /* _BS_SESION_MANDA_V1 (08-nov-2026): el AUTOR de cada registro y los PERMISOS salen de la sesion validada, nunca del
+       navegador (antes params.usuario / params.permisos los ponia el cliente: se podia falsificar el autor en la auditoria
+       y pedir datos de Hostigamiento sin permiso). Para bs_login no aplica (aun no hay sesion). */
+    if (action !== 'bs_login' && params._sesion) {
+      params.usuario = params._sesion.usuario;
+      params.permisos = bs_permisosDeSesion_(params._sesion);
+    }
 
     let result;
     switch(action) {
@@ -3259,6 +3266,14 @@ function bs_emitirToken(u) {
   return token;
 }
  
+/* _BS_SESION_MANDA_V1: permisos efectivos de la sesion (admin = todos los modulos) */
+var BS_MODULOS_TODOS_ = ['quejas', 'accidentes', 'hostigamiento', 'subsidios', 'rendiciones', 'panel', 'estadisticas', 'descansos', 'sugerencias', 'documentos'];
+function bs_permisosDeSesion_(s) {
+  var out = {}, rol = String((s && s.rol) || '').toLowerCase(), esAdmin = rol.indexOf('admin') >= 0;
+  BS_MODULOS_TODOS_.forEach(function (m) { out[m] = esAdmin || !!(s && s.permisos && s.permisos[m] === true); });
+  return out;
+}
+ 
 /* ---------- VALIDAR ACCESO (llamar desde doPost) ---------- */
 function bs_validarAcceso(params) {
   try {
@@ -3481,6 +3496,10 @@ function bs_verDocumento(d) {
     var vals = sh.getRange(2, 1, last - 1, 8).getValues();
     for (var i = 0; i < vals.length; i++) {
       if (String(vals[i][0]) === String(d.id)) {
+        /* _BS_SESION_MANDA_V1: solo quien tiene permiso del modulo del documento (o admin) puede verlo */
+        var modDoc = String(vals[i][1] || '').toLowerCase().trim(); if (modDoc === 'hallazgos') modDoc = 'quejas';
+        var permDoc = bs_permisosDeSesion_(d._sesion || {});
+        if (modDoc && permDoc[modDoc] !== true) return { ok: false, code: 403, message: 'No tienes permiso para ver documentos de ' + modDoc + '.' };
         var url = String(vals[i][4] || '');
         var m = url.match(/[-\w]{25,}/);
         if (!m) return { ok: false, message: 'URL de archivo inválida.' };

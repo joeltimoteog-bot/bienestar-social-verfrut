@@ -191,7 +191,7 @@
       let h = '<div class="bs-table-wrap"><table class="bs-table"><thead><tr><th>Usuario</th><th>Total</th><th>A tiempo</th><th>Fuera</th><th>Abierto en plazo</th><th>Vencido</th><th>% Cumplimiento</th><th>Tiempo prom.</th></tr></thead><tbody>';
       arr.forEach(function(u){
         const col = semColor(u.pct_cumplimiento);
-        h += '<tr><td><strong>' + u.usuario + '</strong></td><td>' + u.total + '</td><td>' + u.a_tiempo + '</td><td>' + u.fuera + '</td><td>' + u.abierto_plazo + '</td><td>' + u.vencido + '</td>' +
+        h += '<tr><td><strong>' + esc(u.usuario) + '</strong></td><td>' + u.total + '</td><td>' + u.a_tiempo + '</td><td>' + u.fuera + '</td><td>' + u.abierto_plazo + '</td><td>' + u.vencido + '</td>' +
              '<td><span style="background:' + col + '20;color:' + col + ';border:1px solid ' + col + '55;padding:2px 10px;border-radius:999px;font-weight:700;">' + u.pct_cumplimiento + '%</span></td>' +
              '<td>' + u.tiempo_prom_cierre + ' d</td></tr>';
       });
@@ -204,7 +204,7 @@
       if (!arr.length) { document.getElementById('vencidos').innerHTML = '<p class="bs-text-muted">🎉 No hay casos vencidos abiertos.</p>'; return; }
       let h = '<div class="bs-table-wrap"><table class="bs-table"><thead><tr><th>Módulo</th><th>ID</th><th>Usuario</th><th>Empresa</th><th>Inicio</th><th>Límite</th><th>Días vencido</th></tr></thead><tbody>';
       arr.forEach(function(x){
-        h += '<tr><td>' + x.modulo + '</td><td>#' + x.id + '</td><td>' + x.usuario + '</td><td>' + (x.empresa || '') + '</td><td>' + (x.fecha_inicio || '') + '</td><td>' + (x.limite || '') + '</td>' +
+        h += '<tr><td>' + esc(x.modulo) + '</td><td>#' + esc(x.id) + '</td><td>' + esc(x.usuario) + '</td><td>' + esc(x.empresa || '') + '</td><td>' + esc(x.fecha_inicio || '') + '</td><td>' + esc(x.limite || '') + '</td>'   /* _SEG_XSS_V1 */ +
              '<td><span style="color:#dc2626;font-weight:700;">' + x.dias_vencido + '</span></td></tr>';
       });
       h += '</tbody></table></div>';
