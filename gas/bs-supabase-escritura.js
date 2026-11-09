@@ -83,6 +83,15 @@ function bsModuloPasarASupabase_(claves) {
   });
   var msg = out.join('\n'); Logger.log(msg); return msg;
 }
+/* Módulo 5 · Descansos médicos · Módulo 6 · Rendiciones y Sugerencias */
+function bsDescansosPasarASupabase() { return bsModuloPasarASupabase_(['bs_descansos']); }
+function bsDescansosVolverAHoja() { bsFuentePoner('bs_descansos', 'hoja'); return 'ok'; }
+function bsRendicionesSugerenciasPasarASupabase() { return bsModuloPasarASupabase_(['bs_rendiciones', 'bs_sugerencias']); }
+function bsRendicionesSugerenciasVolverAHoja() { ['bs_rendiciones', 'bs_sugerencias'].forEach(function (k) { bsFuentePoner(k, 'hoja'); }); return 'ok'; }
+function bs_notificarSugerencia(p) {
+  try { if (p && p.datos && typeof _avisarSugerenciaRegistrada === 'function') { var v = Object.assign({ id: p.id, fecha: new Date(), usuario: (p._sesion && p._sesion.usuario) || p.usuario || '' }, p.datos); _avisarSugerenciaRegistrada(v); } } catch (e) {}
+  return { ok: true };
+}
 /* Módulo 4 · Hostigamiento (PIURA + OLMOS) */
 function bsHostigamientoPasarASupabase() { return bsModuloPasarASupabase_(['bs_hostigamiento', 'bs_hostigamiento_olmos']); }
 function bsHostigamientoVolverAHoja() { ['bs_hostigamiento', 'bs_hostigamiento_olmos'].forEach(function (k) { bsFuentePoner(k, 'hoja'); }); return 'ok'; }

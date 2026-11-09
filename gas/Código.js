@@ -212,7 +212,8 @@ function doPost(e) {
         if (result && result.ok && typeof bs_aplicarAccesosRL_ === 'function') result = bs_aplicarAccesosRL_(result, params);   /* _ACCESOS_CENTRAL_V1 */
         break;
       case 'bs_crearQueja':      result = bs_crearQueja(params.usuario, params.datos); break;
-      case 'bs_notificarCasoNuevo': result = (typeof bs_notificarCasoNuevo === 'function') ? bs_notificarCasoNuevo(params) : { ok: false }; break;   /* _BS_GUARDA_SUPABASE_V1: correo del accidente cuando el caso ya se guardó en Supabase */
+      case 'bs_notificarCasoNuevo': result = (typeof bs_notificarCasoNuevo === 'function') ? bs_notificarCasoNuevo(params) : { ok: false }; break;
+      case 'bs_notificarSugerencia': result = (typeof bs_notificarSugerencia === 'function') ? bs_notificarSugerencia(params) : { ok: false }; break;   /* _BS_GUARDA_SUPABASE_V1: correo de la sugerencia ya guardada en Supabase */   /* _BS_GUARDA_SUPABASE_V1: correo del accidente cuando el caso ya se guardó en Supabase */
       case 'bs_listarQuejas':    result = bs_listarQuejas(params.filtros); break;
       case 'bs_actualizarQueja': result = bs_actualizarQueja(params.usuario, params.id, params.datos); break;
       case 'bs_listarSeguimientosQueja': result = bs_listarSeguimientosQueja(params.id_queja); break;
