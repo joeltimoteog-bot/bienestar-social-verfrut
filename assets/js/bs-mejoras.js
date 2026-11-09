@@ -244,9 +244,33 @@
     el.style.display = 'block';
   };
 
+  /* _BS_GUARDA_SUPABASE_V1 (08-nov-2026): las evidencias viven en el bucket privado 'bienestar' de Supabase (Edge bs/doc).
+     Si la tabla de adjuntos aún manda desde Google (409), si no hay sesión RR.LL. o el documento es histórico de Drive, se usa Google como antes. */
+  var EDGE_BS = (window.BS_EDGE_URL || 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api') + '/bs/doc';
+  function rlTk() { try { return (JSON.parse(localStorage.getItem('bienestarSocialAuth') || '{}') || {}).rl_token || ''; } catch (e) { return ''; } }
+  function edgeDoc(metodo, query, cuerpo) {
+    var tk = rlTk(); if (!tk) return Promise.resolve(null);
+    return fetch(EDGE_BS + (query ? '?' + query : ''), { method: metodo, headers: Object.assign({ Authorization: 'Bearer ' + tk }, cuerpo ? { 'Content-Type': 'application/json' } : {}), body: cuerpo ? JSON.stringify(cuerpo) : undefined })
+      .then(function (r) { return r.json().then(function (j) { j = j || {}; j.__http = r.status; return j; }); })
+      .then(function (j) { if (j.__http === 409 && j.fuente === 'hoja') return null; if (j.__http === 404 || j.__http >= 500) return null; return j; })
+      .catch(function () { return null; });
+  }
+
   /* ---------- ABRIR EVIDENCIA PRIVADA (vía backend, sin enlace público) ---------- */
   window.bsmVerEvid = function (id, a) {
     try { if (a) a.textContent = 'Abriendo…'; } catch (e) {}
+    edgeDoc('GET', 'id=' + encodeURIComponent(id)).then(function (d) {
+      if (d && d.ok && d.url) {   /* Supabase: enlace firmado de 5 minutos */
+        var w = window.open(d.url, '_blank'); if (!w) location.href = d.url;
+        try { if (a) a.textContent = d.nombre || 'evidencia'; } catch (e2) {}
+        return;
+      }
+      if (d && !d.ok && d.__http === 403) { alert('No se pudo abrir: ' + d.message); try { if (a) a.textContent = 'evidencia'; } catch (e3) {} return; }
+      bsmVerEvidGoogle_(id, a);   /* histórico de Drive o fuente aún en Google */
+    });
+    return false;
+  };
+  function bsmVerEvidGoogle_(id, a) {
     fetch(API_URL, {
       method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'bs_verDocumento', token: window.bsToken(), id: id })
@@ -260,10 +284,8 @@
       if (!w) { var l = document.createElement('a'); l.href = url; l.download = d.nombre || 'evidencia'; l.click(); }
       try { if (a) a.textContent = d.nombre || 'evidencia'; } catch (e2) {}
       setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-    }).catch(function (e) { alert('Error al abrir la evidencia: ' + e.message); })
-    .finally ? null : null;
-    return false;
-  };
+    }).catch(function (e) { alert('Error al abrir la evidencia: ' + e.message); });
+  }
 
   /* ---------- estilos compartidos ---------- */
   function injectCss() {
@@ -925,10 +947,13 @@
   function bsmEvidCargar(casoId) {
     var list = document.getElementById('bsmEvidList');
     if (!list) return;
-    fetch(API_URL, {
-      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'bs_listarDocumentos', token: window.bsToken(), modulo: MOD_KEY, caso_id: casoId })
-    }).then(function (r) { return r.json(); }).then(function (d) {
+    edgeDoc('GET', 'modulo=' + encodeURIComponent(MOD_KEY) + '&caso_id=' + encodeURIComponent(casoId)).then(function (d) {
+      if (d) return d;   /* Supabase */
+      return fetch(API_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'bs_listarDocumentos', token: window.bsToken(), modulo: MOD_KEY, caso_id: casoId })
+      }).then(function (r) { return r.json(); });
+    }).then(function (d) {
       if (!list.isConnected) return;
       if (!d || !d.ok) { list.innerHTML = '<span class="em2 err">No se pudieron cargar (¿backend de evidencias instalado?).</span>'; return; }
       if (!d.items || !d.items.length) { list.innerHTML = '<span class="em2">Sin evidencias aún. Sube la primera con el botón de abajo.</span>'; return; }
@@ -961,15 +986,15 @@
       var fr = new FileReader();
       fr.onload = function () {
         var b64 = String(fr.result).split(',')[1] || '';
-        fetch(API_URL, {
-          method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'bs_subirDocumento', token: window.bsToken(), modulo: MOD_KEY, caso_id: casoId,
-            nombre: file.name, mime: file.type || 'application/octet-stream',
-            base64: b64, usuario: (user && (user.nombre || user.usuario)) || ''
-          })
-        }).then(function (r) { return r.json(); }).then(function (d) {
-          if (!d || !d.ok) errores++;
+        var cuerpo = { modulo: MOD_KEY, caso_id: casoId, nombre: file.name, mime: file.type || 'application/octet-stream', base64: b64, subido_por: (user && (user.nombre || user.usuario)) || '' };
+        edgeDoc('POST', '', cuerpo).then(function (d) {
+          if (d) return d;   /* Supabase (bucket privado 'bienestar') */
+          return fetch(API_URL, {
+            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(Object.assign({ action: 'bs_subirDocumento', token: window.bsToken(), usuario: cuerpo.subido_por }, cuerpo))
+          }).then(function (r) { return r.json(); });
+        }).then(function (d) {
+          if (!d || !d.ok) { errores++; if (d && d.message) { msg.className = 'em2 err'; msg.textContent = d.message; } }
           pend--; if (!pend) fin();
         }).catch(function () { errores++; pend--; if (!pend) fin(); });
       };
@@ -982,7 +1007,7 @@
       var inp = document.getElementById('bsmEvidFile');
       if (inp) inp.value = '';
       if (errores) { msg.className = 'em2 err'; msg.textContent = '⚠ ' + errores + ' archivo(s) no se subieron. Revisa tamaño/formato o el backend.'; }
-      else { msg.className = 'em2 okk'; msg.textContent = '✅ Evidencia(s) guardada(s) en Drive.'; }
+      else { msg.className = 'em2 okk'; msg.textContent = '✅ Evidencia(s) guardada(s).'; }
       bsmEvidCargar(casoId);
     }
   }

@@ -83,6 +83,9 @@ function bsModuloPasarASupabase_(claves) {
   });
   var msg = out.join('\n'); Logger.log(msg); return msg;
 }
+/* Adjuntos (evidencias): bucket privado 'bienestar'. Los históricos de Drive siguen abriéndose por Google. */
+function bsAdjuntosPasarASupabase() { return bsModuloPasarASupabase_(['bs_documentos']); }
+function bsAdjuntosVolverAHoja() { bsFuentePoner('bs_documentos', 'hoja'); return 'ok'; }
 /* Módulo 5 · Descansos médicos · Módulo 6 · Rendiciones y Sugerencias */
 function bsDescansosPasarASupabase() { return bsModuloPasarASupabase_(['bs_descansos']); }
 function bsDescansosVolverAHoja() { bsFuentePoner('bs_descansos', 'hoja'); return 'ok'; }
