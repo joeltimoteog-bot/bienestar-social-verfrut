@@ -877,11 +877,22 @@
   }
 
   /* ============ FILAS: fechas legibles + índice para ficha ============ */
+  /* _BS_GUARDA_SUPABASE_V1 (08-nov-2026): botón 📎 visible en cada fila para abrir la ficha con las evidencias (antes solo al hacer clic en la fila) */
+  function bsmBotonEvid(r, i) {
+    if (!MOD_KEY || r.querySelector('.bsm-evbtn')) return;
+    var data = window.__BS_EXPORT_DATA__; if (!data || !data[i] || !data[i].id) return;
+    var celda = r.cells[r.cells.length - 1]; if (!celda) return;
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'bs-btn bs-btn-sm bs-btn-ghost bsm-evbtn'; b.title = 'Ficha y evidencias (adjuntar imágenes / PDF)';
+    b.textContent = '📎'; b.style.cssText = 'font-size:15px;line-height:1;padding:.25rem .45rem;';
+    b.onclick = function (e) { e.stopPropagation(); var d = window.__BS_EXPORT_DATA__; if (d && d[i]) bsmFicha(d[i]); };
+    var flex = celda.querySelector('div'); (flex || celda).appendChild(b);
+  }
   function bsmPrep(tbody) {
     var rows = tbody.rows;
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       if (r.getAttribute('data-bsm-i') === null) r.setAttribute('data-bsm-i', i);
+      bsmBotonEvid(r, i);
       for (var j = 0; j < r.cells.length; j++) {
         var c = r.cells[j];
         if (!c.title && c.textContent.trim().length > 28) c.title = c.textContent.trim(); // texto completo al pasar el mouse (celdas recortadas)
