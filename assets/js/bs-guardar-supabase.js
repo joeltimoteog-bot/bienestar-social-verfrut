@@ -1,5 +1,5 @@
 /* =========================================================================
- * _BS_GUARDA_SUPABASE_V1 (08-nov-2026) · Bienestar Social guarda y lee DIRECTO en Supabase  · v3: + Accidentes, Subsidios
+ * _BS_GUARDA_SUPABASE_V1 (08-nov-2026) · Bienestar Social guarda y lee DIRECTO en Supabase  · v4: + Accidentes, Subsidios, Hostigamiento
  * -------------------------------------------------------------------------
  * Envuelve window.api(): para los módulos listados en BS_SUPABASE_MODULOS, las acciones del
  * Apps Script (bs_listarQuejas, bs_crearQueja, …) se convierten en llamadas a la Edge Function
@@ -19,8 +19,12 @@
   var EDGE = window.BS_EDGE_URL || 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api';
 
   /* módulos que ya guardan en Supabase (se agregan uno a uno conforme avanza el plan) */
-  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas', 'accidentes', 'subsidios'];
+  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas', 'accidentes', 'subsidios', 'hostigamiento'];
 
+  function hostSede(v) { return String(v || '').trim().toUpperCase().indexOf('OLM') >= 0 ? 'OLMOS' : 'PIURA'; }
+  function hostClave(sede) { return hostSede(sede) === 'OLMOS' ? 'bs_hostigamiento_olmos' : 'bs_hostigamiento'; }
+  function hostCodigo(sede, id) { return (hostSede(sede) === 'OLMOS' ? 'OLM' : 'PIU') + '-' + ('000' + (parseInt(id, 10) || 0)).slice(-3); }
+  function claveDe(p) { var m = String((p && p.modulo) || '').toLowerCase(); return m === 'hostigamiento' ? hostClave(p.sede) : CLAVE_DE_MODULO[m]; }
   var CLAVE_DE_MODULO = { quejas: 'bs_quejas', accidentes: 'bs_accidentes_casos', subsidios: 'bs_subsidios', hostigamiento: 'bs_hostigamiento', descansos: 'bs_descansos', rendiciones: 'bs_rendiciones', sugerencias: 'bs_sugerencias' };
 
   function token() { try { return (JSON.parse(localStorage.getItem('bienestarSocialAuth') || '{}') || {}).rl_token || ''; } catch (e) { return ''; } }
@@ -135,13 +139,41 @@
     bs_crearSubsidio: async function (p) { var r = await guardar('bs_subsidios', 'crear', { datos: p.datos || {} }); if (r !== CAE_A_GOOGLE && r.ok && !r.message) r.message = 'Subsidio registrado'; return r; },
     bs_actualizarSubsidio: async function (p) { var r = await guardar('bs_subsidios', 'actualizar', { id: p.id, datos: p.datos || {} }); if (r !== CAE_A_GOOGLE && r.ok && !r.message) r.message = 'Subsidio actualizado'; return r; },
     bs_importarSubsidios: function (p) { return guardar('bs_subsidios', 'importar', { filas: p.filas || [], modo: p.modo || 'upsert' }); },
+    /* ---- HOSTIGAMIENTO (dos sedes = dos tablas; correlativo independiente; códigos PIU-001 / OLM-001) ---- */
+    bs_listarHostigamiento: async function (p) {
+      var f = (p && p.filtros) || p || {}, items = [];
+      for (var i = 0; i < 2; i++) {
+        var sede = i ? 'OLMOS' : 'PIURA', r = await edge('tabla', 'GET', null, 'clave=' + hostClave(sede) + '&anulados=1');
+        if (r === CAE_A_GOOGLE) return r;
+        if (!r.ok) return r;
+        if (r.cargada === false) continue;                           /* OLMOS puede no tener registros aún */
+        (r.items || []).forEach(function (o) { o.sede = sede; o.codigo = hostCodigo(sede, o.id); o.uid = sede + '-' + o.id; items.push(o); });
+      }
+      if (f.sede) items = items.filter(function (x) { return x.sede === hostSede(f.sede); });
+      if (f.empresa) items = items.filter(function (x) { return x.empresa === f.empresa; });
+      if (f.status) items = items.filter(function (x) { return x.status === f.status; });
+      if (f.fundo) items = items.filter(function (x) { return String(x.fundo || '').toLowerCase().indexOf(String(f.fundo).toLowerCase()) >= 0; });
+      items.sort(function (a, b) { var fa = String(a.fecha_denuncia || ''), fb = String(b.fecha_denuncia || ''); if (fa !== fb) return fa < fb ? 1 : -1; return num(b.id) - num(a.id); });
+      return { ok: true, items: items, total: items.length, fuente: 'supabase' };
+    },
+    bs_crearHostigamiento: async function (p) {
+      var sede = hostSede((p.datos || {}).sede), r = await guardar(hostClave(sede), 'crear', { datos: p.datos || {} });
+      if (r !== CAE_A_GOOGLE && r.ok) { r.sede = sede; r.codigo = hostCodigo(sede, r.id); r.message = 'Denuncia ' + r.codigo + ' registrada en ' + sede; }
+      return r;
+    },
+    bs_actualizarHostigamiento: async function (p) {
+      var sede = hostSede((p.datos || {}).sede), r = await guardar(hostClave(sede), 'actualizar', { id: p.id, datos: p.datos || {} });
+      if (r !== CAE_A_GOOGLE && r.ok) r.message = 'Denuncia ' + hostCodigo(sede, p.id) + ' actualizada';
+      return r;
+    },
     /* anular / restaurar son genéricos: solo se redirigen si el módulo del registro ya está en Supabase */
-    bs_anularRegistro: function (p) { var c = CLAVE_DE_MODULO[p.modulo]; return c && activo(p.modulo) ? guardar(c, 'anular', { id: p.id, motivo: p.motivo }) : CAE_A_GOOGLE; },
-    bs_restaurarRegistro: function (p) { var c = CLAVE_DE_MODULO[p.modulo]; return c && activo(p.modulo) ? guardar(c, 'restaurar', { id: p.id, motivo: p.motivo }) : CAE_A_GOOGLE; }
+    bs_anularRegistro: function (p) { var c = claveDe(p); return c && activo(p.modulo) ? guardar(c, 'anular', { id: p.id, motivo: p.motivo }) : CAE_A_GOOGLE; },
+    bs_restaurarRegistro: function (p) { var c = claveDe(p); return c && activo(p.modulo) ? guardar(c, 'restaurar', { id: p.id, motivo: p.motivo }) : CAE_A_GOOGLE; }
   };
   var MODULO_DE_ACCION = { bs_listarQuejas: 'quejas', bs_crearQueja: 'quejas', bs_actualizarQueja: 'quejas', bs_listarSeguimientosQueja: 'quejas', bs_crearSeguimientoQueja: 'quejas', bs_cierreMasivoQuejas: 'quejas', bs_listarBuzones: 'quejas',
     bs_listarAccidentes: 'accidentes', bs_crearAccidente: 'accidentes', bs_actualizarAccidente: 'accidentes', bs_listarSeguimientos: 'accidentes', bs_listarTodosSeguimientos: 'accidentes', bs_crearSeguimiento: 'accidentes', bs_importarAccidentes: 'accidentes',
-    bs_listarSubsidios: 'subsidios', bs_crearSubsidio: 'subsidios', bs_actualizarSubsidio: 'subsidios', bs_importarSubsidios: 'subsidios' };
+    bs_listarSubsidios: 'subsidios', bs_crearSubsidio: 'subsidios', bs_actualizarSubsidio: 'subsidios', bs_importarSubsidios: 'subsidios',
+    bs_listarHostigamiento: 'hostigamiento', bs_crearHostigamiento: 'hostigamiento', bs_actualizarHostigamiento: 'hostigamiento' };
 
   var orig = window.api;
   if (typeof orig !== 'function') return;

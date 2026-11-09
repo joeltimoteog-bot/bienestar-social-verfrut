@@ -75,13 +75,17 @@ function bsAuditoriaPasarASupabase() {
 function bsModuloPasarASupabase_(claves) {
   var out = [];
   claves.forEach(function (k) {
-    var ya = bsFuenteVer_()[k] === 'supabase';
-    var sub = ya ? 'ya estaba en Supabase' : _bsAzCargar_(k, true);
+    var ya = bsFuenteVer_()[k] === 'supabase', sub;
+    if (ya) sub = 'ya estaba en Supabase';
+    else { try { sub = _bsAzCargar_(k, true); } catch (e) { if (/hoja/i.test(e.message)) sub = 'la hoja no existe todavía (tabla vacía): ' + e.message; else throw e; } }
     var r = ya ? { fuente: 'supabase' } : _bsApiPedir_('fuente', { clave: k, fuente: 'supabase' });
     out.push(k + ': ' + sub + ' → fuente ' + r.fuente);
   });
   var msg = out.join('\n'); Logger.log(msg); return msg;
 }
+/* Módulo 4 · Hostigamiento (PIURA + OLMOS) */
+function bsHostigamientoPasarASupabase() { return bsModuloPasarASupabase_(['bs_hostigamiento', 'bs_hostigamiento_olmos']); }
+function bsHostigamientoVolverAHoja() { ['bs_hostigamiento', 'bs_hostigamiento_olmos'].forEach(function (k) { bsFuentePoner(k, 'hoja'); }); return 'ok'; }
 /* Módulo 3 · Subsidios */
 function bsSubsidiosPasarASupabase() { return bsModuloPasarASupabase_(['bs_subsidios']); }
 function bsSubsidiosVolverAHoja() { bsFuentePoner('bs_subsidios', 'hoja'); return 'ok'; }
