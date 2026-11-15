@@ -69,7 +69,7 @@
         '<div class="txt">' + esc(r.mensaje) + '</div>' +
         (r.respuesta ? '<div class="bs-text-sm" style="background:#f0fdfa;border-radius:8px;padding:.4rem .6rem"><b>Atención:</b> ' + esc(r.respuesta) + ' <span class="bs-text-muted">· ' + esc(r.atendido_por || '') + ' · ' + fecha(r.fecha_atencion) + (r.derivado_a ? ' · derivado a ' + esc(r.derivado_a) : '') + '</span></div>' : '') +
         '</div><div style="display:flex;flex-direction:column;gap:.35rem;align-items:flex-end">' +
-        (an ? (esAdmin ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="restaurar(' + Number(r.id) + ')">Restaurar</button>' : '') : '<button class="bs-btn bs-btn-gs bs-btn-sm" onclick="atender(' + Number(r.id) + ')">' + (pend(r) ? 'Atender' : 'Ver / editar') + '</button>' + (pend(r) ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="derivar(' + Number(r.id) + ')">→ Caso social</button>' : '')) +
+        (an ? (esAdmin ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="restaurar(' + Number(r.id) + ')">Restaurar</button>' : '') : '<button class="bs-btn bs-btn-gs bs-btn-sm" onclick="atender(' + Number(r.id) + ')">' + (pend(r) ? 'Atender' : 'Ver / editar') + '</button>' + (pend(r) ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="derivar(' + Number(r.id) + ')">→ Caso social</button>' : '') + '<button class="bs-btn bs-btn-outline bs-btn-sm" title="Eliminar (se puede restaurar)" onclick="gsEliminar(' + Number(r.id) + ",'bs_gs_canal','el mensaje " + esc(r.codigo) + "')\">🗑 Eliminar</button>") +
         '</div></div>';
     }).join('') + '</div>';
   }
@@ -122,6 +122,13 @@
   function copiarUrl() { var u = urlQr(); (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(function () { appAlert('Enlace copiado.'); }, function () { appAlert(u); }); }
   function irTab(t) { var b = document.querySelector('#tabs button[data-t="' + t + '"]'); if (b) b.click(); }
 
+  /* _BS_ELIMINAR_V1 (15-nov-2026, pedido de Joel): botón Eliminar en cada fila. En Supabase "eliminar" = anular con motivo
+     (queda quién/cuándo/por qué, sale de las pantallas y el administrador puede restaurarlo con "Ver anulados"). */
+  window.gsEliminar = async function (id, clave, etiqueta) {
+    var motivo = await appPrompt('¿Eliminar ' + etiqueta + '? Indica el motivo (p. ej. registro equivocado, duplicado):'); if (!motivo) return;
+    try { var r = await api('bs_anularRegistro', { modulo: 'gestion_social', clave: clave, id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Eliminado.' : 'No se pudo eliminar.')); if (r.ok) { try { cerrarDet(); } catch (e) {} try { cerrarAt(); } catch (e) {} cargar(); } }
+    catch (e) { appAlert('Error: ' + e.message); }
+  };
   document.querySelectorAll('#tabs button').forEach(function (b) { b.onclick = function () { TAB = b.getAttribute('data-t'); document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); ['lista', 'resumen', 'qr'].forEach(function (t) { $('p-' + t).hidden = t !== TAB; }); if (TAB === 'qr') qr(); }; });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarAt(); });
   window.cargar = cargar; window.render = render; window.atender = atender; window.cerrarAt = cerrarAt; window.derivar = derivar; window.restaurar = restaurar; window.qr = qr; window.copiarUrl = copiarUrl; window.irTab = irTab;

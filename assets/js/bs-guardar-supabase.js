@@ -72,6 +72,8 @@
   function SIN_GOOGLE() { return { ok: false, success: false, items: [], total: 0, message: token() ? 'No se pudo conectar con Supabase. Revisa tu conexión e intenta de nuevo.' : 'Tu sesión no tiene credencial del Sistema RR.LL. Cierra sesión y vuelve a ingresar.' }; }
   /* _BS_GESTION_SOCIAL_V1: permisos según "Acceso a Módulos" del Sistema RR.LL. (GET bs/permisos). null si no se pudo consultar. */
   window.bsPermisosRL = async function () { var r = await edge('permisos', 'GET'); return (r === CAE_A_GOOGLE || !r || !r.ok) ? null : r; };
+  /* _BS_RESUMEN_SUPABASE_V1 (15-nov-2026): KPIs (dashboard) y alertas legales (alertas) del portal desde Supabase. null si no se pudo. */
+  window.bsResumenRL = async function (que) { var r = await edge(que === 'alertas' ? 'alertas' : 'dashboard', 'GET'); return (r === CAE_A_GOOGLE || !r || !r.ok) ? null : r; };
 
   async function edge(ruta, metodo, cuerpo, query) {
     var tk = token(); if (!tk) return CAE_A_GOOGLE;            /* sin sesión RR.LL. en este navegador: Google como siempre */

@@ -229,7 +229,8 @@
     function fetchKPIs(){
       var permisos = user.permisos || {};
       Promise.all([
-        bsApi('bs_dashboard', { permisos: permisos }).catch(function(){ return {ok:false}; }),
+        /* _BS_RESUMEN_SUPABASE_V1 (15-nov-2026): KPIs desde Supabase (GET bs/dashboard); Google (hoja congelada) solo si no hay sesion RR.LL. */
+        (window.bsResumenRL ? window.bsResumenRL('dashboard').catch(function(){ return null; }) : Promise.resolve(null)).then(function(d){ return d || bsApi('bs_dashboard', { permisos: permisos }); }).catch(function(){ return {ok:false}; }),
         bsApi('bs_reporteRendiciones', { filtros:{} }).catch(function(){ return {ok:false}; }),
         bsApi('bs_listarSugerencias', { filtros:{} }).catch(function(){ return {ok:false}; }),
         bsApi('bs_listarSubsidios', {}).catch(function(){ return {ok:false}; })
@@ -292,7 +293,8 @@
     function escHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
     function cargarAtrasos(){
-      bsApi('bs_alertas', { permisos: user.permisos || {} }).then(function(d){
+      /* _BS_RESUMEN_SUPABASE_V1 (15-nov-2026): alertas desde Supabase (GET bs/alertas); Google solo si no hay sesion RR.LL. */
+      (window.bsResumenRL ? window.bsResumenRL('alertas').catch(function(){ return null; }) : Promise.resolve(null)).then(function(d){ return d || bsApi('bs_alertas', { permisos: user.permisos || {} }); }).then(function(d){
         if(!d || !d.ok) return;
         var al = (d.alertas || []).filter(function(a){ return a.estado==='rojo' || a.estado==='ambar'; });
         ATRASOS = al;

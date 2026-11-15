@@ -105,7 +105,7 @@
           '<td>' + fecha(r.lactancia_hasta) + '</td>' +
           '<td>' + (riesgo ? (SI(r.reubicada) ? '<span class="gs-pill ok">Reubicada</span>' : '<span class="gs-pill si">Riesgo sin reubicar</span>') : '<span class="bs-text-muted">—</span>') + '</td>' +
           '<td style="white-space:nowrap"><button class="bs-btn bs-btn-outline bs-btn-sm" onclick="verCaso(' + Number(r.id) + ')">Ver</button> ' +
-          (anulado(r) ? (esAdmin ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="restaurar(' + Number(r.id) + ')">Restaurar</button>' : '') : '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="editar(' + Number(r.id) + ')">Editar</button>') + '</td></tr>';
+          (anulado(r) ? (esAdmin ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="restaurar(' + Number(r.id) + ')">Restaurar</button>' : '') : '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="editar(' + Number(r.id) + ')">Editar</button> <button class="bs-btn bs-btn-outline bs-btn-sm" title="Eliminar (se puede restaurar)" onclick="gsEliminar(' + Number(r.id) + ",'bs_gs_gestantes','el registro " + esc(r.codigo || '#' + r.id) + "')\">🗑</button>") + '</td></tr>';
       }).join('') + '</tbody></table></div>';
   }
 
@@ -228,6 +228,13 @@
     catch (e) { appAlert('Error: ' + e.message); }
   }
 
+  /* _BS_ELIMINAR_V1 (15-nov-2026, pedido de Joel): botón Eliminar en cada fila. En Supabase "eliminar" = anular con motivo
+     (queda quién/cuándo/por qué, sale de las pantallas y el administrador puede restaurarlo con "Ver anulados"). */
+  window.gsEliminar = async function (id, clave, etiqueta) {
+    var motivo = await appPrompt('¿Eliminar ' + etiqueta + '? Indica el motivo (p. ej. registro equivocado, duplicado):'); if (!motivo) return;
+    try { var r = await api('bs_anularRegistro', { modulo: 'gestion_social', clave: clave, id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Eliminado.' : 'No se pudo eliminar.')); if (r.ok) { try { cerrarDet(); } catch (e) {} try { cerrarAt(); } catch (e) {} cargar(); } }
+    catch (e) { appAlert('Error: ' + e.message); }
+  };
   document.querySelectorAll('#tabs button').forEach(function (b) { b.onclick = function () { TAB = b.getAttribute('data-t'); document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); ['lista', 'alertas', 'calendario'].forEach(function (t) { $('p-' + t).hidden = t !== TAB; }); }; });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrarModal(); cerrarDet(); } });
   window.cargar = cargar; window.render = render; window.abrirNuevo = abrirNuevo; window.editar = editar; window.cerrarModal = cerrarModal; window.autocompletar = autocompletar; window.guardar = guardar; window.verCaso = verCaso; window.cerrarDet = cerrarDet; window.restaurar = restaurar; window.previsualizar = previsualizar;

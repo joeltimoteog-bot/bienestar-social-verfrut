@@ -99,7 +99,7 @@
       var an = anulado(r), venc = r.estado === 'Con pendientes' && ymd(r.fecha_compromiso) && ymd(r.fecha_compromiso) < hoy();
       return '<tr' + (an ? ' style="opacity:.55"' : '') + '><td><b>' + esc(r.codigo) + '</b></td><td>' + fecha(r.fecha) + '</td><td><b>' + esc(r.fundo) + '</b><br><span class="bs-text-xs bs-text-muted">' + esc(r.empresa) + '</span></td><td>' + esc(r.visitante) + '</td><td>' + score(num(r.puntaje)) + '</td><td class="bs-text-sm">' + num(r.items_ok) + ' / <b style="color:#b91c1c">' + num(r.items_obs) + '</b> / ' + num(r.items_na) + '</td>' +
         '<td class="bs-text-sm">' + (ymd(r.fecha_compromiso) ? fecha(r.fecha_compromiso) + (venc ? ' <b style="color:#b91c1c">vencido</b>' : '') + '<br><span class="bs-text-xs bs-text-muted">' + esc(r.responsable_compromiso || '') + '</span>' : '—') + '</td><td>' + (an ? '<span class="gs-pill anulado">ANULADA</span>' : pill(r.estado)) + '</td>' +
-        '<td style="white-space:nowrap"><button class="bs-btn bs-btn-outline bs-btn-sm" onclick="verCaso(' + Number(r.id) + ')">Ver</button> ' + (an ? (esAdmin ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="restaurar(' + Number(r.id) + ')">Restaurar</button>' : '') : '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="editar(' + Number(r.id) + ')">Editar</button>') + '</td></tr>';
+        '<td style="white-space:nowrap"><button class="bs-btn bs-btn-outline bs-btn-sm" onclick="verCaso(' + Number(r.id) + ')">Ver</button> ' + (an ? (esAdmin ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="restaurar(' + Number(r.id) + ')">Restaurar</button>' : '') : '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="editar(' + Number(r.id) + ')">Editar</button> <button class="bs-btn bs-btn-outline bs-btn-sm" title="Eliminar (se puede restaurar)" onclick="gsEliminar(' + Number(r.id) + ",'bs_gs_visitas','la visita " + esc(r.codigo) + "')\">🗑</button>") + '</td></tr>';
     }).join('') + '</tbody></table></div>' : '<div class="bs-text-center bs-text-muted" style="padding:2rem">No hay visitas con estos filtros.</div>';
     /* alertas */
     var A = [];
@@ -171,6 +171,13 @@
   window.gsAnular = async function (id) { var motivo = await appPrompt('Motivo de la anulación:'); if (!motivo) return; try { var r = await api('bs_anularRegistro', { modulo: 'gestion_social', clave: 'bs_gs_visitas', id: id, motivo: motivo }); appAlert(r.message || ''); if (r.ok) { cerrarDet(); cargar(); } } catch (e) { appAlert('Error: ' + e.message); } };
   async function restaurar(id) { if (!(await appConfirm('¿Restaurar la visita #' + id + '?'))) return; try { var r = await api('bs_restaurarRegistro', { modulo: 'gestion_social', clave: 'bs_gs_visitas', id: id, motivo: 'Restaurado desde el módulo' }); appAlert(r.message || ''); if (r.ok) cargar(); } catch (e) { appAlert('Error: ' + e.message); } }
 
+  /* _BS_ELIMINAR_V1 (15-nov-2026, pedido de Joel): botón Eliminar en cada fila. En Supabase "eliminar" = anular con motivo
+     (queda quién/cuándo/por qué, sale de las pantallas y el administrador puede restaurarlo con "Ver anulados"). */
+  window.gsEliminar = async function (id, clave, etiqueta) {
+    var motivo = await appPrompt('¿Eliminar ' + etiqueta + '? Indica el motivo (p. ej. registro equivocado, duplicado):'); if (!motivo) return;
+    try { var r = await api('bs_anularRegistro', { modulo: 'gestion_social', clave: clave, id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Eliminado.' : 'No se pudo eliminar.')); if (r.ok) { try { cerrarDet(); } catch (e) {} try { cerrarAt(); } catch (e) {} cargar(); } }
+    catch (e) { appAlert('Error: ' + e.message); }
+  };
   document.querySelectorAll('#tabs button').forEach(function (b) { b.onclick = function () { TAB = b.getAttribute('data-t'); document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); ['indice', 'lista', 'alertas', 'items'].forEach(function (t) { $('p-' + t).hidden = t !== TAB; }); }; });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrarModal(); cerrarDet(); } });
   window.cargar = cargar; window.render = render; window.abrirNuevo = abrirNuevo; window.editar = editar; window.cerrarModal = cerrarModal; window.guardar = guardar; window.verCaso = verCaso; window.cerrarDet = cerrarDet; window.restaurar = restaurar; window.itemCambio = itemCambio; window.GS_ITEMS = ITEMS;

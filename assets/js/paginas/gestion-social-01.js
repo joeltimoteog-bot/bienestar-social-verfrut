@@ -103,7 +103,7 @@
           '<td>' + esc(r.accion_inmediata || '—') + (prog ? '<br><span class="bs-text-xs" style="color:' + (venc ? '#b91c1c;font-weight:700' : '#5b6785') + '">' + fecha(prog) + (venc ? ' · vencida' : '') + '</span>' : '') + '</td>' +
           '<td>' + esc(r.responsable || '—') + '</td><td style="text-align:center">' + (Number(r.numero_seguimientos) || 0) + '</td><td>' + (an ? '<span class="gs-pill anulado">ANULADO</span>' : pill(r.estado)) + '</td>' +
           '<td style="white-space:nowrap"><button class="bs-btn bs-btn-outline bs-btn-sm" onclick="verCaso(' + Number(r.id) + ')">Ver</button> ' +
-          (an ? (esAdmin ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="restaurar(' + Number(r.id) + ')">Restaurar</button>' : '') : '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="editar(' + Number(r.id) + ')">Editar</button>') + '</td></tr>';
+          (an ? (esAdmin ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="restaurar(' + Number(r.id) + ')">Restaurar</button>' : '') : '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="editar(' + Number(r.id) + ')">Editar</button> <button class="bs-btn bs-btn-outline bs-btn-sm" title="Eliminar (se puede restaurar)" onclick="gsEliminar(' + Number(r.id) + ",'bs_gs_casos','el caso " + esc(r.codigo || '#' + r.id) + "')\">🗑</button>") + '</td></tr>';
       }).join('') + '</tbody></table></div>';
   }
 
@@ -221,6 +221,13 @@
     catch (e) { appAlert('Error: ' + e.message); }
   }
 
+  /* _BS_ELIMINAR_V1 (15-nov-2026, pedido de Joel): botón Eliminar en cada fila. En Supabase "eliminar" = anular con motivo
+     (queda quién/cuándo/por qué, sale de las pantallas y el administrador puede restaurarlo con "Ver anulados"). */
+  window.gsEliminar = async function (id, clave, etiqueta) {
+    var motivo = await appPrompt('¿Eliminar ' + etiqueta + '? Indica el motivo (p. ej. registro equivocado, duplicado):'); if (!motivo) return;
+    try { var r = await api('bs_anularRegistro', { modulo: 'gestion_social', clave: clave, id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Eliminado.' : 'No se pudo eliminar.')); if (r.ok) { try { cerrarDet(); } catch (e) {} try { cerrarAt(); } catch (e) {} cargar(); } }
+    catch (e) { appAlert('Error: ' + e.message); }
+  };
   // ===== TABS Y ARRANQUE =====
   document.querySelectorAll('#tabs button').forEach(function (b) { b.onclick = function () { TAB = b.getAttribute('data-t'); document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); ['lista', 'alertas'].forEach(function (t) { $('p-' + t).hidden = t !== TAB; }); }; });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrarModal(); cerrarDet(); } });
