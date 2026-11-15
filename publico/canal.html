@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Buzón de quejas y sugerencias · Unifrutti Perú</title>
+  <!-- _BS_GESTION_SOCIAL_V3 (15-nov-2026) — Página PÚBLICA del canal anónimo. Se abre escaneando el QR del fundo/comedor/bus.
+       No carga ningún script del sistema ni pide usuario: envía al servidor (POST bs/canal) y el servidor aplica los límites.
+       Parámetros del QR: ?e=RAPEL|VERFRUT|OLMOS&f=<fundo o sector>&s=PIURA|OLMOS -->
+  <style>
+    :root { --azul: #0a2463; --verde: #15803d; --gris: #5b6785; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: #f3f5fa; color: #1f2937; }
+    .top { background: var(--azul); color: #fff; padding: 14px 18px; display: flex; align-items: center; gap: 10px; }
+    .top b { font-size: 15px; } .top small { opacity: .85; display: block; font-size: 12px; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 16px; }
+    .card { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(10,36,99,.08); padding: 18px; }
+    h1 { font-size: 20px; margin: 0 0 6px; color: var(--azul); }
+    p.lead { margin: 0 0 14px; color: var(--gris); font-size: 14px; line-height: 1.45; }
+    .lugar { background: #eef2ff; border-radius: 10px; padding: 8px 12px; font-size: 13px; margin-bottom: 14px; color: #1e3a8a; }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 5px; }
+    select, textarea, input { width: 100%; font: inherit; font-size: 16px; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; }
+    textarea { min-height: 130px; resize: vertical; }
+    .hint { font-size: 12px; color: var(--gris); margin-top: 4px; }
+    .hp { position: absolute; left: -5000px; top: -5000px; height: 0; width: 0; opacity: 0; }
+    button { width: 100%; margin-top: 16px; padding: 14px; border: 0; border-radius: 12px; background: var(--verde); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: .6; }
+    .ok { text-align: center; padding: 24px 10px; }
+    .ok .ico { font-size: 52px; } .ok h2 { color: var(--verde); margin: 8px 0; } .ok code { background: #f1f5f9; padding: 3px 8px; border-radius: 6px; font-size: 15px; }
+    .err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-top: 12px; display: none; }
+    .pie { text-align: center; font-size: 12px; color: var(--gris); margin: 18px 0; line-height: 1.5; }
+    .priv { font-size: 12px; color: var(--gris); margin-top: 10px; line-height: 1.45; }
+  </style>
+</head>
+<body>
+  <div class="top"><span style="font-size:22px">🗣️</span><div><b>Buzón de quejas y sugerencias</b><small>Unifrutti Perú · Bienestar Social</small></div></div>
+  <div class="wrap">
+    <div class="card" id="form">
+      <h1>Tu voz importa</h1>
+      <p class="lead">Este buzón es <b>anónimo</b>: no pide tu nombre ni tu DNI. Lo lee únicamente el equipo de Bienestar Social y se registra con fecha y código para darle seguimiento.</p>
+      <div class="lugar" id="lugar"></div>
+      <form onsubmit="enviar(event)">
+        <label>¿Qué quieres contarnos?</label>
+        <select id="categoria" required>
+          <option value="">Elige una opción…</option>
+          <option>Queja</option><option>Sugerencia</option><option>Reconocimiento</option>
+          <option>Seguridad / salud en el trabajo</option><option>Trato / discriminación</option><option>Pago / horas</option>
+          <option>Transporte / comedor / SS.HH.</option><option>Hostigamiento (se deriva al comité)</option><option>Otro</option>
+        </select>
+        <label>Cuéntanos qué pasó o qué propones</label>
+        <textarea id="mensaje" required maxlength="2000" placeholder="Escribe con tus palabras: qué, dónde y cuándo. No es necesario poner nombres."></textarea>
+        <div class="hint"><span id="cnt">0</span>/2000</div>
+        <label>Si quieres que te contactemos (opcional)</label>
+        <input id="contacto" maxlength="200" placeholder="Celular o correo. Puedes dejarlo vacío.">
+        <div class="hp"><label>No llenar</label><input id="hp" tabindex="-1" autocomplete="off"></div>
+        <div class="err" id="err"></div>
+        <button id="btn" type="submit">Enviar de forma anónima</button>
+        <div class="priv">No se guarda tu número de teléfono ni tu ubicación. Si eliges "Hostigamiento", el mensaje se deriva al comité de intervención según la Ley 27942; si quieres denunciar formalmente, acércate a Bienestar Social o Relaciones Laborales.</div>
+      </form>
+    </div>
+    <div class="card ok" id="gracias" style="display:none">
+      <div class="ico">✅</div>
+      <h2>¡Gracias! Recibimos tu mensaje</h2>
+      <p>Tu código de seguimiento es <code id="codigo"></code>. Guárdalo si deseas preguntar por él en Bienestar Social.</p>
+      <button type="button" onclick="location.reload()" style="background:var(--azul)">Enviar otro mensaje</button>
+    </div>
+    <div class="pie">Canal de comunicación interna · Unifrutti Perú (RAPEL · VERFRUT)<br>Si estás en una emergencia, llama a tu supervisor o a la posta más cercana.</div>
+  </div>
+  <script>
+    (function () {
+      var API = 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api/bs/canal';
+      var q = new URLSearchParams(location.search), e = (q.get('e') || '').toUpperCase(), f = q.get('f') || '', s = (q.get('s') || 'PIURA').toUpperCase();
+      if (['RAPEL', 'VERFRUT', 'OLMOS'].indexOf(e) < 0) e = '';
+      var lugar = document.getElementById('lugar');
+      lugar.textContent = e ? ('📍 ' + e + (f ? ' · ' + f : '') + ' · ' + s) : '📍 Lugar no indicado en el código QR';
+      if (!e) { lugar.innerHTML += '<br><label style="margin-top:6px">Empresa</label><select id="empSel"><option>RAPEL</option><option>VERFRUT</option><option>OLMOS</option></select>'; }
+      var ta = document.getElementById('mensaje'); ta.addEventListener('input', function () { document.getElementById('cnt').textContent = ta.value.length; });
+      window.enviar = async function (ev) {
+        ev.preventDefault();
+        var btn = document.getElementById('btn'), err = document.getElementById('err'); err.style.display = 'none'; btn.disabled = true; btn.textContent = 'Enviando…';
+        var empresa = e || (document.getElementById('empSel') || {}).value || '';
+        var body = { empresa: empresa, fundo: f, sede: s, categoria: document.getElementById('categoria').value, mensaje: ta.value.trim(), contacto: document.getElementById('contacto').value.trim(), hp: document.getElementById('hp').value };
+        try {
+          var r = await fetch(API + '?forceFunctionRegion=sa-east-1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          var j = await r.json().catch(function () { return {}; });
+          if (!r.ok || !j.ok) throw new Error(j.message || 'No se pudo enviar. Intenta de nuevo.');
+          document.getElementById('codigo').textContent = j.codigo || ('#' + j.id);
+          document.getElementById('form').style.display = 'none'; document.getElementById('gracias').style.display = 'block';
+        } catch (ex) { err.textContent = ex.message; err.style.display = 'block'; btn.disabled = false; btn.textContent = 'Enviar de forma anónima'; }
+      };
+    })();
+  </script>
+</body>
+</html>

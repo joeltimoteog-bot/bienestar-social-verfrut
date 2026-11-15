@@ -156,6 +156,8 @@
       var id = $('gsId').value;
       var r = id ? await api('bs_actualizarGsCaso', { id: id, datos: d }) : await api('bs_crearGsCaso', { datos: d });
       if (!r || !r.ok) { appAlert((r && r.message) || 'No se pudo guardar.'); return; }
+      /* _BS_GESTION_SOCIAL_V3: si el caso nació de un mensaje del canal anónimo, ese mensaje queda Derivado al código del caso */
+      if (!id && CANAL.id) { try { await api('bs_actualizarCanal', { id: CANAL.id, datos: { estado: 'Derivado', derivado_a: r.codigo || ('GS #' + r.id), respuesta: 'Convertido en caso social ' + (r.codigo || '#' + r.id), atendido_por: user.nombre || user.usuario } }); } catch (e2) {} CANAL = {}; history.replaceState(null, '', location.pathname); }
       cerrarModal(); appAlert(r.message || (id ? 'Caso actualizado.' : 'Caso registrado.')); cargar();
     } catch (e) { appAlert('Error: ' + e.message); }
     finally { btn.disabled = false; btn.textContent = '💾 Guardar'; }
@@ -223,8 +225,17 @@
   document.querySelectorAll('#tabs button').forEach(function (b) { b.onclick = function () { TAB = b.getAttribute('data-t'); document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); ['lista', 'alertas'].forEach(function (t) { $('p-' + t).hidden = t !== TAB; }); }; });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrarModal(); cerrarDet(); } });
   window.cargar = cargar; window.render = render; window.abrirNuevo = abrirNuevo; window.editar = editar; window.cerrarModal = cerrarModal; window.autocompletar = autocompletar; window.guardar = guardar; window.verCaso = verCaso; window.cerrarDet = cerrarDet; window.restaurar = restaurar;
+  /* _BS_GESTION_SOCIAL_V3: llegada desde el canal anónimo (modulos/canal.html → "→ Caso social") */
+  var QS = new URLSearchParams(location.search), CANAL = QS.get('canal') ? { id: QS.get('canal'), cq: QS.get('cq') || '' } : {};
+  function abrirDesdeCanal() {
+    abrirNuevo();
+    $('origen').value = 'Canal de quejas / sugerencias'; $('descripcion').value = QS.get('t') || '';
+    if (QS.get('e')) $('empresa').value = String(QS.get('e')).toUpperCase(); if (QS.get('f')) $('fundo').value = QS.get('f'); if (QS.get('s')) $('sede').value = String(QS.get('s')).toUpperCase();
+    $('compromisos').value = 'Origen: mensaje anónimo ' + CANAL.cq + '. Identificar al trabajador solo si él lo autoriza.';
+    var box = $('anteBox'); box.innerHTML = '<b>Caso derivado del canal anónimo ' + esc(CANAL.cq) + '.</b> El mensaje no trae DNI: si no se identifica al trabajador, usa DNI 00000000 y descríbelo en la descripción.'; box.style.display = 'block';
+  }
   verificarAcceso().then(function (ok) {
-    if (ok) { cargar(); return; }
+    if (ok) { cargar().then(function () { if (CANAL.id) abrirDesdeCanal(); }); return; }
     document.getElementById('p-lista').innerHTML = '<div class="bs-alert bs-alert-danger"><strong>Sin acceso a Gestión Social.</strong> Pide al administrador que active <b>Bienestar → Gestión Social</b> para tu usuario en "Acceso a Módulos" del Sistema RR.LL. y vuelve a ingresar.</div>';
     document.querySelectorAll('.bs-btn-gs').forEach(function (b) { b.disabled = true; });
   });

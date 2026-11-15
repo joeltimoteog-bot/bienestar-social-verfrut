@@ -303,6 +303,9 @@
     bs_listarGestantes: async function () { var r = await edge('tabla', 'GET', null, 'clave=bs_gs_gestantes&anulados=1'); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (!r.ok) return r; var items = r.cargada === false ? [] : (r.items || []).slice(); return { ok: true, items: items, total: items.length, fuente: 'supabase' }; },
     bs_crearGestante: async function (p) { var r = await guardar('bs_gs_gestantes', 'crear', { datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Gestante registrada' + (r.codigo ? ' (' + r.codigo + ')' : '') + '. Descansos y lactancia calculados.'; return r; },
     bs_actualizarGestante: async function (p) { var r = await guardar('bs_gs_gestantes', 'actualizar', { id: p.id, datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Registro actualizado; fechas recalculadas.'; return r; },
+    /* ---- CANAL ANÓNIMO QR (_BS_GESTION_SOCIAL_V3, 15-nov-2026): los mensajes entran sin sesión por POST bs/canal; aquí solo se leen y atienden ---- */
+    bs_listarCanal: async function () { var r = await edge('tabla', 'GET', null, 'clave=bs_gs_canal&anulados=1'); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (!r.ok) return r; var items = r.cargada === false ? [] : (r.items || []).slice(); return { ok: true, items: items, total: items.length, fuente: 'supabase' }; },
+    bs_actualizarCanal: async function (p) { var r = await guardar('bs_gs_canal', 'actualizar', { id: p.id, datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Mensaje actualizado.'; return r; },
     /* anular / restaurar son genéricos: solo se redirigen si el módulo del registro ya está en Supabase */
     bs_anularRegistro: async function (p) { var c = claveDe(p); if (!(c && activo(p.modulo))) return CAE_A_GOOGLE; var r = await guardar(c, 'anular', { id: p.id, motivo: p.motivo }); return r === CAE_A_GOOGLE && SOLO_SUPABASE.indexOf(p.modulo) >= 0 ? SIN_GOOGLE() : r; },
     bs_restaurarRegistro: async function (p) { var c = claveDe(p); if (!(c && activo(p.modulo))) return CAE_A_GOOGLE; var r = await guardar(c, 'restaurar', { id: p.id, motivo: p.motivo }); return r === CAE_A_GOOGLE && SOLO_SUPABASE.indexOf(p.modulo) >= 0 ? SIN_GOOGLE() : r; }
@@ -315,7 +318,8 @@
     bs_listarRendiciones: 'rendiciones', bs_crearRendicion: 'rendiciones', bs_actualizarRendicion: 'rendiciones', bs_eliminarRendicion: 'rendiciones',
     bs_listarSugerencias: 'sugerencias', bs_crearSugerencia: 'sugerencias', bs_actualizarSugerencia: 'sugerencias', bs_eliminarSugerencia: 'sugerencias',
     bs_listarGsCasos: 'gestion_social', bs_crearGsCaso: 'gestion_social', bs_actualizarGsCaso: 'gestion_social', bs_listarGsSeguimientos: 'gestion_social', bs_crearGsSeguimiento: 'gestion_social',
-    bs_listarGestantes: 'gestion_social', bs_crearGestante: 'gestion_social', bs_actualizarGestante: 'gestion_social' };
+    bs_listarGestantes: 'gestion_social', bs_crearGestante: 'gestion_social', bs_actualizarGestante: 'gestion_social',
+    bs_listarCanal: 'gestion_social', bs_actualizarCanal: 'gestion_social' };
 
   var orig = window.api;
   if (typeof orig !== 'function') return;

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canal anónimo (QR) · Bienestar Social</title>
+  <!-- _BS_GESTION_SOCIAL_V3 (15-nov-2026) — Gestión Social, etapa 3: bandeja del canal anónimo de quejas y sugerencias + generador de QR por fundo.
+       Los mensajes entran por publico/canal.html (sin login) → POST bs/canal. Aquí se leen, atienden y derivan (Supabase, bs_gs_canal).
+       Acceso: clave bs_gestion_social de "Acceso a Módulos" del RR.LL. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
+  <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-mejoras.js?v=5"></script>
+  <script src="../assets/js/bs-core.js"></script>
+  <script src="../assets/js/bs-guardar-supabase.js?v=9"></script>
+  <script src="../assets/js/bs-saludo.js"></script>
+  <link rel="stylesheet" href="../assets/css/bs-theme-pro.css">
+  <link rel="stylesheet" href="../assets/css/bs-theme-2026.css">
+  <link rel="stylesheet" href="../assets/css/bs-table-v3.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v3.css">
+  <script src="../assets/js/bs-ui.js"></script>
+  <script src="../assets/js/bs-form-v3.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <style>
+    :root { --bs-mod-gs: #0f766e; }
+    .gs-kpi { padding: .85rem 1rem; }
+    .gs-kpi .l { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: #5b6785; font-weight: 600; }
+    .gs-kpi .v { font-size: 1.6rem; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; margin-top: .15rem; }
+    .gs-kpi .s { font-size: .8rem; color: #5b6785; }
+    .gs-tabs { display: flex; gap: .25rem; border-bottom: 1px solid #dde3ef; margin-bottom: 1rem; flex-wrap: wrap; }
+    .gs-tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: .6rem .9rem; font: inherit; font-weight: 600; color: #5b6785; cursor: pointer; }
+    .gs-tabs button.on { color: var(--bs-mod-gs); border-bottom-color: var(--bs-mod-gs); }
+    .gs-pill { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .74rem; font-weight: 700; white-space: nowrap; }
+    .gs-pill.nuevo { background: #fee2e2; color: #b91c1c; } .gs-pill.enrevision { background: #fef3c7; color: #92400e; } .gs-pill.atendido { background: #dcfce7; color: #166534; }
+    .gs-pill.derivado { background: #ede9fe; color: #5b21b6; } .gs-pill.descartado { background: #f1f5f9; color: #475569; } .gs-pill.anulado { background: #f1f5f9; color: #64748b; }
+    .gs-msg { border: 1px solid #dde3ef; border-radius: 12px; padding: .8rem 1rem; background: #fff; display: grid; grid-template-columns: 1fr auto; gap: .5rem 1rem; }
+    .gs-msg.nuevo { border-left: 4px solid #b91c1c; }
+    .gs-msg .txt { white-space: pre-wrap; margin: .35rem 0; font-size: .95rem; }
+    .gs-msg .meta { font-size: .78rem; color: #5b6785; }
+    .gs-sec { font-size: .72rem; font-weight: 800; letter-spacing: .1em; color: #6b7a99; margin: 1rem 0 .5rem; }
+    .bs-btn-gs { background: var(--bs-mod-gs); color: #fff; border: 0; } .bs-btn-gs:hover { filter: brightness(1.1); }
+    .qr-poster { width: 420px; max-width: 100%; margin: 0 auto; background: #fff; border: 2px solid #0a2463; border-radius: 18px; padding: 22px; text-align: center; }
+    .qr-poster h2 { color: #0a2463; margin: 0 0 4px; font-size: 1.35rem; } .qr-poster p { margin: .3rem 0; color: #334155; font-size: .95rem; }
+    .qr-poster .lugar { font-weight: 700; color: #0f766e; font-size: 1.05rem; margin-top: .4rem; }
+    .qr-poster canvas { margin: 10px auto; display: block; }
+    .qr-poster .url { font-size: .7rem; color: #64748b; word-break: break-all; }
+    @media print { body * { visibility: hidden; } .qr-poster, .qr-poster * { visibility: visible; } .qr-poster { position: fixed; left: 50%; top: 40px; transform: translateX(-50%); } }
+  </style>
+<link rel="stylesheet" href="../assets/css/bs-modulos-pro.css?v=1">
+<link rel="stylesheet" href="../assets/css/bs-skin-moderna.css?v=1">
+<link rel="stylesheet" href="../assets/css/bs-tablas-legibles.css?v=2">
+<link rel="stylesheet" href="../assets/css/bs-compacto.css?v=2">
+<script src="../assets/js/bs-compacto.js?v=2"></script>
+</head>
+<body>
+  <div class="bs-appshell">
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon"><img src="../images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
+          <span>Bienestar Social · <strong>Canal anónimo (QR)</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <a href="gestion-social.html" class="bs-topbar-logout" style="text-decoration: none;">Casos sociales</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: var(--bs-mod-gs);">
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">🗣️</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> Gestión Social <span>&rsaquo;</span> <b>Canal anónimo</b></div>
+            <h1 style="color: var(--bs-mod-gs);">Canal anónimo de quejas y sugerencias</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Mensajes que los trabajadores envían desde su celular escaneando el QR del fundo, comedor o bus. Sin nombre ni DNI. Aquí se atienden, se responden y se derivan a Casos sociales o al comité.</p>
+          </div>
+        </div>
+        <div class="bs-flex" style="gap:.5rem; flex-wrap:wrap;">
+          <button class="bs-btn bs-btn-outline" onclick="cargar()">↻ Actualizar</button>
+          <button class="bs-btn bs-btn-gs" onclick="irTab('qr')">▦ Generar QR</button>
+        </div>
+      </div>
+
+      <div class="bs-grid bs-grid-4 bs-gap bs-mb" id="kpis"></div>
+
+      <div class="bs-card bs-mb">
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Empresa</label><select class="bs-select" id="fEmpresa" onchange="render()"><option value="">Todas</option><option>RAPEL</option><option>VERFRUT</option><option>OLMOS</option></select></div>
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Fundo / lugar</label><select class="bs-select" id="fFundo" onchange="render()"><option value="">Todos</option></select></div>
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Categoría</label><select class="bs-select" id="fCat" onchange="render()"><option value="">Todas</option></select></div>
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Estado</label><select class="bs-select" id="fEstado" onchange="render()"><option value="">Pendientes (nuevos y en revisión)</option><option>Nuevo</option><option>En revisión</option><option>Atendido</option><option>Derivado</option><option>Descartado</option><option value="todos">Todos</option></select></div>
+          <div class="bs-form-group" style="margin:0; grid-column: span 2;"><label class="bs-label">Buscar</label><input type="search" class="bs-input" id="fTexto" placeholder="Código o texto del mensaje…" oninput="render()"></div>
+        </div>
+        <label class="bs-text-sm bs-text-muted" style="display:inline-flex;align-items:center;gap:.4rem;margin-top:.6rem;"><input type="checkbox" id="fAnulados" onchange="render()"> Ver anulados</label>
+      </div>
+
+      <div class="bs-card">
+        <div class="gs-tabs" id="tabs">
+          <button data-t="lista" class="on">📥 Mensajes <span id="nLista"></span></button>
+          <button data-t="resumen">📊 Resumen por lugar</button>
+          <button data-t="qr">▦ Generar QR</button>
+        </div>
+        <div id="p-lista"><div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div></div>
+        <div id="p-resumen" hidden></div>
+        <div id="p-qr" hidden>
+          <div class="bs-grid bs-grid-2 bs-gap">
+            <div>
+              <div class="gs-sec">DATOS DEL AFICHE</div>
+              <div class="bs-form-group"><label class="bs-label">Empresa</label><select class="bs-select" id="qEmpresa" onchange="qr()"><option>RAPEL</option><option>VERFRUT</option><option>OLMOS</option></select></div>
+              <div class="bs-form-group"><label class="bs-label">Fundo / lugar (como se verá en los mensajes)</label><input class="bs-input" id="qFundo" placeholder="Ej.: Fundo San Pedro · Comedor 2" oninput="qr()"></div>
+              <div class="bs-form-group"><label class="bs-label">Sede</label><select class="bs-select" id="qSede" onchange="qr()"><option>PIURA</option><option>OLMOS</option></select></div>
+              <div class="bs-text-sm bs-text-muted" style="line-height:1.5">Imprime el afiche y pégalo en comedores, buses, SS.HH. y oficinas de campo. Cada QR lleva el lugar, así sabrás de dónde vienen los mensajes. El enlace es público pero solo permite enviar; nadie puede leer los mensajes sin acceso a este módulo.</div>
+              <div class="bs-flex" style="gap:.5rem;margin-top:.8rem;flex-wrap:wrap"><button class="bs-btn bs-btn-gs" onclick="window.print()">🖨️ Imprimir afiche</button><button class="bs-btn bs-btn-outline" onclick="copiarUrl()">Copiar enlace</button></div>
+            </div>
+            <div class="qr-poster" id="poster">
+              <h2>🗣️ Tu voz importa</h2>
+              <p>Escanea y cuéntanos tu queja, sugerencia o reconocimiento.<br><b>Es anónimo</b>: no pide nombre ni DNI.</p>
+              <div class="lugar" id="qLugar"></div>
+              <canvas id="qCanvas"></canvas>
+              <p class="bs-text-sm">Lo lee únicamente Bienestar Social · Unifrutti Perú</p>
+              <div class="url" id="qUrl"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer class="bs-footer">Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0</footer>
+  </div>
+
+  <div class="bs-modal-overlay" id="modalAt">
+    <div class="bs-modal" style="max-width: 720px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="atTitle">Atender mensaje</h3>
+        <button class="bs-modal-close" onclick="cerrarAt()">×</button>
+      </div>
+      <div class="bs-modal-body" id="atBody"></div>
+    </div>
+  </div>
+
+  <script src="../assets/js/paginas/canal-01.js?v=1"></script>
+  <script src="../assets/js/bs-presencia.js"></script>
+  <script src="../assets/js/bs-modulos-pro.js?v=1"></script>
+</body>
+</html>
