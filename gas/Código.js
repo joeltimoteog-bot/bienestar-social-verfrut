@@ -205,6 +205,10 @@ function doPost(e) {
       params.permisos = bs_permisosDeSesion_(params._sesion);
     }
 
+    /* _BS_HOJA_CONGELADA_V1 (14-nov-2026): los módulos migrados a Supabase no leen ni escriben en las hojas congeladas */
+    var _cong = (typeof bsHojaCongeladaGuard_ === 'function') ? bsHojaCongeladaGuard_(action, params) : null;
+    if (_cong) return ContentService.createTextOutput(JSON.stringify(_cong)).setMimeType(ContentService.MimeType.JSON);
+
     let result;
     switch(action) {
       case 'bs_login':           result = bs_login(params.usuario, params.password);

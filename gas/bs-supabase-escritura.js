@@ -143,3 +143,44 @@ function bsRespaldoInstalarTrigger() {
   ScriptApp.newTrigger('bsRespaldoDiario').timeBased().atHour(1).everyDays(1).inTimezone('America/Lima').create();
   Logger.log('Respaldo diario programado: 01:00 America/Lima'); return 'ok';
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   _BS_HOJA_CONGELADA_V1 (14-nov-2026) — Candado: los módulos que ya guardan en Supabase NO vuelven a
+   escribir ni a leer de las hojas de Google (quedaron congeladas el 08-nov). Antes, si el servidor de
+   Supabase no respondía, la pantalla caía al Apps Script y el registro se guardaba en la hoja congelada:
+   nunca llegaba a Supabase ni a la auditoría. Ahora el Apps Script responde con un aviso claro y no
+   guarda nada; el usuario vuelve a intentar y el registro entra a Supabase.
+   · Solo afecta a las acciones de los 7 módulos migrados (lista BS_CONGELADO_ACCIONES_).
+   · La fuente por tabla se consulta a la Edge (bs/fuente) y se guarda 10 min en caché; si esa consulta
+     falla se asume Supabase (lo seguro). Una tabla con fuente 'hoja' sigue funcionando como siempre.
+   · Emergencia: propiedad del script BS_HOJA_CONGELADA = off (vuelve al comportamiento anterior).
+   ═══════════════════════════════════════════════════════════════════════════ */
+var BS_CONGELADO_ACCIONES_ = {
+  bs_crearQueja: 'bs_quejas', bs_actualizarQueja: 'bs_quejas', bs_crearSeguimientoQueja: 'bs_quejas', bs_cierreMasivoQuejas: 'bs_quejas', bs_listarQuejas: 'bs_quejas', bs_listarSeguimientosQueja: 'bs_quejas', bs_listarBuzones: 'bs_quejas',
+  bs_crearAccidente: 'bs_accidentes_casos', bs_actualizarAccidente: 'bs_accidentes_casos', bs_crearSeguimiento: 'bs_accidentes_casos', bs_importarAccidentes: 'bs_accidentes_casos', bs_listarAccidentes: 'bs_accidentes_casos', bs_listarSeguimientos: 'bs_accidentes_casos', bs_listarTodosSeguimientos: 'bs_accidentes_casos',
+  bs_crearSubsidio: 'bs_subsidios', bs_actualizarSubsidio: 'bs_subsidios', bs_importarSubsidios: 'bs_subsidios', bs_listarSubsidios: 'bs_subsidios',
+  bs_crearHostigamiento: 'bs_hostigamiento', bs_actualizarHostigamiento: 'bs_hostigamiento', bs_listarHostigamiento: 'bs_hostigamiento',
+  bs_crearDescanso: 'bs_descansos', bs_actualizarDescanso: 'bs_descansos', bs_generarSubsidioDesdeDM: 'bs_descansos', bs_listarDescansos: 'bs_descansos', bs_acumuladoDescansos: 'bs_descansos', bs_dashboardDescansos: 'bs_descansos',
+  bs_crearRendicion: 'bs_rendiciones', bs_actualizarRendicion: 'bs_rendiciones', bs_eliminarRendicion: 'bs_rendiciones', bs_listarRendiciones: 'bs_rendiciones',
+  bs_crearSugerencia: 'bs_sugerencias', bs_actualizarSugerencia: 'bs_sugerencias', bs_eliminarSugerencia: 'bs_sugerencias', bs_listarSugerencias: 'bs_sugerencias'
+};
+var BS_CONGELADO_MODULO_ = { quejas: 'bs_quejas', accidentes: 'bs_accidentes_casos', subsidios: 'bs_subsidios', hostigamiento: 'bs_hostigamiento', descansos: 'bs_descansos', rendiciones: 'bs_rendiciones', sugerencias: 'bs_sugerencias' };
+function bsFuenteCache_() {
+  var c = CacheService.getScriptCache(), k = 'bs_fuentes_v1', v = c.get(k);
+  if (v) { try { return JSON.parse(v); } catch (e) {} }
+  try { var m = bsFuenteVer_(); c.put(k, JSON.stringify(m), 600); return m; } catch (e) { return null; }
+}
+function bsHojaCongeladaGuard_(action, params) {
+  try {
+    var clave = BS_CONGELADO_ACCIONES_[action];
+    if (!clave && (action === 'bs_anularRegistro' || action === 'bs_restaurarRegistro')) clave = BS_CONGELADO_MODULO_[String((params || {}).modulo || '').toLowerCase()] || 'bs_quejas';
+    if (!clave) return null;
+    if (PropertiesService.getScriptProperties().getProperty('BS_HOJA_CONGELADA') === 'off') return null;
+    var f = bsFuenteCache_();
+    if (f && f[clave] === 'hoja') return null;   /* esa tabla todavía se trabaja en la hoja */
+    var lectura = /^bs_(listar|acumulado|dashboard)/.test(action);
+    return { ok: false, congelado: true, items: [], total: 0,
+      message: lectura ? 'El servidor de datos (Supabase) no respondió. Recarga la página en unos segundos; la hoja de Google quedó congelada y no se usa para mostrar datos.'
+                       : 'No se pudo guardar: el servidor de datos (Supabase) no respondió. Vuelve a intentarlo en unos segundos. Nada se guardó en la hoja de Google (quedó congelada).' };
+  } catch (e) { return null; }
+}

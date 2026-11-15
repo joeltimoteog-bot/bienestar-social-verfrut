@@ -119,6 +119,12 @@ function bs_sbResyncTodo() {
   return out.join(' | ');
 }
 
+/* _BS_SIN_RESYNC_V1 (14-nov-2026): la revisión nocturna hoja→copia ya no tiene sentido (Supabase es la base y las hojas
+   quedaron congeladas). Ejecutar UNA vez en el editor para quitar el activador. */
+function bs_sbQuitarNoche() {
+  var n = 0; ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'bs_sbResyncTodo') { ScriptApp.deleteTrigger(t); n++; } });
+  Logger.log('Activadores bs_sbResyncTodo eliminados: ' + n); return n;
+}
 function bs_sbInstalarNoche() {
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'bs_sbResyncTodo') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('bs_sbResyncTodo').timeBased().everyDays(1).atHour(2).create();
