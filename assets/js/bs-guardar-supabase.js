@@ -19,7 +19,7 @@
   var EDGE = window.BS_EDGE_URL || 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api';
 
   /* módulos que ya guardan en Supabase (se agregan uno a uno conforme avanza el plan) */
-  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas', 'accidentes', 'subsidios', 'hostigamiento', 'descansos', 'rendiciones', 'sugerencias', 'gestion_social', 'gs_gestantes', 'gs_canal', 'gs_condiciones'];   /* _BS_GESTION_SOCIAL_V1 (14-nov-2026): Gestión Social nace sin hoja de Google: solo Supabase */
+  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas', 'accidentes', 'subsidios', 'hostigamiento', 'descansos', 'rendiciones', 'sugerencias', 'gestion_social', 'gs_gestantes', 'gs_canal', 'gs_condiciones', 'gs_datos', 'gs_comite', 'gs_adolescentes', 'gs_lactario', 'gs_discapacidad'];   /* _BS_GESTION_SOCIAL_V1 (14-nov-2026): Gestión Social nace sin hoja de Google: solo Supabase */
 
   function hostSede(v) { return String(v || '').trim().toUpperCase().indexOf('OLM') >= 0 ? 'OLMOS' : 'PIURA'; }
   function hostClave(sede) { return hostSede(sede) === 'OLMOS' ? 'bs_hostigamiento_olmos' : 'bs_hostigamiento'; }
@@ -61,12 +61,14 @@
     var peso = { rojo: 0, ambar: 1, info: 2 }; al.sort(function (a, b) { return peso[a.nivel] - peso[b.nivel]; });
     return al;
   }
-  var CLAVE_DE_MODULO = { quejas: 'bs_quejas', accidentes: 'bs_accidentes_casos', subsidios: 'bs_subsidios', hostigamiento: 'bs_hostigamiento', descansos: 'bs_descansos', rendiciones: 'bs_rendiciones', sugerencias: 'bs_sugerencias', gestion_social: 'bs_gs_casos', gs_gestantes: 'bs_gs_gestantes', gs_canal: 'bs_gs_canal', gs_condiciones: 'bs_gs_visitas' };   /* _BS_GESTION_SOCIAL_V5: permisos separados */
+  var CLAVE_DE_MODULO = { quejas: 'bs_quejas', accidentes: 'bs_accidentes_casos', subsidios: 'bs_subsidios', hostigamiento: 'bs_hostigamiento', descansos: 'bs_descansos', rendiciones: 'bs_rendiciones', sugerencias: 'bs_sugerencias', gestion_social: 'bs_gs_casos', gs_gestantes: 'bs_gs_gestantes', gs_canal: 'bs_gs_canal', gs_condiciones: 'bs_gs_visitas', gs_datos: 'bs_gs_consentimientos', gs_comite: 'bs_gs_comite', gs_adolescentes: 'bs_gs_adolescentes', gs_lactario: 'bs_gs_lactarios', gs_discapacidad: 'bs_gs_discapacidad' };   /* _BS_GESTION_SOCIAL_V5/V6 */
 
   function token() { try { return (JSON.parse(localStorage.getItem('bienestarSocialAuth') || '{}') || {}).rl_token || ''; } catch (e) { return ''; } }
   function activo(modulo) { return (window.BS_SUPABASE_MODULOS || []).indexOf(modulo) >= 0; }
   function num(v) { var n = Number(v); return isNaN(n) ? 0 : n; }
   var CAE_A_GOOGLE = { caer: true };
+  /* _BS_GESTION_SOCIAL_V6: tablas de cumplimiento que atiende el motor genérico → módulo (permiso) */
+  var MODULO_DE_CLAVE_GS = { bs_gs_consentimientos: 'gs_datos', bs_gs_comite: 'gs_comite', bs_gs_adolescentes: 'gs_adolescentes', bs_gs_lactarios: 'gs_lactario', bs_gs_discapacidad: 'gs_discapacidad' };
   /* _BS_GESTION_SOCIAL_V1: módulos que no tienen hoja de Google; cuando Supabase no responde se informa, no se cae a Google */
   var SOLO_SUPABASE = ['gestion_social'];
   function SIN_GOOGLE() { return { ok: false, success: false, items: [], total: 0, message: token() ? 'No se pudo conectar con Supabase. Revisa tu conexión e intenta de nuevo.' : 'Tu sesión no tiene credencial del Sistema RR.LL. Cierra sesión y vuelve a ingresar.' }; }
@@ -334,6 +336,10 @@
       var f = p || {}, qs = ['modulo', 'usuario', 'empresa', 'desde', 'hasta'].filter(function (k) { return f[k]; }).map(function (k) { return k + '=' + encodeURIComponent(f[k]); }).join('&');
       var r = await edge('estadisticas', 'GET', null, qs); return r;   /* CAE_A_GOOGLE → Apps Script como antes */
     },
+    /* ---- GENÉRICAS DE CUMPLIMIENTO (_BS_GESTION_SOCIAL_V6, 15-nov-2026): motor bs-gs-simple.js. El módulo (permiso) sale de la clave. ---- */
+    bs_gsListar: async function (p) { var c = String((p && p.clave) || ''); if (!MODULO_DE_CLAVE_GS[c]) return { ok: false, message: 'Tabla no permitida: ' + c }; var r = await edge('tabla', 'GET', null, 'clave=' + encodeURIComponent(c) + '&anulados=1'); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (!r.ok) return r; var items = r.cargada === false ? [] : (r.items || []).slice(); return { ok: true, items: items, total: items.length, fuente: 'supabase' }; },
+    bs_gsCrear: async function (p) { var c = String((p && p.clave) || ''); if (!MODULO_DE_CLAVE_GS[c]) return { ok: false, message: 'Tabla no permitida: ' + c }; var r = await guardar(c, 'crear', { datos: p.datos || {} }); return r === CAE_A_GOOGLE ? SIN_GOOGLE() : r; },
+    bs_gsActualizar: async function (p) { var c = String((p && p.clave) || ''); if (!MODULO_DE_CLAVE_GS[c]) return { ok: false, message: 'Tabla no permitida: ' + c }; var r = await guardar(c, 'actualizar', { id: p.id, datos: p.datos || {} }); return r === CAE_A_GOOGLE ? SIN_GOOGLE() : r; },
     /* anular / restaurar son genéricos: solo se redirigen si el módulo del registro ya está en Supabase */
     bs_anularRegistro: async function (p) { var c = claveDe(p); if (!(c && activo(p.modulo))) return CAE_A_GOOGLE; var r = await guardar(c, 'anular', { id: p.id, motivo: p.motivo }); return r === CAE_A_GOOGLE && SOLO_SUPABASE.indexOf(p.modulo) >= 0 ? SIN_GOOGLE() : r; },
     bs_restaurarRegistro: async function (p) { var c = claveDe(p); if (!(c && activo(p.modulo))) return CAE_A_GOOGLE; var r = await guardar(c, 'restaurar', { id: p.id, motivo: p.motivo }); return r === CAE_A_GOOGLE && SOLO_SUPABASE.indexOf(p.modulo) >= 0 ? SIN_GOOGLE() : r; }

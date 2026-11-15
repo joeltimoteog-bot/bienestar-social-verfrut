@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subsidios · Bienestar Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
+  <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-saludo.js"></script>
+  <script src="../assets/js/bs-mejoras.js"></script>
+  <script src="../assets/js/bs-core.js"></script>
+  <script src="../assets/js/bs-dash-subsidios.js"></script>
+  <link rel="stylesheet" href="../assets/css/bs-theme-pro.css">
+  <link rel="stylesheet" href="../assets/css/bs-theme-2026.css">
+  <link rel="stylesheet" href="../assets/css/bs-table-v3.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v3.css">
+  <script src="../assets/js/bs-ui.js"></script>
+  <script src="../assets/js/bs-form-v3.js"></script>
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <!-- TOPBAR -->
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon"><img src="../images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
+          <span>Bienestar Social · <strong>Subsidios</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+
+      <!-- Header -->
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: var(--bs-mod-subsidios);">
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">💰</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Subsidios</b></div>
+            <h1 style="color: var(--bs-mod-subsidios);">Subsidios</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, lactancia, sepelio).</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+          <button class="bs-btn bs-btn-outline" style="border:1.5px solid var(--bs-mod-subsidios); color: var(--bs-mod-subsidios); background:#fff;" onclick="BSDashSubsidios.abrir()">📊 Dashboard</button>
+          <button class="bs-btn bs-btn-outline" style="border:1.5px solid var(--bs-mod-subsidios); color: var(--bs-mod-subsidios); background:#fff;" onclick="openImportModal()">📥 Importar Excel</button>
+          <button class="bs-btn" style="background: var(--bs-mod-subsidios); color: white;" onclick="openModal()">+ Nuevo Subsidio</button>
+        </div>
+      </div>
+
+      <!-- Resumen de recuperación por año -->
+      <style>
+        .rec-grid{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+        .rec-kpi{flex:1;min-width:160px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:12px 16px;box-shadow:0 4px 14px rgba(0,27,85,.07);position:relative;overflow:hidden;transition:transform .18s, box-shadow .2s;}
+        .rec-kpi:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(0,27,85,.13);}
+        .rec-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;}
+        .rec-kpi.verde::before{background:#16a34a;}.rec-kpi.azul::before{background:#2563eb;}.rec-kpi.ambar::before{background:#f59e0b;}.rec-kpi.gris::before{background:#64748b;}
+        .rec-kpi .v{font-size:1.15rem;font-weight:800;line-height:1.2;}
+        .rec-kpi .l{font-size:.68rem;font-weight:700;color:var(--bs-text-subtle);text-transform:uppercase;letter-spacing:.03em;}
+        .rec-kpi.verde .v{color:#15803d;}.rec-kpi.azul .v{color:#1e3a8a;}.rec-kpi.ambar .v{color:#b45309;}.rec-kpi.gris .v{color:#334155;}
+        .rec-year{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px dashed var(--bs-border);flex-wrap:wrap;}
+        .rec-year:last-child{border-bottom:none;}
+        .rec-year .yr{font-weight:800;color:var(--bs-primary);min-width:52px;font-size:1rem;}
+        .rec-year .dt{font-size:.76rem;color:var(--bs-text-muted);min-width:190px;}
+        .rec-year .dt b{color:#15803d;}
+        .rec-year .dt .pc{color:#1e3a8a;font-weight:700;}
+        .rec-year .dt .nr{color:#b45309;font-weight:700;}
+        .rec-bar{flex:1;min-width:160px;height:10px;background:#e2e8f0;border-radius:6px;overflow:hidden;}
+        .rec-bar i{display:block;height:100%;background:linear-gradient(90deg,#15803d,#22c55e);border-radius:6px;}
+        .rec-pct{font-size:.78rem;font-weight:800;color:#15803d;min-width:88px;text-align:right;}
+      </style>
+      <div class="bs-card bs-mb" id="resumenAnual" style="display:none;">
+        <div class="bs-card-header" style="margin-bottom:.75rem;">
+          <h3 class="bs-card-title" style="font-size:1rem;">📊 Recuperación EsSalud por Año <span class="bs-text-xs bs-text-subtle" style="font-weight:400;">(Cobrado + Recuperado = dinero recuperado · según filtros de empresa y tipo)</span></h3>
+        </div>
+        <div class="rec-grid" id="recKpis"></div>
+        <div id="recAnios"></div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="bs-card bs-mb">
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Empresa</label>
+            <select class="bs-select" id="filterEmpresa" onchange="renderSubsidios()">
+              <option value="">Todas</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+              <option value="BOMAREA">BOMAREA</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Tipo</label>
+            <select class="bs-select" id="filterTipo" onchange="renderSubsidios()">
+              <option value="">Todos</option>
+              <option value="Incapacidad Temporal">Incapacidad Temporal</option>
+              <option value="Maternidad">Maternidad</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Año</label>
+            <select class="bs-select" id="filterAnio" onchange="renderSubsidios()">
+              <option value="">Todos</option>
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin: 0;">
+            <label class="bs-label">Estado</label>
+            <select class="bs-select" id="filterEstado" onchange="renderSubsidios()">
+              <option value="">Todos</option>
+              <option value="En proceso">En proceso</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Pagado">Pagado</option>
+              <option value="Recuperado">Recuperado</option>
+              <option value="Cobrado">Cobrado</option>
+              <option value="No Recuperable">No Recuperable</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="bs-flex bs-items-center bs-gap-sm bs-mb" style="justify-content:flex-end;">
+        <input type="checkbox" id="verAnulados" onchange="renderSubsidios()">
+        <label for="verAnulados" class="bs-text-xs bs-text-muted bs-cursor-pointer">🗂 Ver anulados</label>
+      </div>
+
+      <div id="tablaContainer">
+        <div class="bs-text-center" style="padding: 2rem;">
+          <div class="bs-spinner bs-spinner-dark" style="margin: 0 auto;"></div>
+          <p class="bs-mt">Cargando subsidios...</p>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="bs-footer">
+      Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0
+    </footer>
+  </div>
+
+  <!-- MODAL FORM -->
+  <div class="bs-modal-overlay" id="formModal">
+    <div class="bs-modal" style="max-width: 880px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="formTitle">Nuevo Subsidio</h3>
+        <button class="bs-modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <input type="hidden" id="subsidioId">
+
+        <h4 style="color: var(--bs-mod-subsidios); margin-bottom: 0.5rem;">Datos del trabajador</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Número / DNI</label>
+            <input type="text" id="numero" class="bs-input" placeholder="DNI o N° expediente">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Empresa <span class="bs-required">*</span></label>
+            <select id="empresa" class="bs-select" required>
+              <option value="">Seleccionar...</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+              <option value="BOMAREA">BOMAREA</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Expediente EsSalud</label>
+            <input type="text" id="expediente" class="bs-input" placeholder="N° de expediente">
+          </div>
+        </div>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Apellido Paterno</label>
+            <input type="text" id="apellido_paterno" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Apellido Materno</label>
+            <input type="text" id="apellido_materno" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Nombres</label>
+            <input type="text" id="nombres" class="bs-input">
+          </div>
+        </div>
+
+        <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Datos del subsidio</h4>
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Año <span class="bs-required">*</span></label>
+            <input type="number" id="anio" class="bs-input" required min="2020" max="2030">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Mes</label>
+            <select id="mes" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="Enero">Enero</option>
+              <option value="Febrero">Febrero</option>
+              <option value="Marzo">Marzo</option>
+              <option value="Abril">Abril</option>
+              <option value="Mayo">Mayo</option>
+              <option value="Junio">Junio</option>
+              <option value="Julio">Julio</option>
+              <option value="Agosto">Agosto</option>
+              <option value="Septiembre">Septiembre</option>
+              <option value="Octubre">Octubre</option>
+              <option value="Noviembre">Noviembre</option>
+              <option value="Diciembre">Diciembre</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Tipo <span class="bs-required">*</span></label>
+            <select id="tipo" class="bs-select" required>
+              <option value="">Seleccionar...</option>
+              <option value="Incapacidad Temporal">Incapacidad Temporal</option>
+              <option value="Maternidad">Maternidad</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Periodo</label>
+            <input type="text" id="periodo" class="bs-input" placeholder="Ej: 01/01-31/01">
+          </div>
+        </div>
+
+
+        <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Cálculo del subsidio (S/)</h4>
+        <p class="bs-helptext" style="margin: -0.25rem 0 0.6rem; line-height: 1.4;">💡 <strong>Auto-cálculo EsSalud:</strong> ingresa el <strong>total de remuneraciones computables de los 12 meses</strong> previos al mes de la contingencia y las fechas (o los días). <strong>Subsidio diario = total ÷ 360</strong> (si hay menos de 12 meses computados, ÷ meses×30). Incapacidad: primeros 20 días = empresa, del día 21 = EsSalud. Maternidad: todo EsSalud. Todos los montos son editables.</p>
+
+        <!-- FECHAS Y DÍAS (necesarios para el cálculo) -->
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Inicio</label>
+            <input type="date" id="inicio" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Término</label>
+            <input type="date" id="termino" class="bs-input">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Días <span class="bs-required">*</span></label>
+            <input type="number" id="dias" class="bs-input" min="0" step="1" placeholder="Total de días">
+          </div>
+        </div>
+
+        <!-- ENTRADAS BASE (método EsSalud: total 12 meses ÷ 360) -->
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Total remun. 12 meses <span class="bs-text-xs bs-text-subtle">(computables)</span></label>
+            <input type="number" id="total_remun_12m" class="bs-input" min="0" step="0.01" placeholder="Ej: 37686.01">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">N° meses computados <span class="bs-text-xs bs-text-subtle">(≥12 → /360)</span></label>
+            <input type="number" id="meses_computados" class="bs-input" min="1" max="12" step="1" value="12">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Cálculo por día <span class="bs-text-xs bs-text-subtle">(total ÷ 360)</span></label>
+            <input type="number" id="calculo_por_dia" class="bs-input" min="0" step="0.01" placeholder="Auto o manual">
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Reembolso por mes <span class="bs-text-xs bs-text-subtle">(= ESSALUD)</span></label>
+            <input type="number" id="reembolso_por_mes" class="bs-input" min="0" step="0.01">
+          </div>
+        </div>
+
+        <!-- RESULTADOS CALCULADOS -->
+        <div style="background: var(--bs-surface-alt); border-radius: var(--bs-radius); padding: 0.85rem 0.85rem 0.25rem; margin-top: 0.5rem;">
+          <p class="bs-text-xs bs-text-subtle" style="margin: 0 0 0.5rem;">📊 Resultados (se calculan solos, puedes ajustar)</p>
+          <div class="bs-grid bs-grid-4 bs-gap">
+            <div class="bs-form-group">
+              <label class="bs-label">Pago empresa</label>
+              <input type="number" id="pago_empresa" class="bs-input" min="0" step="0.01">
+            </div>
+            <div class="bs-form-group">
+              <label class="bs-label">Recuperado EsSalud</label>
+              <input type="number" id="recuperado_essalud" class="bs-input" min="0" step="0.01">
+            </div>
+            <div class="bs-form-group">
+              <label class="bs-label">Monto total</label>
+              <input type="number" id="monto_total" class="bs-input" min="0" step="0.01" style="font-weight: 600;">
+            </div>
+            <div class="bs-form-group">
+              <label class="bs-label">Diferencias</label>
+              <input type="number" id="diferencias" class="bs-input" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <h4 style="color: var(--bs-mod-subsidios); margin: 1rem 0 0.5rem;">Estado</h4>
+        <div class="bs-grid bs-grid-3 bs-gap">
+          <div class="bs-form-group">
+            <label class="bs-label">Estado documento</label>
+            <select id="estado" class="bs-select">
+              <option value="">Seleccionar...</option>
+              <option value="Presentado">Presentado</option>
+              <option value="Observado">Observado</option>
+              <option value="Aprobado">Aprobado</option>
+            </select>
+          </div>
+          <div class="bs-form-group">
+            <label class="bs-label">Estado general</label>
+            <select id="estado_general" class="bs-select">
+              <option value="En proceso">En proceso</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Pagado">Pagado</option>
+              <option value="Recuperado">Recuperado</option>
+              <option value="Cobrado">Cobrado</option>
+              <option value="No Recuperable">No Recuperable</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bs-form-group">
+          <label class="bs-label">Observaciones</label>
+          <textarea id="observaciones" class="bs-textarea"></textarea>
+        </div>
+
+        <div id="formAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="bs-btn" id="btnSubmit" onclick="submitForm()" style="background: var(--bs-mod-subsidios); color: white;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL IMPORTAR EXCEL -->
+  <div class="bs-modal-overlay" id="importModal">
+    <div class="bs-modal" style="max-width: 980px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title">📥 Importar Subsidios desde Excel</h3>
+        <button class="bs-modal-close" onclick="closeImportModal()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <div class="bs-alert bs-alert-info" style="margin-bottom:.75rem;">
+          Sube tu archivo <strong>.xlsx, .xls o .csv</strong>. La primera fila debe tener los títulos de columna
+          (p.ej. <em>AÑO, MES, TIPO, DNI, APELLIDO PATERNO, APELLIDO MATERNO, NOMBRES, EMPRESA, DÍAS, INICIO, TÉRMINO, MONTO TOTAL, ESTADO GENERAL…</em>).
+          El sistema reconoce los nombres automáticamente. Si una fila coincide con un registro existente
+          (mismo <strong>expediente</strong>, o mismo <strong>DNI + año + tipo + periodo</strong>) se <strong>actualiza</strong>; si no, se <strong>agrega</strong>. No se borra nada.
+        </div>
+        <div class="bs-form-group">
+          <input type="file" id="importFile" class="bs-input" accept=".xlsx,.xls,.csv" onchange="leerArchivoImport(this)">
+        </div>
+        <div id="importResumen"></div>
+        <div id="importPreview" style="max-height: 320px; overflow:auto;"></div>
+        <div id="importAlert"></div>
+      </div>
+      <div class="bs-modal-footer">
+        <button class="bs-btn bs-btn-ghost" onclick="closeImportModal()">Cancelar</button>
+        <button class="bs-btn" id="btnImport" onclick="subirImport()" disabled style="background: var(--bs-mod-subsidios); color: white;">Cargar a la base</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/trabajadores.js"></script>
+  <script src="../assets/js/paginas/subsidios-01.js?v=1"></script>  <!-- _BS_MODULAR_V1: antes inline (linea 367) -->
+<!-- === BS-EXPORT-EXCEL : Exportar a Excel (reutilizable) === -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="../assets/js/paginas/subsidios-02.js?v=1"></script>  <!-- _BS_MODULAR_V1: antes inline (linea 1133) -->
+
+  <!-- === BS-TIEMPO-REAL : escucha la señal de Firebase y refresca al instante === -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="../assets/js/paginas/subsidios-03.js?v=1"></script>  <!-- _BS_MODULAR_V1: antes inline (linea 1182) -->
+<script src="../assets/js/bs-presencia.js"></script>
+</body>
+</html>

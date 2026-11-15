@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Descansos Médicos · Bienestar Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
+  <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-mejoras.js"></script>
+  <script src="../assets/js/bs-core.js"></script>
+  <script src="../assets/js/bs-saludo.js"></script>
+  <link rel="stylesheet" href="../assets/css/bs-theme-pro.css">
+  <link rel="stylesheet" href="../assets/css/bs-theme-2026.css">
+  <link rel="stylesheet" href="../assets/css/bs-table-v3.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v3.css">
+  <script src="../assets/js/bs-ui.js"></script>
+  <script src="../assets/js/bs-form-v3.js"></script>
+  <script src="../assets/js/trabajadores.js"></script>
+  <style>
+    :root { --bs-mod-dm: #be185d; }
+    .dm-kpi { padding: .85rem 1rem; }
+    .dm-kpi .l { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: #5b6785; font-weight: 600; }
+    .dm-kpi .v { font-size: 1.6rem; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; margin-top: .15rem; }
+    .dm-kpi .s { font-size: .8rem; color: #5b6785; }
+    .dm-sem { display: inline-flex; align-items: center; gap: .35rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .dm-sem i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dm-sem.verde i { background: #15803d; } .dm-sem.ambar i { background: #d97706; } .dm-sem.rojo i { background: #b91c1c; } .dm-sem.azul i { background: #0891b2; }
+    .dm-alert { border-left: 4px solid #dde3ef; padding: .55rem .9rem; border-radius: 8px; background: #fff; display: flex; gap: .6rem; align-items: center; font-size: .92rem; }
+    .dm-alert.rojo { border-left-color: #b91c1c; background: #fff5f5; } .dm-alert.ambar { border-left-color: #b45309; background: #fffbeb; } .dm-alert.info { border-left-color: #0891b2; background: #f0f9ff; }
+    .dm-alert .nm { font-weight: 600; }
+    .dm-tabs { display: flex; gap: .25rem; border-bottom: 1px solid #dde3ef; margin-bottom: 1rem; flex-wrap: wrap; }
+    .dm-tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: .6rem .9rem; font: inherit; font-weight: 600; color: #5b6785; cursor: pointer; }
+    .dm-tabs button.on { color: var(--bs-mod-dm); border-bottom-color: var(--bs-mod-dm); }
+    .dm-acum { background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 10px; padding: .7rem .9rem; font-size: .9rem; display: none; }
+    .dm-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+    .dm-charts .bs-card { min-width: 0; }
+    .dm-charts canvas { max-height: 260px; }
+    .bs-btn-dm { background: var(--bs-mod-dm); color: #fff; border: 0; }
+    .bs-btn-dm:hover { filter: brightness(1.08); }
+    .dm-mask { filter: blur(4px); user-select: none; }
+  </style>
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon"><img src="../images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
+          <span>Bienestar Social · <strong>Descansos Médicos</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: var(--bs-mod-dm);">
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">🏥</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Descansos Médicos</b></div>
+            <h1 style="color: var(--bs-mod-dm);">Descansos Médicos · CITT</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Registro de DM, acumulado anual por trabajador y pase automático a Subsidios al superar los <b id="umbralTxt">20</b> días.</p>
+          </div>
+        </div>
+        <div class="bs-flex" style="gap:.5rem; flex-wrap:wrap;">
+          <button class="bs-btn bs-btn-outline" onclick="cargar()">↻ Actualizar</button>
+          <button class="bs-btn bs-btn-dm" onclick="abrirNuevo()">＋ Nuevo descanso</button>
+        </div>
+      </div>
+
+      <div class="bs-grid bs-grid-4 bs-gap bs-mb" id="kpis"></div>
+
+      <div class="bs-card bs-mb">
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Año</label><select class="bs-select" id="fAnio" onchange="cargar()"></select></div>
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Empresa</label><select class="bs-select" id="fEmpresa" onchange="render()"><option value="">Ambas</option><option>RAPEL</option><option>VERFRUT</option></select></div>
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Tipo</label><select class="bs-select" id="fTipo" onchange="render()"><option value="">Todos</option></select></div>
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Estado</label><select class="bs-select" id="fEstado" onchange="render()"><option value="">Todos</option><option>Activo</option><option>Concluido</option></select></div>
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Semáforo</label><select class="bs-select" id="fSem" onchange="render()"><option value="">Todos</option><option value="rojo">🔴 Supera umbral</option><option value="ambar">🟡 Cerca del umbral</option><option value="verde">🟢 Normal</option><option value="azul">🔵 Maternidad</option></select></div>
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">CITT</label><select class="bs-select" id="fCitt" onchange="render()"><option value="">Todos</option></select></div>
+          <div class="bs-form-group" style="margin:0; grid-column: span 2;"><label class="bs-label">Buscar</label><input type="search" class="bs-input" id="fTexto" placeholder="DNI, nombre, diagnóstico, CIE-10, sector…" oninput="render()"></div>
+        </div>
+      </div>
+
+      <div class="bs-card">
+        <div class="dm-tabs" id="tabs">
+          <button data-t="lista" class="on">📋 Registros <span id="nLista"></span></button>
+          <button data-t="alertas">🚨 Alertas <span id="nAlertas"></span></button>
+          <button data-t="dash">📊 Dashboard</button>
+        </div>
+        <div id="p-lista"><div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div></div>
+        <div id="p-alertas" hidden></div>
+        <div id="p-dash" hidden><div class="bs-text-center bs-text-muted" style="padding:2rem">Cargando dashboard…</div></div>
+      </div>
+
+    </main>
+
+    <footer class="bs-footer">Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0</footer>
+  </div>
+
+  <!-- Modal formulario -->
+  <div class="bs-modal-overlay" id="modalDM">
+    <div class="bs-modal" style="max-width: 860px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="formTitle">Nuevo descanso médico</h3>
+        <button class="bs-modal-close" onclick="cerrarModal()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <form id="formDM" onsubmit="guardar(event)" autocomplete="off">
+          <input type="hidden" id="dmId">
+          <div class="bs-grid bs-grid-3 bs-gap">
+            <div class="bs-form-group"><label class="bs-label">DNI *</label><input class="bs-input" id="dni" maxlength="8" inputmode="numeric" required oninput="if(this.value.length===8) autocompletar(this.value)"></div>
+            <div class="bs-form-group" style="grid-column: span 2;"><label class="bs-label">Nombre completo *</label><input class="bs-input" id="nombre" required style="text-transform:uppercase;"></div>
+            <div class="bs-form-group"><label class="bs-label">Empresa *</label><select class="bs-select" id="empresa" required><option value="">—</option><option>RAPEL</option><option>VERFRUT</option></select></div>
+            <div class="bs-form-group" style="grid-column: span 2;"><label class="bs-label">Sector / fundo</label><input class="bs-input" id="sector"></div>
+            <div class="bs-form-group"><label class="bs-label">Tipo *</label><select class="bs-select" id="tipo" required></select></div>
+            <div class="bs-form-group"><label class="bs-label">Origen del certificado</label><select class="bs-select" id="origen" onchange="sugerirCitt()"></select></div>
+            <div class="bs-form-group"><label class="bs-label">Estado CITT</label><select class="bs-select" id="citt_estado"></select></div>
+            <div class="bs-form-group"><label class="bs-label">Nº CITT</label><input class="bs-input" id="citt_numero" placeholder="Si ya está canjeado"></div>
+            <div class="bs-form-group"><label class="bs-label">Fecha inicio *</label><input type="date" class="bs-input" id="fecha_inicio" required onchange="calcDias()"></div>
+            <div class="bs-form-group"><label class="bs-label">Fecha fin *</label><input type="date" class="bs-input" id="fecha_fin" required onchange="calcDias()"></div>
+            <div class="bs-form-group"><label class="bs-label">Días</label><input class="bs-input" id="dias" readonly></div>
+            <div class="bs-form-group" style="grid-column: span 2;"><label class="bs-label">Diagnóstico</label><input class="bs-input" id="diagnostico"></div>
+            <div class="bs-form-group"><label class="bs-label">CIE-10</label><input class="bs-input" id="cie10" placeholder="Ej. S93.4" style="text-transform:uppercase;"></div>
+            <div class="bs-form-group"><label class="bs-label">Centro de atención</label><input class="bs-input" id="centro"></div>
+            <div class="bs-form-group"><label class="bs-label">Médico</label><input class="bs-input" id="medico"></div>
+            <div class="bs-form-group"><label class="bs-label">Nº de caso de Accidente (si aplica)</label><input class="bs-input" id="id_accidente" inputmode="numeric"></div>
+            <div class="bs-form-group" style="grid-column: span 3;"><label class="bs-label">Observaciones</label><textarea class="bs-textarea" id="observaciones" rows="2"></textarea></div>
+          </div>
+          <div class="dm-acum" id="acumBox"></div>
+          <div class="bs-flex bs-justify-between" style="margin-top:1rem; gap:.5rem; flex-wrap:wrap;">
+            <span class="bs-text-xs bs-text-muted">* obligatorio · los días se calculan de forma inclusiva (inicio y fin cuentan).</span>
+            <div class="bs-flex" style="gap:.5rem;">
+              <button type="button" class="bs-btn bs-btn-outline" onclick="cerrarModal()">Cancelar</button>
+              <button type="submit" class="bs-btn bs-btn-dm" id="btnGuardar">💾 Guardar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/paginas/descansos-01.js?v=1"></script>  <!-- _BS_MODULAR_V1: antes inline (linea 153) -->
+
+  <!-- === BS-EXPORT-EXCEL === -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+  (function(){
+    async function exportar(){
+      if (typeof XLSX === 'undefined'){ appAlert('La librería de Excel se está cargando, intenta de nuevo.'); return; }
+      var data = window.__BS_EXPORT_DATA__;
+      if (!Array.isArray(data) || !data.length){ appAlert('No hay datos para exportar.'); return; }
+      var headers = Object.keys(data[0]);
+      var aoa = [headers].concat(data.map(function(r){ return headers.map(function(h){ return r[h] == null ? '' : r[h]; }); }));
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Descansos');
+      XLSX.writeFile(wb, 'Descansos_Medicos_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    }
+    var btn = document.createElement('button');
+    btn.textContent = '⬇️ Exportar Excel'; btn.onclick = exportar;
+    btn.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;background:#0a2463;color:#fff;border:none;padding:11px 16px;border-radius:10px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.18);';
+    document.body.appendChild(btn);
+  })();
+  </script>
+<script src="../assets/js/bs-presencia.js"></script>
+</body>
+</html>

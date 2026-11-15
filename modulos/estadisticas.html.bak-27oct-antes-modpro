@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estadísticas Empresariales · Bienestar Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <style>
+    .est-filtros { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:.8rem; align-items:end; }
+    .est-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:1rem; margin-bottom:1.2rem; }
+    .est-charts { display:grid; grid-template-columns:repeat(auto-fit,minmax(380px,1fr)); gap:1rem; margin-bottom:1.2rem; }
+    .est-estados { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; }
+    .est-chart-box { height:300px; position:relative; }
+    .est-card-title { font-weight:700; color:#0a1c4d; margin:0 0 .8rem; font-size:1rem; }
+    @media print {
+      .no-print, .bs-topbar { display:none !important; }
+      .bs-main { padding:0 !important; }
+      .bs-card { break-inside:avoid; }
+    }
+  </style>
+  <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-saludo.js"></script>
+  <script src="../assets/js/bs-mejoras.js"></script>
+  <script src="../assets/js/bs-core.js"></script>
+  <link rel="stylesheet" href="../assets/css/bs-theme-pro.css">
+  <link rel="stylesheet" href="../assets/css/bs-theme-2026.css">
+  <link rel="stylesheet" href="../assets/css/bs-table-v3.css">
+  <script src="../assets/js/bs-ui.js"></script>
+</head>
+<body>
+  <div class="bs-appshell">
+
+    <!-- TOPBAR -->
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon"><img src="../images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
+          <span>Bienestar Social · <strong>Estadísticas</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+
+      <!-- Encabezado -->
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: #0a2463;">
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">📊</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Estadísticas Empresariales</b></div>
+            <h1 style="color: #0a2463;">Estadísticas Empresariales</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Indicadores consolidados de todos los módulos y cumplimiento por caso y por responsable. <span id="genStamp"></span></p>
+          </div>
+        </div>
+        <div class="no-print" style="display:flex; gap:.6rem; flex-wrap:wrap;">
+          <button class="bs-btn" style="background:#1D6F42; color:#fff;" onclick="exportExcel()">⬇ Excel</button>
+          <button class="bs-btn" style="background:#dc2626; color:#fff;" onclick="exportPDF()">⬇ PDF</button>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="bs-card no-print" style="margin-bottom:1.2rem;">
+        <div class="est-filtros">
+          <div class="bs-form-group" style="margin:0;">
+            <label class="bs-label">Módulo</label>
+            <select id="fModulo" class="bs-select">
+              <option value="Todos">Todos</option>
+              <option value="Quejas">Quejas</option>
+              <option value="Accidentes">Accidentes</option>
+              <option value="Hostigamiento">Hostigamiento</option>
+              <option value="Subsidios">Subsidios</option>
+              <option value="Sugerencias">Sugerencias</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin:0;">
+            <label class="bs-label">Usuario</label>
+            <select id="fUsuario" class="bs-select">
+              <option value="Todos">Todos</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin:0;">
+            <label class="bs-label">Empresa</label>
+            <select id="fEmpresa" class="bs-select">
+              <option value="Todas">Todas</option>
+              <option value="RAPEL">RAPEL</option>
+              <option value="VERFRUT">VERFRUT</option>
+              <option value="BOMAREA">BOMAREA</option>
+            </select>
+          </div>
+          <div class="bs-form-group" style="margin:0;">
+            <label class="bs-label">Desde</label>
+            <input type="date" id="fDesde" class="bs-input">
+          </div>
+          <div class="bs-form-group" style="margin:0;">
+            <label class="bs-label">Hasta</label>
+            <input type="date" id="fHasta" class="bs-input">
+          </div>
+          <div class="bs-form-group" style="margin:0; display:flex; gap:.5rem;">
+            <button class="bs-btn" style="background:#0a2463; color:#fff; flex:1;" onclick="cargar()">Aplicar</button>
+            <button class="bs-btn bs-btn-outline" onclick="limpiar()">Limpiar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cargando -->
+      <div id="loading" class="bs-text-center" style="padding:2rem; display:none;">
+        <div class="bs-spinner bs-spinner-dark" style="margin:0 auto;"></div>
+      </div>
+
+      <!-- Contenido -->
+      <div id="contenido" style="display:none;">
+
+        <div id="kpis" class="est-kpis"></div>
+
+        <div class="est-charts">
+          <div class="bs-card"><div class="est-card-title">Totales por módulo</div><div class="est-chart-box"><canvas id="chTotales"></canvas></div></div>
+          <div class="bs-card"><div class="est-card-title">Cumplimiento por módulo</div><div class="est-chart-box"><canvas id="chCump"></canvas></div></div>
+          <div class="bs-card"><div class="est-card-title">RAPEL vs VERFRUT</div><div class="est-chart-box"><canvas id="chEmpresa"></canvas></div></div>
+          <div class="bs-card"><div class="est-card-title">Tendencia mensual</div><div class="est-chart-box"><canvas id="chTend"></canvas></div></div>
+        </div>
+
+        <div class="bs-card" style="margin-bottom:1.2rem;">
+          <div class="est-card-title">Distribución por estado</div>
+          <div id="estados" class="est-estados"></div>
+        </div>
+
+        <div class="bs-card" style="margin-bottom:1.2rem;">
+          <div class="est-card-title">Ranking de cumplimiento por usuario (responsable)</div>
+          <div id="rankingUsuarios"></div>
+        </div>
+
+        <div class="bs-card">
+          <div class="est-card-title">⚠️ Casos vencidos abiertos</div>
+          <div id="vencidos"></div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="../assets/js/paginas/estadisticas-01.js?v=1"></script>  <!-- _BS_MODULAR_V1: antes inline (linea 152) -->
+
+  <!-- === BS-TIEMPO-REAL : escucha la señal de Firebase y refresca al instante === -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+  (function(){
+    var URL_RTDB = 'https://sistema-rl-verfrut-default-rtdb.firebaseio.com';
+    try {
+      var app = firebase.initializeApp({ databaseURL: URL_RTDB }, 'bs-senales');
+      var ref = firebase.database(app).ref('bienestar/senales/global');
+      var primera = true, ultimo = null, timer = null;
+      ref.on('value', function(snap){
+        var v = snap.val();
+        if (primera) { primera = false; ultimo = v; return; }
+        if (v === ultimo || v === null) return;
+        ultimo = v;
+        clearTimeout(timer);
+        timer = setTimeout(function(){
+          if (document.hidden) return;
+          cargar();
+        }, 800);
+      });
+    } catch(e) { /* si Firebase no carga, el auto-refresh de 60s sigue activo */ }
+  })();
+  </script>
+<script src="../assets/js/bs-presencia.js"></script>
+</body>
+</html>

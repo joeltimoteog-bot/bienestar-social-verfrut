@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expediente de auditoría · Bienestar Social</title>
+  <!-- _BS_GESTION_SOCIAL_V6 (15-nov-2026) — Paquete de evidencia por periodo y empresa con todo lo que está en Supabase. Solo lectura. Permiso: estadisticas. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
+  <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-mejoras.js?v=5"></script>
+  <script src="../assets/js/bs-core.js"></script>
+  <script src="../assets/js/bs-guardar-supabase.js?v=14"></script>
+  <script src="../assets/js/bs-saludo.js"></script>
+  <link rel="stylesheet" href="../assets/css/bs-theme-pro.css">
+  <link rel="stylesheet" href="../assets/css/bs-theme-2026.css">
+  <link rel="stylesheet" href="../assets/css/bs-table-v3.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v3.css">
+  <script src="../assets/js/bs-ui.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="../assets/css/bs-gs-simple.css?v=1">
+  <style>:root { --bs-mod-gs: #334155; } @media print { .gs-doc { position: static; transform: none; width: auto; } }</style>
+<link rel="stylesheet" href="../assets/css/bs-modulos-pro.css?v=1">
+<link rel="stylesheet" href="../assets/css/bs-skin-moderna.css?v=1">
+<link rel="stylesheet" href="../assets/css/bs-tablas-legibles.css?v=2">
+</head>
+<body>
+  <div class="bs-appshell">
+    <header class="bs-topbar"><div class="bs-topbar-inner">
+      <div class="bs-topbar-brand"><div class="bs-topbar-brand-icon"><img src="../images/logo-unifrutti-hd.png" alt="Unifrutti"></div><span>Bienestar Social · <strong>Expediente de auditoría</strong></span></div>
+      <div class="bs-topbar-user"><a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a><span class="bs-topbar-user-name" id="userName"></span><button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button></div>
+    </div></header>
+    <main class="bs-main">
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: var(--bs-mod-gs);">
+        <div class="bs-hero-lead"><div class="bs-hero-ico">📁</div><div>
+          <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> <b>Expediente de auditoría</b></div>
+          <h1 style="color: var(--bs-mod-gs);">Expediente de auditoría</h1>
+          <p class="bs-text-subtle" style="margin: 0;">Arma en un clic el paquete de evidencia para SMETA, GRASP, SUNAFIL o gerencia: 14 módulos, por periodo y empresa, con resumen, Excel (una hoja por módulo) e impresión. Todo sale de Supabase.</p></div></div>
+      </div>
+      <div class="bs-card bs-mb"><div class="bs-grid bs-grid-4 bs-gap" style="align-items:end">
+        <div class="bs-form-group" style="margin:0;"><label class="bs-label">Empresa</label><select class="bs-select" id="fEmpresa"><option value="">RAPEL y VERFRUT</option><option>RAPEL</option><option>VERFRUT</option></select></div>
+        <div class="bs-form-group" style="margin:0;"><label class="bs-label">Desde</label><input type="date" class="bs-input" id="fDesde"></div>
+        <div class="bs-form-group" style="margin:0;"><label class="bs-label">Hasta</label><input type="date" class="bs-input" id="fHasta"></div>
+        <div class="bs-flex" style="gap:.5rem;flex-wrap:wrap"><button class="bs-btn bs-btn-gs" id="btnGen" onclick="generar()">⚙️ Generar</button><button class="bs-btn bs-btn-outline" id="btnXls" onclick="excel()" disabled>⬇️ Excel</button><button class="bs-btn bs-btn-outline" id="btnPrint" onclick="window.print()" disabled>🖨️ Imprimir</button></div>
+      </div></div>
+      <div class="bs-card" id="resultado"><div class="bs-text-center bs-text-muted" style="padding:2rem">Elige empresa y periodo y pulsa <b>Generar</b>.</div></div>
+    </main>
+    <footer class="bs-footer">Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0</footer>
+  </div>
+  <script src="../assets/js/paginas/expediente-01.js?v=1"></script>
+  <script src="../assets/js/bs-presencia.js"></script>
+</body>
+</html>
