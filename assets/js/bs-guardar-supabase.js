@@ -276,6 +276,23 @@
     },
     bs_crearRendicion: async function (p) { var r = await guardar('bs_rendiciones', 'crear', { datos: p.datos || {} }); if (r !== CAE_A_GOOGLE && r.ok) r.message = 'Rendición registrada'; return r; },
     bs_actualizarRendicion: async function (p) { var r = await guardar('bs_rendiciones', 'actualizar', { id: p.id, datos: p.datos || {} }); if (r !== CAE_A_GOOGLE && r.ok) r.message = 'Rendición actualizada'; return r; },
+    /* _BS_RESUMEN_SUPABASE_V1 (15-nov-2026): el reporte del portal se calcula aquí desde Supabase (en Google llamaba a bs_listarRendiciones, hoy bloqueado por el candado de hojas) */
+    bs_reporteRendiciones: async function (p) {
+      var r = await ACCIONES.bs_listarRendiciones(p || {}); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (!r.ok) return r;
+      var cat = { reclutamiento: 0, relaciones_laborales: 0, capacitaciones: 0, bienestar: 0 }, porEmpresa = { RAPEL: { total: 0, reclutamiento: 0, relaciones_laborales: 0, capacitaciones: 0, bienestar: 0, n: 0 }, VERFRUT: { total: 0, reclutamiento: 0, relaciones_laborales: 0, capacitaciones: 0, bienestar: 0, n: 0 } };
+      var porResp = {}, porMes = {}, total = 0, depM = 0, penM = 0, nDep = 0, nPen = 0, f = function (v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; };
+      r.items.forEach(function (it) {
+        var mt = f(it.monto_total), rec = f(it.monto_reclutamiento), rll = f(it.monto_relaciones_laborales), cap = f(it.monto_capacitaciones), bie = f(it.monto_bienestar);
+        total += mt; cat.reclutamiento += rec; cat.relaciones_laborales += rll; cat.capacitaciones += cap; cat.bienestar += bie;
+        if (String(it.estado || '').toUpperCase() === 'DEPOSITADO') { depM += mt; nDep++; } else { penM += mt; nPen++; }
+        var su = String(it.empresa || '').toUpperCase(), e = su.indexOf('VERFRUT') >= 0 ? 'VERFRUT' : su.indexOf('RAPEL') >= 0 ? 'RAPEL' : null;
+        if (e) { var o = porEmpresa[e]; o.total += mt; o.reclutamiento += rec; o.relaciones_laborales += rll; o.capacitaciones += cap; o.bienestar += bie; o.n++; }
+        var rs = String(it.responsable || '(sin responsable)').trim(); if (!porResp[rs]) porResp[rs] = { total: 0, n: 0 }; porResp[rs].total += mt; porResp[rs].n++;
+        var ym = String(it.fecha || '').slice(0, 7); if (/^\d{4}-\d{2}$/.test(ym)) porMes[ym] = (porMes[ym] || 0) + mt;
+      });
+      var responsables = Object.keys(porResp).map(function (k) { return { responsable: k, total: porResp[k].total, n: porResp[k].n }; }).sort(function (a, b) { return b.total - a.total; });
+      return { ok: true, total_registros: r.items.length, monto_total: total, depositado: { monto: depM, n: nDep }, pendiente: { monto: penM, n: nPen }, porCategoria: cat, porEmpresa: porEmpresa, porResponsable: responsables, tendencia: Object.keys(porMes).sort().map(function (k) { return { periodo: k, monto: porMes[k] }; }), fuente: 'supabase' };
+    },
     bs_eliminarRendicion: async function (p) { var r = await guardar('bs_rendiciones', 'eliminar', { id: p.id }); if (r !== CAE_A_GOOGLE && r.ok) r.message = 'Rendición eliminada'; return r; },
     /* ---- SUGERENCIAS (el correo al administrador lo sigue mandando Google: bs_notificarSugerencia) ---- */
     bs_listarSugerencias: async function (p) {
@@ -312,6 +329,11 @@
     bs_listarVisitas: async function () { var r = await edge('tabla', 'GET', null, 'clave=bs_gs_visitas&anulados=1'); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (!r.ok) return r; var items = r.cargada === false ? [] : (r.items || []).slice(); return { ok: true, items: items, total: items.length, fuente: 'supabase' }; },
     bs_crearVisita: async function (p) { var r = await guardar('bs_gs_visitas', 'crear', { datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Visita registrada' + (r.codigo ? ' (' + r.codigo + ')' : '') + '.'; return r; },
     bs_actualizarVisita: async function (p) { var r = await guardar('bs_gs_visitas', 'actualizar', { id: p.id, datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Visita actualizada.'; return r; },
+    /* ---- ESTADÍSTICAS EMPRESARIALES (_BS_RESUMEN_SUPABASE_V1): GET bs/estadisticas; si no hay sesión RR.LL. cae a Google (hoja congelada) ---- */
+    bs_estadisticasEmpresariales: async function (p) {
+      var f = p || {}, qs = ['modulo', 'usuario', 'empresa', 'desde', 'hasta'].filter(function (k) { return f[k]; }).map(function (k) { return k + '=' + encodeURIComponent(f[k]); }).join('&');
+      var r = await edge('estadisticas', 'GET', null, qs); return r;   /* CAE_A_GOOGLE → Apps Script como antes */
+    },
     /* anular / restaurar son genéricos: solo se redirigen si el módulo del registro ya está en Supabase */
     bs_anularRegistro: async function (p) { var c = claveDe(p); if (!(c && activo(p.modulo))) return CAE_A_GOOGLE; var r = await guardar(c, 'anular', { id: p.id, motivo: p.motivo }); return r === CAE_A_GOOGLE && SOLO_SUPABASE.indexOf(p.modulo) >= 0 ? SIN_GOOGLE() : r; },
     bs_restaurarRegistro: async function (p) { var c = claveDe(p); if (!(c && activo(p.modulo))) return CAE_A_GOOGLE; var r = await guardar(c, 'restaurar', { id: p.id, motivo: p.motivo }); return r === CAE_A_GOOGLE && SOLO_SUPABASE.indexOf(p.modulo) >= 0 ? SIN_GOOGLE() : r; }
@@ -321,13 +343,15 @@
     bs_listarSubsidios: 'subsidios', bs_crearSubsidio: 'subsidios', bs_actualizarSubsidio: 'subsidios', bs_importarSubsidios: 'subsidios',
     bs_listarHostigamiento: 'hostigamiento', bs_crearHostigamiento: 'hostigamiento', bs_actualizarHostigamiento: 'hostigamiento',
     bs_listarDescansos: 'descansos', bs_acumuladoDescansos: 'descansos', bs_dashboardDescansos: 'descansos', bs_crearDescanso: 'descansos', bs_actualizarDescanso: 'descansos', bs_generarSubsidioDesdeDM: 'descansos',
-    bs_listarRendiciones: 'rendiciones', bs_crearRendicion: 'rendiciones', bs_actualizarRendicion: 'rendiciones', bs_eliminarRendicion: 'rendiciones',
+    bs_listarRendiciones: 'rendiciones', bs_reporteRendiciones: 'rendiciones', bs_crearRendicion: 'rendiciones', bs_actualizarRendicion: 'rendiciones', bs_eliminarRendicion: 'rendiciones',
     bs_listarSugerencias: 'sugerencias', bs_crearSugerencia: 'sugerencias', bs_actualizarSugerencia: 'sugerencias', bs_eliminarSugerencia: 'sugerencias',
     bs_listarGsCasos: 'gestion_social', bs_crearGsCaso: 'gestion_social', bs_actualizarGsCaso: 'gestion_social', bs_listarGsSeguimientos: 'gestion_social', bs_crearGsSeguimiento: 'gestion_social',
     bs_listarGestantes: 'gestion_social', bs_crearGestante: 'gestion_social', bs_actualizarGestante: 'gestion_social',
     bs_listarCanal: 'gestion_social', bs_actualizarCanal: 'gestion_social',
     bs_listarVisitas: 'gestion_social', bs_crearVisita: 'gestion_social', bs_actualizarVisita: 'gestion_social' };
 
+  /* _BS_RESUMEN_SUPABASE_V1: acceso directo a una acción Supabase desde páginas sin bs-core (portal). null = no se pudo (usar Google). */
+  window.bsAccionSupabase = async function (action, payload) { var fn = ACCIONES[action]; if (!fn) return null; var r = await fn(payload || {}); return r === CAE_A_GOOGLE ? null : r; };
   var orig = window.api;
   if (typeof orig !== 'function') return;
   window.api = async function (action, payload) {

@@ -231,7 +231,7 @@
       Promise.all([
         /* _BS_RESUMEN_SUPABASE_V1 (15-nov-2026): KPIs desde Supabase (GET bs/dashboard); Google (hoja congelada) solo si no hay sesion RR.LL. */
         (window.bsResumenRL ? window.bsResumenRL('dashboard').catch(function(){ return null; }) : Promise.resolve(null)).then(function(d){ return d || bsApi('bs_dashboard', { permisos: permisos }); }).catch(function(){ return {ok:false}; }),
-        bsApi('bs_reporteRendiciones', { filtros:{} }).catch(function(){ return {ok:false}; }),
+        (window.bsAccionSupabase ? window.bsAccionSupabase('bs_reporteRendiciones', { filtros:{} }).catch(function(){ return null; }) : Promise.resolve(null)).then(function(d){ return d || bsApi('bs_reporteRendiciones', { filtros:{} }); }).catch(function(){ return {ok:false}; }),   /* _BS_RESUMEN_SUPABASE_V1 */
         bsApi('bs_listarSugerencias', { filtros:{} }).catch(function(){ return {ok:false}; }),
         bsApi('bs_listarSubsidios', {}).catch(function(){ return {ok:false}; })
       ]).then(function(r){

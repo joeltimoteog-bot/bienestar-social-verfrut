@@ -97,6 +97,7 @@
   <link rel="stylesheet" href="assets/css/bs-theme-2026.css">
   <script src="assets/js/bs-ui.js"></script>
 <link rel="stylesheet" href="assets/css/bs-pro.css?v=1">  <!-- _BS_PRO_V1 (07-nov): páginas gerenciales desde Supabase -->
+<script src="assets/js/bs-guardar-supabase.js?v=12"></script>  <!-- _BS_RESUMEN_SUPABASE_V1 (15-nov): bsResumenRL para KPIs/alertas desde Supabase -->
 <script src="assets/js/bs-datos-pro.js?v=3"></script>
 <script src="assets/js/bs-graf-pro.js?v=1"></script>
 <script src="assets/js/bs-panel-pro.js?v=1"></script>
@@ -247,6 +248,13 @@ async function cargar(){
   function _bsTok(){ try { var u = JSON.parse(localStorage.getItem('bienestarSocialAuth')||'null'); return (u && u.token) || ''; } catch(e){ return ''; } }
   function _bs401(j){ if (j && j.code === 401) { try { localStorage.removeItem('bienestarSocialAuth'); Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); } catch(e){} location.href = 'index.html'; return true; } return false; }
   function post(action){
+    /* _BS_RESUMEN_SUPABASE_V1 (15-nov-2026): KPIs y alertas desde Supabase (bs/dashboard, bs/alertas); Google solo si no hay sesión RR.LL. */
+    if ((action === 'bs_dashboard' || action === 'bs_alertas') && typeof window.bsResumenRL === 'function') {
+      return window.bsResumenRL(action === 'bs_alertas' ? 'alertas' : 'dashboard').catch(function(){ return null; }).then(function(d){ return d || postGoogle(action); });
+    }
+    return postGoogle(action);
+  }
+  function postGoogle(action){
     return fetch(API_URL, {
       method:'POST',
       headers:{ 'Content-Type':'text/plain;charset=utf-8' },
