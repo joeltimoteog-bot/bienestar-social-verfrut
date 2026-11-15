@@ -24,7 +24,7 @@
   function hostSede(v) { return String(v || '').trim().toUpperCase().indexOf('OLM') >= 0 ? 'OLMOS' : 'PIURA'; }
   function hostClave(sede) { return hostSede(sede) === 'OLMOS' ? 'bs_hostigamiento_olmos' : 'bs_hostigamiento'; }
   function hostCodigo(sede, id) { return (hostSede(sede) === 'OLMOS' ? 'OLM' : 'PIU') + '-' + ('000' + (parseInt(id, 10) || 0)).slice(-3); }
-  function claveDe(p) { var m = String((p && p.modulo) || '').toLowerCase(); return m === 'hostigamiento' ? hostClave(p.sede) : CLAVE_DE_MODULO[m]; }
+  function claveDe(p) { var m = String((p && p.modulo) || '').toLowerCase(); if (m === 'gestion_social' && p.clave && /^bs_gs_/.test(String(p.clave))) return String(p.clave);   /* _BS_GESTION_SOCIAL_V2: submódulos (gestantes) */ return m === 'hostigamiento' ? hostClave(p.sede) : CLAVE_DE_MODULO[m]; }
   var DM = { UMBRAL_DIAS: 20, UMBRAL_AMBAR: 15, UMBRAL_INVALIDEZ: 150, PLAZO_CANJE_DIAS: 30, TIPOS: ['Enfermedad común', 'Accidente de trabajo', 'Accidente común', 'Maternidad'], ORIGENES: ['Particular', 'EsSalud'], CITT_ESTADOS: ['Pendiente de canje', 'Canjeado', 'Observado', 'No aplica'] };
   function dmHoy() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
   function dmFecha(v) { var s = String(v || '').slice(0, 10), m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
@@ -299,6 +299,10 @@
     bs_actualizarGsCaso: async function (p) { var r = await guardar('bs_gs_casos', 'actualizar', { id: p.id, datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Caso social actualizado.'; return r; },
     bs_listarGsSeguimientos: async function (p) { var r = await edge('tabla', 'GET', null, 'clave=bs_gs_seguimientos'); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (!r.ok) return r; var id = String((p && p.id_caso) || ''), items = (r.cargada === false ? [] : (r.items || [])).filter(function (s) { return String(s.id_caso) === id; }).sort(function (a, b) { return num(a.numero_seguimiento) - num(b.numero_seguimiento); }); return { ok: true, items: items, total: items.length, fuente: 'supabase' }; },
     bs_crearGsSeguimiento: async function (p) { var r = await guardar('bs_gs_seguimientos', 'seguimiento', { id: p.id_caso, datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Seguimiento registrado.'; return r; },
+    /* ---- GESTANTES Y LACTANCIA (_BS_GESTION_SOCIAL_V2, 14-nov-2026): las fechas legales las calcula el servidor ---- */
+    bs_listarGestantes: async function () { var r = await edge('tabla', 'GET', null, 'clave=bs_gs_gestantes&anulados=1'); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (!r.ok) return r; var items = r.cargada === false ? [] : (r.items || []).slice(); return { ok: true, items: items, total: items.length, fuente: 'supabase' }; },
+    bs_crearGestante: async function (p) { var r = await guardar('bs_gs_gestantes', 'crear', { datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Gestante registrada' + (r.codigo ? ' (' + r.codigo + ')' : '') + '. Descansos y lactancia calculados.'; return r; },
+    bs_actualizarGestante: async function (p) { var r = await guardar('bs_gs_gestantes', 'actualizar', { id: p.id, datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Registro actualizado; fechas recalculadas.'; return r; },
     /* anular / restaurar son genéricos: solo se redirigen si el módulo del registro ya está en Supabase */
     bs_anularRegistro: async function (p) { var c = claveDe(p); if (!(c && activo(p.modulo))) return CAE_A_GOOGLE; var r = await guardar(c, 'anular', { id: p.id, motivo: p.motivo }); return r === CAE_A_GOOGLE && SOLO_SUPABASE.indexOf(p.modulo) >= 0 ? SIN_GOOGLE() : r; },
     bs_restaurarRegistro: async function (p) { var c = claveDe(p); if (!(c && activo(p.modulo))) return CAE_A_GOOGLE; var r = await guardar(c, 'restaurar', { id: p.id, motivo: p.motivo }); return r === CAE_A_GOOGLE && SOLO_SUPABASE.indexOf(p.modulo) >= 0 ? SIN_GOOGLE() : r; }
@@ -310,7 +314,8 @@
     bs_listarDescansos: 'descansos', bs_acumuladoDescansos: 'descansos', bs_dashboardDescansos: 'descansos', bs_crearDescanso: 'descansos', bs_actualizarDescanso: 'descansos', bs_generarSubsidioDesdeDM: 'descansos',
     bs_listarRendiciones: 'rendiciones', bs_crearRendicion: 'rendiciones', bs_actualizarRendicion: 'rendiciones', bs_eliminarRendicion: 'rendiciones',
     bs_listarSugerencias: 'sugerencias', bs_crearSugerencia: 'sugerencias', bs_actualizarSugerencia: 'sugerencias', bs_eliminarSugerencia: 'sugerencias',
-    bs_listarGsCasos: 'gestion_social', bs_crearGsCaso: 'gestion_social', bs_actualizarGsCaso: 'gestion_social', bs_listarGsSeguimientos: 'gestion_social', bs_crearGsSeguimiento: 'gestion_social' };
+    bs_listarGsCasos: 'gestion_social', bs_crearGsCaso: 'gestion_social', bs_actualizarGsCaso: 'gestion_social', bs_listarGsSeguimientos: 'gestion_social', bs_crearGsSeguimiento: 'gestion_social',
+    bs_listarGestantes: 'gestion_social', bs_crearGestante: 'gestion_social', bs_actualizarGestante: 'gestion_social' };
 
   var orig = window.api;
   if (typeof orig !== 'function') return;
