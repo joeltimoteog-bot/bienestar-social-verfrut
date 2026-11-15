@@ -68,7 +68,7 @@
         '<div class="meta">' + fecha(r.fecha) + ' · hace ' + dias(r.fecha) + ' d · ' + esc(r.empresa) + (r.fundo ? ' · ' + esc(r.fundo) : '') + ' · ' + esc(r.sede || '') + (r.contacto ? ' · 📞 ' + esc(r.contacto) : '') + '</div>' +
         '<div class="txt">' + esc(r.mensaje) + '</div>' +
         (r.respuesta ? '<div class="bs-text-sm" style="background:#f0fdfa;border-radius:8px;padding:.4rem .6rem"><b>Atención:</b> ' + esc(r.respuesta) + ' <span class="bs-text-muted">· ' + esc(r.atendido_por || '') + ' · ' + fecha(r.fecha_atencion) + (r.derivado_a ? ' · derivado a ' + esc(r.derivado_a) : '') + '</span></div>' : '') +
-        '</div><div style="display:flex;flex-direction:column;gap:.35rem;align-items:flex-end">' +
+        '</div><div class="gs-acciones">' +
         (an ? (esAdmin ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="restaurar(' + Number(r.id) + ')">Restaurar</button>' : '') : '<button class="bs-btn bs-btn-gs bs-btn-sm" onclick="atender(' + Number(r.id) + ')">' + (pend(r) ? 'Atender' : 'Ver / editar') + '</button>' + (pend(r) ? '<button class="bs-btn bs-btn-outline bs-btn-sm" onclick="derivar(' + Number(r.id) + ')">→ Caso social</button>' : '') + '<button class="bs-btn bs-btn-outline bs-btn-sm" title="Eliminar (se puede restaurar)" onclick="gsEliminar(' + Number(r.id) + ",'bs_gs_canal','el mensaje " + esc(r.codigo) + "')\">🗑 Eliminar</button>") +
         '</div></div>';
     }).join('') + '</div>';

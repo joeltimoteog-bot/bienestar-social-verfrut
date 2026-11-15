@@ -38,6 +38,8 @@
     .gs-pill.derivado { background: #ede9fe; color: #5b21b6; } .gs-pill.descartado { background: #f1f5f9; color: #475569; } .gs-pill.anulado { background: #f1f5f9; color: #64748b; }
     .gs-msg { border: 1px solid #dde3ef; border-radius: 12px; padding: .8rem 1rem; background: #fff; display: grid; grid-template-columns: 1fr auto; gap: .5rem 1rem; }
     .gs-msg.nuevo { border-left: 4px solid #b91c1c; }
+    .gs-msg .gs-acciones { display: flex; flex-direction: row; flex-wrap: wrap; gap: .4rem; align-items: center; justify-content: flex-end; align-self: center; }
+    @media (max-width: 720px) { .gs-msg { grid-template-columns: 1fr; } .gs-msg .gs-acciones { justify-content: flex-start; } }
     .gs-msg .txt { white-space: pre-wrap; margin: .35rem 0; font-size: .95rem; }
     .gs-msg .meta { font-size: .78rem; color: #5b6785; }
     .gs-sec { font-size: .72rem; font-weight: 800; letter-spacing: .1em; color: #6b7a99; margin: 1rem 0 .5rem; }
@@ -144,7 +146,7 @@
     </div>
   </div>
 
-  <script src="../assets/js/paginas/canal-01.js?v=3"></script>
+  <script src="../assets/js/paginas/canal-01.js?v=4"></script>
   <script src="../assets/js/bs-presencia.js"></script>
   <script src="../assets/js/bs-modulos-pro.js?v=1"></script>
 </body>
