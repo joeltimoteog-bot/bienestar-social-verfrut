@@ -13,9 +13,9 @@
   var esAdmin = /admin|geren/i.test(user.rol || '') || user.esAdminRL === true || ['jtimoteo'].indexOf((user.usuario || '').toLowerCase()) >= 0;
   document.getElementById('userName').textContent = user.nombre || user.usuario;
   async function verificarAcceso() {
-    if (esAdmin || (user.permisos && user.permisos.gestion_social)) return true;
+    if (esAdmin || (user.permisos && user.permisos.gs_gestantes)) return true;
     var rl = null; try { rl = window.bsPermisosRL ? await window.bsPermisosRL() : null; } catch (e) { rl = null; }
-    if (rl && rl.ok && (rl.esAdmin || (rl.permisos && rl.permisos.gestion_social))) {
+    if (rl && rl.ok && (rl.esAdmin || (rl.permisos && rl.permisos.gs_gestantes))) {
       user.permisos = Object.assign({}, user.permisos || {}, rl.permisos || {}); if (rl.esAdmin) { user.esAdminRL = true; esAdmin = true; }
       try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch (e) {}
       return true;
@@ -219,12 +219,12 @@
   window.gsAnular = async function (id) {
     var x = DATA.find(function (c) { return Number(c.id) === Number(id); }); if (!x) return;
     var motivo = await appPrompt('Motivo de la anulación del registro ' + (x.codigo || '#' + id) + ':'); if (!motivo) return;
-    try { var r = await api('bs_anularRegistro', { modulo: 'gestion_social', clave: 'bs_gs_gestantes', id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Registro anulado.' : 'No se pudo anular.')); if (r.ok) { cerrarDet(); cargar(); } }
+    try { var r = await api('bs_anularRegistro', { modulo: 'gs_gestantes', clave: 'bs_gs_gestantes', id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Registro anulado.' : 'No se pudo anular.')); if (r.ok) { cerrarDet(); cargar(); } }
     catch (e) { appAlert('Error: ' + e.message); }
   };
   async function restaurar(id) {
     if (!(await appConfirm('¿Restaurar el registro #' + id + '?'))) return;
-    try { var r = await api('bs_restaurarRegistro', { modulo: 'gestion_social', clave: 'bs_gs_gestantes', id: id, motivo: 'Restaurado desde el módulo' }); appAlert(r.message || (r.ok ? 'Registro restaurado.' : 'No se pudo restaurar.')); if (r.ok) cargar(); }
+    try { var r = await api('bs_restaurarRegistro', { modulo: 'gs_gestantes', clave: 'bs_gs_gestantes', id: id, motivo: 'Restaurado desde el módulo' }); appAlert(r.message || (r.ok ? 'Registro restaurado.' : 'No se pudo restaurar.')); if (r.ok) cargar(); }
     catch (e) { appAlert('Error: ' + e.message); }
   }
 
@@ -232,7 +232,7 @@
      (queda quién/cuándo/por qué, sale de las pantallas y el administrador puede restaurarlo con "Ver anulados"). */
   window.gsEliminar = async function (id, clave, etiqueta) {
     var motivo = await appPrompt('¿Eliminar ' + etiqueta + '? Indica el motivo (p. ej. registro equivocado, duplicado):'); if (!motivo) return;
-    try { var r = await api('bs_anularRegistro', { modulo: 'gestion_social', clave: clave, id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Eliminado.' : 'No se pudo eliminar.')); if (r.ok) { try { cerrarDet(); } catch (e) {} try { cerrarAt(); } catch (e) {} cargar(); } }
+    try { var r = await api('bs_anularRegistro', { modulo: 'gs_gestantes', clave: clave, id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Eliminado.' : 'No se pudo eliminar.')); if (r.ok) { try { cerrarDet(); } catch (e) {} try { cerrarAt(); } catch (e) {} cargar(); } }
     catch (e) { appAlert('Error: ' + e.message); }
   };
   document.querySelectorAll('#tabs button').forEach(function (b) { b.onclick = function () { TAB = b.getAttribute('data-t'); document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); ['lista', 'alertas', 'calendario'].forEach(function (t) { $('p-' + t).hidden = t !== TAB; }); }; });
@@ -240,7 +240,7 @@
   window.cargar = cargar; window.render = render; window.abrirNuevo = abrirNuevo; window.editar = editar; window.cerrarModal = cerrarModal; window.autocompletar = autocompletar; window.guardar = guardar; window.verCaso = verCaso; window.cerrarDet = cerrarDet; window.restaurar = restaurar; window.previsualizar = previsualizar;
   verificarAcceso().then(function (ok) {
     if (ok) { cargar(); return; }
-    $('p-lista').innerHTML = '<div class="bs-alert bs-alert-danger"><strong>Sin acceso a Gestión Social.</strong> Pide al administrador que active <b>Bienestar → Gestión Social</b> para tu usuario en "Acceso a Módulos" del Sistema RR.LL. y vuelve a ingresar.</div>';
+    $('p-lista').innerHTML = '<div class="bs-alert bs-alert-danger"><strong>Sin acceso a Gestantes y lactancia.</strong> Pide al administrador que active <b>Bienestar → Gestantes y lactancia</b> para tu usuario en "Acceso a Módulos" del Sistema RR.LL. y vuelve a ingresar.</div>';
     document.querySelectorAll('.bs-btn-gs').forEach(function (b) { b.disabled = true; });
   });
 })();

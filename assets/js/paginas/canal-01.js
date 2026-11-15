@@ -9,9 +9,9 @@
   var esAdmin = /admin|geren/i.test(user.rol || '') || user.esAdminRL === true || ['jtimoteo'].indexOf((user.usuario || '').toLowerCase()) >= 0;
   document.getElementById('userName').textContent = user.nombre || user.usuario;
   async function verificarAcceso() {
-    if (esAdmin || (user.permisos && user.permisos.gestion_social)) return true;
+    if (esAdmin || (user.permisos && user.permisos.gs_canal)) return true;
     var rl = null; try { rl = window.bsPermisosRL ? await window.bsPermisosRL() : null; } catch (e) { rl = null; }
-    if (rl && rl.ok && (rl.esAdmin || (rl.permisos && rl.permisos.gestion_social))) { user.permisos = Object.assign({}, user.permisos || {}, rl.permisos || {}); if (rl.esAdmin) { user.esAdminRL = true; esAdmin = true; } try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch (e) {} return true; }
+    if (rl && rl.ok && (rl.esAdmin || (rl.permisos && rl.permisos.gs_canal))) { user.permisos = Object.assign({}, user.permisos || {}, rl.permisos || {}); if (rl.esAdmin) { user.esAdminRL = true; esAdmin = true; } try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch (e) {} return true; }
     return false;
   }
 
@@ -107,9 +107,9 @@
   function derivar(id) { var x = DATA.find(function (r) { return Number(r.id) === Number(id); }); if (!x) return; location.href = 'gestion-social.html?canal=' + encodeURIComponent(x.id) + '&cq=' + encodeURIComponent(x.codigo) + '&e=' + encodeURIComponent(x.empresa || '') + '&f=' + encodeURIComponent(x.fundo || '') + '&s=' + encodeURIComponent(x.sede || '') + '&t=' + encodeURIComponent('[' + x.codigo + ' · ' + x.categoria + '] ' + x.mensaje); }
   window.anularMsg = async function (id) {
     var motivo = await appPrompt('Motivo de anulación (p. ej. duplicado, prueba, contenido ofensivo):'); if (!motivo) return;
-    try { var r = await api('bs_anularRegistro', { modulo: 'gestion_social', clave: 'bs_gs_canal', id: id, motivo: motivo }); appAlert(r.message || ''); if (r.ok) { cerrarAt(); cargar(); } } catch (e) { appAlert('Error: ' + e.message); }
+    try { var r = await api('bs_anularRegistro', { modulo: 'gs_canal', clave: 'bs_gs_canal', id: id, motivo: motivo }); appAlert(r.message || ''); if (r.ok) { cerrarAt(); cargar(); } } catch (e) { appAlert('Error: ' + e.message); }
   };
-  async function restaurar(id) { if (!(await appConfirm('¿Restaurar el mensaje #' + id + '?'))) return; try { var r = await api('bs_restaurarRegistro', { modulo: 'gestion_social', clave: 'bs_gs_canal', id: id, motivo: 'Restaurado desde el módulo' }); appAlert(r.message || ''); if (r.ok) cargar(); } catch (e) { appAlert('Error: ' + e.message); } }
+  async function restaurar(id) { if (!(await appConfirm('¿Restaurar el mensaje #' + id + '?'))) return; try { var r = await api('bs_restaurarRegistro', { modulo: 'gs_canal', clave: 'bs_gs_canal', id: id, motivo: 'Restaurado desde el módulo' }); appAlert(r.message || ''); if (r.ok) cargar(); } catch (e) { appAlert('Error: ' + e.message); } }
 
   /* ===== QR ===== */
   function urlQr() { return PUBLICO + '?e=' + encodeURIComponent($('qEmpresa').value) + '&f=' + encodeURIComponent($('qFundo').value.trim()) + '&s=' + encodeURIComponent($('qSede').value); }
@@ -126,7 +126,7 @@
      (queda quién/cuándo/por qué, sale de las pantallas y el administrador puede restaurarlo con "Ver anulados"). */
   window.gsEliminar = async function (id, clave, etiqueta) {
     var motivo = await appPrompt('¿Eliminar ' + etiqueta + '? Indica el motivo (p. ej. registro equivocado, duplicado):'); if (!motivo) return;
-    try { var r = await api('bs_anularRegistro', { modulo: 'gestion_social', clave: clave, id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Eliminado.' : 'No se pudo eliminar.')); if (r.ok) { try { cerrarDet(); } catch (e) {} try { cerrarAt(); } catch (e) {} cargar(); } }
+    try { var r = await api('bs_anularRegistro', { modulo: 'gs_canal', clave: clave, id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Eliminado.' : 'No se pudo eliminar.')); if (r.ok) { try { cerrarDet(); } catch (e) {} try { cerrarAt(); } catch (e) {} cargar(); } }
     catch (e) { appAlert('Error: ' + e.message); }
   };
   document.querySelectorAll('#tabs button').forEach(function (b) { b.onclick = function () { TAB = b.getAttribute('data-t'); document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); ['lista', 'resumen', 'qr'].forEach(function (t) { $('p-' + t).hidden = t !== TAB; }); if (TAB === 'qr') qr(); }; });
@@ -134,7 +134,7 @@
   window.cargar = cargar; window.render = render; window.atender = atender; window.cerrarAt = cerrarAt; window.derivar = derivar; window.restaurar = restaurar; window.qr = qr; window.copiarUrl = copiarUrl; window.irTab = irTab;
   verificarAcceso().then(function (ok) {
     if (ok) { cargar(); return; }
-    $('p-lista').innerHTML = '<div class="bs-alert bs-alert-danger"><strong>Sin acceso a Gestión Social.</strong> Pide al administrador que active <b>Bienestar → Gestión Social</b> para tu usuario en "Acceso a Módulos" del Sistema RR.LL. y vuelve a ingresar.</div>';
+    $('p-lista').innerHTML = '<div class="bs-alert bs-alert-danger"><strong>Sin acceso a Canal anónimo QR.</strong> Pide al administrador que active <b>Bienestar → Canal anónimo QR</b> para tu usuario en "Acceso a Módulos" del Sistema RR.LL. y vuelve a ingresar.</div>';
     document.querySelectorAll('.bs-btn-gs').forEach(function (b) { b.disabled = true; });
   });
 })();

@@ -19,12 +19,12 @@
   var EDGE = window.BS_EDGE_URL || 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api';
 
   /* módulos que ya guardan en Supabase (se agregan uno a uno conforme avanza el plan) */
-  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas', 'accidentes', 'subsidios', 'hostigamiento', 'descansos', 'rendiciones', 'sugerencias', 'gestion_social'];   /* _BS_GESTION_SOCIAL_V1 (14-nov-2026): Gestión Social nace sin hoja de Google: solo Supabase */
+  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas', 'accidentes', 'subsidios', 'hostigamiento', 'descansos', 'rendiciones', 'sugerencias', 'gestion_social', 'gs_gestantes', 'gs_canal', 'gs_condiciones'];   /* _BS_GESTION_SOCIAL_V1 (14-nov-2026): Gestión Social nace sin hoja de Google: solo Supabase */
 
   function hostSede(v) { return String(v || '').trim().toUpperCase().indexOf('OLM') >= 0 ? 'OLMOS' : 'PIURA'; }
   function hostClave(sede) { return hostSede(sede) === 'OLMOS' ? 'bs_hostigamiento_olmos' : 'bs_hostigamiento'; }
   function hostCodigo(sede, id) { return (hostSede(sede) === 'OLMOS' ? 'OLM' : 'PIU') + '-' + ('000' + (parseInt(id, 10) || 0)).slice(-3); }
-  function claveDe(p) { var m = String((p && p.modulo) || '').toLowerCase(); if (m === 'gestion_social' && p.clave && /^bs_gs_/.test(String(p.clave))) return String(p.clave);   /* _BS_GESTION_SOCIAL_V2: submódulos (gestantes) */ return m === 'hostigamiento' ? hostClave(p.sede) : CLAVE_DE_MODULO[m]; }
+  function claveDe(p) { var m = String((p && p.modulo) || '').toLowerCase(); if (/^(gestion_social|gs_)/.test(m) && p.clave && /^bs_gs_/.test(String(p.clave))) return String(p.clave);   /* _BS_GESTION_SOCIAL_V2: submódulos (gestantes) */ return m === 'hostigamiento' ? hostClave(p.sede) : CLAVE_DE_MODULO[m]; }
   var DM = { UMBRAL_DIAS: 20, UMBRAL_AMBAR: 15, UMBRAL_INVALIDEZ: 150, PLAZO_CANJE_DIAS: 30, TIPOS: ['Enfermedad común', 'Accidente de trabajo', 'Accidente común', 'Maternidad'], ORIGENES: ['Particular', 'EsSalud'], CITT_ESTADOS: ['Pendiente de canje', 'Canjeado', 'Observado', 'No aplica'] };
   function dmHoy() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
   function dmFecha(v) { var s = String(v || '').slice(0, 10), m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
@@ -61,7 +61,7 @@
     var peso = { rojo: 0, ambar: 1, info: 2 }; al.sort(function (a, b) { return peso[a.nivel] - peso[b.nivel]; });
     return al;
   }
-  var CLAVE_DE_MODULO = { quejas: 'bs_quejas', accidentes: 'bs_accidentes_casos', subsidios: 'bs_subsidios', hostigamiento: 'bs_hostigamiento', descansos: 'bs_descansos', rendiciones: 'bs_rendiciones', sugerencias: 'bs_sugerencias', gestion_social: 'bs_gs_casos' };
+  var CLAVE_DE_MODULO = { quejas: 'bs_quejas', accidentes: 'bs_accidentes_casos', subsidios: 'bs_subsidios', hostigamiento: 'bs_hostigamiento', descansos: 'bs_descansos', rendiciones: 'bs_rendiciones', sugerencias: 'bs_sugerencias', gestion_social: 'bs_gs_casos', gs_gestantes: 'bs_gs_gestantes', gs_canal: 'bs_gs_canal', gs_condiciones: 'bs_gs_visitas' };   /* _BS_GESTION_SOCIAL_V5: permisos separados */
 
   function token() { try { return (JSON.parse(localStorage.getItem('bienestarSocialAuth') || '{}') || {}).rl_token || ''; } catch (e) { return ''; } }
   function activo(modulo) { return (window.BS_SUPABASE_MODULOS || []).indexOf(modulo) >= 0; }
@@ -346,9 +346,9 @@
     bs_listarRendiciones: 'rendiciones', bs_reporteRendiciones: 'rendiciones', bs_crearRendicion: 'rendiciones', bs_actualizarRendicion: 'rendiciones', bs_eliminarRendicion: 'rendiciones',
     bs_listarSugerencias: 'sugerencias', bs_crearSugerencia: 'sugerencias', bs_actualizarSugerencia: 'sugerencias', bs_eliminarSugerencia: 'sugerencias',
     bs_listarGsCasos: 'gestion_social', bs_crearGsCaso: 'gestion_social', bs_actualizarGsCaso: 'gestion_social', bs_listarGsSeguimientos: 'gestion_social', bs_crearGsSeguimiento: 'gestion_social',
-    bs_listarGestantes: 'gestion_social', bs_crearGestante: 'gestion_social', bs_actualizarGestante: 'gestion_social',
-    bs_listarCanal: 'gestion_social', bs_actualizarCanal: 'gestion_social',
-    bs_listarVisitas: 'gestion_social', bs_crearVisita: 'gestion_social', bs_actualizarVisita: 'gestion_social' };
+    bs_listarGestantes: 'gs_gestantes', bs_crearGestante: 'gs_gestantes', bs_actualizarGestante: 'gs_gestantes',
+    bs_listarCanal: 'gs_canal', bs_actualizarCanal: 'gs_canal',
+    bs_listarVisitas: 'gs_condiciones', bs_crearVisita: 'gs_condiciones', bs_actualizarVisita: 'gs_condiciones' };
 
   /* _BS_RESUMEN_SUPABASE_V1: acceso directo a una acción Supabase desde páginas sin bs-core (portal). null = no se pudo (usar Google). */
   window.bsAccionSupabase = async function (action, payload) { var fn = ACCIONES[action]; if (!fn) return null; var r = await fn(payload || {}); return r === CAE_A_GOOGLE ? null : r; };

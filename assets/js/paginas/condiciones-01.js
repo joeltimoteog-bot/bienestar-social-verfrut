@@ -10,9 +10,9 @@
   var esAdmin = /admin|geren/i.test(user.rol || '') || user.esAdminRL === true || ['jtimoteo'].indexOf((user.usuario || '').toLowerCase()) >= 0;
   document.getElementById('userName').textContent = user.nombre || user.usuario;
   async function verificarAcceso() {
-    if (esAdmin || (user.permisos && user.permisos.gestion_social)) return true;
+    if (esAdmin || (user.permisos && user.permisos.gs_condiciones)) return true;
     var rl = null; try { rl = window.bsPermisosRL ? await window.bsPermisosRL() : null; } catch (e) { rl = null; }
-    if (rl && rl.ok && (rl.esAdmin || (rl.permisos && rl.permisos.gestion_social))) { user.permisos = Object.assign({}, user.permisos || {}, rl.permisos || {}); if (rl.esAdmin) { user.esAdminRL = true; esAdmin = true; } try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch (e) {} return true; }
+    if (rl && rl.ok && (rl.esAdmin || (rl.permisos && rl.permisos.gs_condiciones))) { user.permisos = Object.assign({}, user.permisos || {}, rl.permisos || {}); if (rl.esAdmin) { user.esAdminRL = true; esAdmin = true; } try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch (e) {} return true; }
     return false;
   }
 
@@ -168,14 +168,14 @@
   }
   function cerrarDet() { $('modalDet').classList.remove('bs-active'); }
   window.cerrarVisita = async function (id) { if (!(await appConfirm('¿Confirmas que las observaciones de esta visita ya fueron levantadas?'))) return; try { var r = await api('bs_actualizarVisita', { id: id, datos: { estado: 'Cerrada' } }); appAlert(r.message || ''); if (r.ok) { cerrarDet(); cargar(); } } catch (e) { appAlert('Error: ' + e.message); } };
-  window.gsAnular = async function (id) { var motivo = await appPrompt('Motivo de la anulación:'); if (!motivo) return; try { var r = await api('bs_anularRegistro', { modulo: 'gestion_social', clave: 'bs_gs_visitas', id: id, motivo: motivo }); appAlert(r.message || ''); if (r.ok) { cerrarDet(); cargar(); } } catch (e) { appAlert('Error: ' + e.message); } };
-  async function restaurar(id) { if (!(await appConfirm('¿Restaurar la visita #' + id + '?'))) return; try { var r = await api('bs_restaurarRegistro', { modulo: 'gestion_social', clave: 'bs_gs_visitas', id: id, motivo: 'Restaurado desde el módulo' }); appAlert(r.message || ''); if (r.ok) cargar(); } catch (e) { appAlert('Error: ' + e.message); } }
+  window.gsAnular = async function (id) { var motivo = await appPrompt('Motivo de la anulación:'); if (!motivo) return; try { var r = await api('bs_anularRegistro', { modulo: 'gs_condiciones', clave: 'bs_gs_visitas', id: id, motivo: motivo }); appAlert(r.message || ''); if (r.ok) { cerrarDet(); cargar(); } } catch (e) { appAlert('Error: ' + e.message); } };
+  async function restaurar(id) { if (!(await appConfirm('¿Restaurar la visita #' + id + '?'))) return; try { var r = await api('bs_restaurarRegistro', { modulo: 'gs_condiciones', clave: 'bs_gs_visitas', id: id, motivo: 'Restaurado desde el módulo' }); appAlert(r.message || ''); if (r.ok) cargar(); } catch (e) { appAlert('Error: ' + e.message); } }
 
   /* _BS_ELIMINAR_V1 (15-nov-2026, pedido de Joel): botón Eliminar en cada fila. En Supabase "eliminar" = anular con motivo
      (queda quién/cuándo/por qué, sale de las pantallas y el administrador puede restaurarlo con "Ver anulados"). */
   window.gsEliminar = async function (id, clave, etiqueta) {
     var motivo = await appPrompt('¿Eliminar ' + etiqueta + '? Indica el motivo (p. ej. registro equivocado, duplicado):'); if (!motivo) return;
-    try { var r = await api('bs_anularRegistro', { modulo: 'gestion_social', clave: clave, id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Eliminado.' : 'No se pudo eliminar.')); if (r.ok) { try { cerrarDet(); } catch (e) {} try { cerrarAt(); } catch (e) {} cargar(); } }
+    try { var r = await api('bs_anularRegistro', { modulo: 'gs_condiciones', clave: clave, id: id, motivo: motivo }); appAlert(r.message || (r.ok ? 'Eliminado.' : 'No se pudo eliminar.')); if (r.ok) { try { cerrarDet(); } catch (e) {} try { cerrarAt(); } catch (e) {} cargar(); } }
     catch (e) { appAlert('Error: ' + e.message); }
   };
   document.querySelectorAll('#tabs button').forEach(function (b) { b.onclick = function () { TAB = b.getAttribute('data-t'); document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); ['indice', 'lista', 'alertas', 'items'].forEach(function (t) { $('p-' + t).hidden = t !== TAB; }); }; });
@@ -183,7 +183,7 @@
   window.cargar = cargar; window.render = render; window.abrirNuevo = abrirNuevo; window.editar = editar; window.cerrarModal = cerrarModal; window.guardar = guardar; window.verCaso = verCaso; window.cerrarDet = cerrarDet; window.restaurar = restaurar; window.itemCambio = itemCambio; window.GS_ITEMS = ITEMS;
   verificarAcceso().then(function (ok) {
     if (ok) { cargar(); return; }
-    $('p-indice').innerHTML = '<div class="bs-alert bs-alert-danger"><strong>Sin acceso a Gestión Social.</strong> Pide al administrador que active <b>Bienestar → Gestión Social</b> para tu usuario en "Acceso a Módulos" del Sistema RR.LL. y vuelve a ingresar.</div>';
+    $('p-indice').innerHTML = '<div class="bs-alert bs-alert-danger"><strong>Sin acceso a Condiciones en campo.</strong> Pide al administrador que active <b>Bienestar → Condiciones en campo</b> para tu usuario en "Acceso a Módulos" del Sistema RR.LL. y vuelve a ingresar.</div>';
     document.querySelectorAll('.bs-btn-gs').forEach(function (b) { b.disabled = true; });
   });
 })();
