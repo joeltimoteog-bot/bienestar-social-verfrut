@@ -115,7 +115,9 @@
   function urlQr() { return PUBLICO + '?e=' + encodeURIComponent($('qEmpresa').value) + '&f=' + encodeURIComponent($('qFundo').value.trim()) + '&s=' + encodeURIComponent($('qSede').value); }
   function qr() {
     var u = urlQr(); $('qLugar').textContent = $('qEmpresa').value + ($('qFundo').value.trim() ? ' · ' + $('qFundo').value.trim() : '') + ' · ' + $('qSede').value; $('qUrl').textContent = u;
-    if (window.QRCode && QRCode.toCanvas) QRCode.toCanvas($('qCanvas'), u, { width: 260, margin: 1, color: { dark: '#0a2463' } }, function (e) { if (e) console.warn(e); });
+    if (typeof window.qrcode !== 'function') { console.warn('[canal] librería QR no cargó'); return; }
+    var q = qrcode(0, 'M'); q.addData(u); q.make(); var n = q.getModuleCount(), cell = Math.max(2, Math.floor(260 / n)), c = $('qCanvas'), ctx = c.getContext('2d');
+    c.width = c.height = n * cell + cell * 2; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.fillStyle = '#0a2463'; ctx.translate(cell, cell); q.renderTo2dContext(ctx, cell); ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
   function copiarUrl() { var u = urlQr(); (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(function () { appAlert('Enlace copiado.'); }, function () { appAlert(u); }); }
   function irTab(t) { var b = document.querySelector('#tabs button[data-t="' + t + '"]'); if (b) b.click(); }
