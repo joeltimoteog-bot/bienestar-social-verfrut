@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Condiciones en campo · Bienestar Social</title>
+  <!-- _BS_GESTION_SOCIAL_V4 (15-nov-2026) — Gestión Social, etapa 4: visitas de condiciones en campo (checklist por fundo) e índice por fundo.
+       Datos 100 % en Supabase (bs_gs_visitas). El puntaje lo calcula el servidor con los pesos del catálogo de esta pantalla.
+       Base legal del checklist: Ley 29783 y D.S. 005-2012-TR (SST), D.S. 015-2005-SA / D.S. 001-2015-MINAGRI (agroquímicos), RM 375-2008-TR (ergonomía),
+       Ley 31110 (régimen agrario), Ley 28048 (gestantes), D.S. 003-2010-MIMDES (trabajo infantil). Acceso: clave bs_gestion_social del RR.LL. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v2.css">
+  <script src="../assets/js/modal-system.js"></script>
+  <script src="../assets/js/bs-mejoras.js?v=5"></script>
+  <script src="../assets/js/bs-core.js"></script>
+  <script src="../assets/js/bs-guardar-supabase.js?v=10"></script>
+  <script src="../assets/js/bs-saludo.js"></script>
+  <link rel="stylesheet" href="../assets/css/bs-theme-pro.css">
+  <link rel="stylesheet" href="../assets/css/bs-theme-2026.css">
+  <link rel="stylesheet" href="../assets/css/bs-table-v3.css">
+  <link rel="stylesheet" href="../assets/css/bs-form-v3.css">
+  <script src="../assets/js/bs-ui.js"></script>
+  <script src="../assets/js/bs-form-v3.js"></script>
+  <style>
+    :root { --bs-mod-gs: #b45309; }
+    .gs-kpi { padding: .85rem 1rem; }
+    .gs-kpi .l { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: #5b6785; font-weight: 600; }
+    .gs-kpi .v { font-size: 1.6rem; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; margin-top: .15rem; }
+    .gs-kpi .s { font-size: .8rem; color: #5b6785; }
+    .gs-tabs { display: flex; gap: .25rem; border-bottom: 1px solid #dde3ef; margin-bottom: 1rem; flex-wrap: wrap; }
+    .gs-tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: .6rem .9rem; font: inherit; font-weight: 600; color: #5b6785; cursor: pointer; }
+    .gs-tabs button.on { color: var(--bs-mod-gs); border-bottom-color: var(--bs-mod-gs); }
+    .gs-pill { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .74rem; font-weight: 700; white-space: nowrap; }
+    .gs-pill.registrada { background: #dcfce7; color: #166534; } .gs-pill.conpendientes { background: #fef3c7; color: #92400e; } .gs-pill.cerrada { background: #e0e7ff; color: #3730a3; } .gs-pill.anulado { background: #f1f5f9; color: #64748b; }
+    .gs-score { display: inline-block; min-width: 54px; text-align: center; padding: .2rem .5rem; border-radius: 8px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .gs-score.v { background: #dcfce7; color: #166534; } .gs-score.a { background: #fef3c7; color: #92400e; } .gs-score.r { background: #fee2e2; color: #b91c1c; } .gs-score.g { background: #f1f5f9; color: #475569; }
+    .gs-sec { font-size: .72rem; font-weight: 800; letter-spacing: .1em; color: #6b7a99; margin: 1rem 0 .5rem; }
+    .gs-item { display: grid; grid-template-columns: 1fr auto; gap: .5rem 1rem; align-items: center; padding: .55rem .7rem; border: 1px solid #e5e9f2; border-radius: 10px; background: #fff; }
+    .gs-item.obs { border-color: #fcd34d; background: #fffbeb; } .gs-item.ok { border-color: #bbf7d0; } .gs-item.na { opacity: .6; }
+    .gs-item .t { font-size: .92rem; font-weight: 600; } .gs-item .b { font-size: .76rem; color: #5b6785; }
+    .gs-item .peso { font-size: .7rem; color: #92400e; background: #fef3c7; border-radius: 6px; padding: .05rem .4rem; margin-left: .4rem; }
+    .gs-opc { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+    .gs-opc label { padding: .35rem .7rem; font-size: .8rem; font-weight: 700; cursor: pointer; color: #5b6785; border-right: 1px solid #cbd5e1; }
+    .gs-opc label:last-child { border-right: 0; } .gs-opc input { display: none; }
+    .gs-opc input:checked + span { display: block; } .gs-opc label.ok:has(input:checked) { background: #dcfce7; color: #166534; } .gs-opc label.obs:has(input:checked) { background: #fee2e2; color: #b91c1c; } .gs-opc label.na:has(input:checked) { background: #f1f5f9; color: #334155; }
+    .gs-alert { border-left: 4px solid #dde3ef; padding: .55rem .9rem; border-radius: 8px; background: #fff; display: flex; gap: .6rem; align-items: center; font-size: .92rem; }
+    .gs-alert.rojo { border-left-color: #b91c1c; background: #fff5f5; } .gs-alert.ambar { border-left-color: #b45309; background: #fffbeb; } .gs-alert.info { border-left-color: #0a2463; background: #f3f5fa; }
+    .gs-bar { height: 8px; background: #e2e8f0; border-radius: 6px; overflow: hidden; min-width: 90px; } .gs-bar i { display: block; height: 100%; }
+    .bs-btn-gs { background: var(--bs-mod-gs); color: #fff; border: 0; } .bs-btn-gs:hover { filter: brightness(1.1); }
+  </style>
+<link rel="stylesheet" href="../assets/css/bs-modulos-pro.css?v=1">
+<link rel="stylesheet" href="../assets/css/bs-skin-moderna.css?v=1">
+<link rel="stylesheet" href="../assets/css/bs-tablas-legibles.css?v=2">
+<link rel="stylesheet" href="../assets/css/bs-compacto.css?v=2">
+<script src="../assets/js/bs-compacto.js?v=2"></script>
+</head>
+<body>
+  <div class="bs-appshell">
+    <header class="bs-topbar">
+      <div class="bs-topbar-inner">
+        <div class="bs-topbar-brand">
+          <div class="bs-topbar-brand-icon"><img src="../images/logo-unifrutti-hd.png" alt="Unifrutti"></div>
+          <span>Bienestar Social · <strong>Condiciones en campo</strong></span>
+        </div>
+        <div class="bs-topbar-user">
+          <a href="../portal.html" class="bs-topbar-logout" style="text-decoration: none;">← Portal</a>
+          <a href="gestion-social.html" class="bs-topbar-logout" style="text-decoration: none;">Casos sociales</a>
+          <span class="bs-topbar-user-name" id="userName"></span>
+          <button class="bs-topbar-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="bs-main">
+      <div class="bs-flex bs-justify-between bs-items-center bs-mb-lg bs-hero" style="flex-wrap: wrap; gap: 1rem; --mod: var(--bs-mod-gs);">
+        <div class="bs-hero-lead">
+          <div class="bs-hero-ico">🌾</div>
+          <div>
+            <div class="bs-hero-crumbs">Portal <span>&rsaquo;</span> Gestión Social <span>&rsaquo;</span> <b>Condiciones en campo</b></div>
+            <h1 style="color: var(--bs-mod-gs);">Condiciones en campo</h1>
+            <p class="bs-text-subtle" style="margin: 0;">Visita de verificación por fundo: agua, SS.HH., sombra, comedor, EPP, agroquímicos, transporte, jornada, trato. Cada visita da un puntaje (0–100) y el índice por fundo muestra dónde actuar. Evidencia para SMETA / GRASP / SUNAFIL.</p>
+          </div>
+        </div>
+        <div class="bs-flex" style="gap:.5rem; flex-wrap:wrap;">
+          <button class="bs-btn bs-btn-outline" onclick="cargar()">↻ Actualizar</button>
+          <button class="bs-btn bs-btn-gs" onclick="abrirNuevo()">＋ Registrar visita</button>
+        </div>
+      </div>
+
+      <div class="bs-grid bs-grid-4 bs-gap bs-mb" id="kpis"></div>
+
+      <div class="bs-card bs-mb">
+        <div class="bs-grid bs-grid-4 bs-gap">
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Empresa</label><select class="bs-select" id="fEmpresa" onchange="render()"><option value="">Ambas</option><option>RAPEL</option><option>VERFRUT</option><option>OLMOS</option></select></div>
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Fundo</label><select class="bs-select" id="fFundo" onchange="render()"><option value="">Todos</option></select></div>
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Estado</label><select class="bs-select" id="fEstado" onchange="render()"><option value="">Todas</option><option>Con pendientes</option><option>Registrada</option><option>Cerrada</option></select></div>
+          <div class="bs-form-group" style="margin:0;"><label class="bs-label">Año</label><select class="bs-select" id="fAnio" onchange="render()"></select></div>
+        </div>
+        <label class="bs-text-sm bs-text-muted" style="display:inline-flex;align-items:center;gap:.4rem;margin-top:.6rem;"><input type="checkbox" id="fAnulados" onchange="render()"> Ver anuladas</label>
+      </div>
+
+      <div class="bs-card">
+        <div class="gs-tabs" id="tabs">
+          <button data-t="indice" class="on">🏆 Índice por fundo</button>
+          <button data-t="lista">📋 Visitas <span id="nLista"></span></button>
+          <button data-t="alertas">🚨 Alertas <span id="nAlertas"></span></button>
+          <button data-t="items">📈 Ítems más observados</button>
+        </div>
+        <div id="p-indice"><div class="bs-text-center" style="padding:2rem"><div class="bs-spinner bs-spinner-dark" style="margin:0 auto"></div></div></div>
+        <div id="p-lista" hidden></div>
+        <div id="p-alertas" hidden></div>
+        <div id="p-items" hidden></div>
+      </div>
+    </main>
+    <footer class="bs-footer">Creado por <strong>Joel Angel Timoteo Gonza</strong> · Unifrutti Group · v1.0.0</footer>
+  </div>
+
+  <div class="bs-modal-overlay" id="modalGS">
+    <div class="bs-modal" style="max-width: 920px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="formTitle">Registrar visita</h3>
+        <button class="bs-modal-close" onclick="cerrarModal()">×</button>
+      </div>
+      <div class="bs-modal-body">
+        <form id="formGS" onsubmit="guardar(event)" autocomplete="off">
+          <input type="hidden" id="gsId">
+          <div class="gs-sec">1 · LA VISITA</div>
+          <div class="bs-grid bs-grid-3 bs-gap">
+            <div class="bs-form-group"><label class="bs-label">Fecha *</label><input type="date" class="bs-input" id="fecha" required></div>
+            <div class="bs-form-group"><label class="bs-label">Empresa *</label><select class="bs-select" id="empresa" required><option value="">—</option><option>RAPEL</option><option>VERFRUT</option><option>OLMOS</option></select></div>
+            <div class="bs-form-group"><label class="bs-label">Sede</label><select class="bs-select" id="sede"><option>PIURA</option><option>OLMOS</option></select></div>
+            <div class="bs-form-group"><label class="bs-label">Fundo / sector *</label><input class="bs-input" id="fundo" required list="dlFundos"><datalist id="dlFundos"></datalist></div>
+            <div class="bs-form-group"><label class="bs-label">Quién visita *</label><input class="bs-input" id="visitante" required></div>
+            <div class="bs-form-group"><label class="bs-label">Acompañantes (supervisor, SST…)</label><input class="bs-input" id="acompanantes"></div>
+            <div class="bs-form-group"><label class="bs-label">Personas presentes en el fundo</label><input type="number" class="bs-input" id="personas_presentes" min="0"></div>
+          </div>
+
+          <div class="gs-sec">2 · CHECKLIST <span class="bs-text-muted" style="font-weight:500;letter-spacing:0">· OK = cumple · OBS = observado · N/A = no aplica en esta visita · ×2 = pesa doble en el puntaje</span></div>
+          <div id="checklist" style="display:flex;flex-direction:column;gap:.4rem"></div>
+          <div class="bs-flex bs-justify-between bs-items-center" style="margin-top:.6rem;gap:.5rem;flex-wrap:wrap">
+            <span class="bs-text-sm bs-text-muted">Puntaje estimado (lo confirma el servidor al guardar):</span><span class="gs-score g" id="scorePrev">—</span>
+          </div>
+
+          <div class="gs-sec">3 · HALLAZGOS Y COMPROMISOS</div>
+          <div class="bs-grid bs-grid-3 bs-gap">
+            <div class="bs-form-group" style="grid-column: span 3;"><label class="bs-label">Hallazgos (qué se observó, dónde)</label><textarea class="bs-textarea" id="hallazgos" rows="2" placeholder="Describe lo observado en cada ítem OBS. Ej.: SS.HH. del sector 3 sin agua ni papel desde el lunes."></textarea></div>
+            <div class="bs-form-group" style="grid-column: span 3;"><label class="bs-label">Compromisos de mejora</label><textarea class="bs-textarea" id="compromisos" rows="2" placeholder="Qué se va a corregir y cómo."></textarea></div>
+            <div class="bs-form-group"><label class="bs-label">Responsable del compromiso</label><input class="bs-input" id="responsable_compromiso" placeholder="Jefe de fundo, SST, logística…"></div>
+            <div class="bs-form-group"><label class="bs-label">Fecha límite</label><input type="date" class="bs-input" id="fecha_compromiso"></div>
+            <div class="bs-form-group"><label class="bs-label">Estado</label><select class="bs-select" id="estado"><option value="">Automático (según observaciones)</option><option>Cerrada</option></select><div class="bs-text-xs bs-text-muted">"Cerrada" = los pendientes ya se levantaron.</div></div>
+          </div>
+
+          <div class="bs-flex bs-justify-between" style="margin-top:1rem; gap:.5rem; flex-wrap:wrap;">
+            <span class="bs-text-xs bs-text-muted">* obligatorio · queda quién registró, fecha y hora; los cambios van a la auditoría.</span>
+            <div class="bs-flex" style="gap:.5rem;">
+              <button type="button" class="bs-btn bs-btn-outline" onclick="cerrarModal()">Cancelar</button>
+              <button type="submit" class="bs-btn bs-btn-gs" id="btnGuardar">💾 Guardar visita</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="bs-modal-overlay" id="modalDet">
+    <div class="bs-modal" style="max-width: 820px;">
+      <div class="bs-modal-header">
+        <h3 class="bs-modal-title" id="detTitle">Visita</h3>
+        <button class="bs-modal-close" onclick="cerrarDet()">×</button>
+      </div>
+      <div class="bs-modal-body" id="detBody"></div>
+    </div>
+  </div>
+
+  <script src="../assets/js/paginas/condiciones-01.js?v=1"></script>
+  <script src="../assets/js/bs-presencia.js"></script>
+  <script src="../assets/js/bs-modulos-pro.js?v=1"></script>
+</body>
+</html>
