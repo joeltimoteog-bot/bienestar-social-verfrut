@@ -3035,7 +3035,8 @@ function bs_permisosUsuario(usuario) {
             rendiciones:   gv(row, 'mod_rendiciones') === true,
             panel:         gv(row, 'mod_panel') === true,
             estadisticas:  gv(row, 'mod_estadisticas') === true,
-            descansos:     gv(row, 'mod_descansos') === true
+            descansos:     gv(row, 'mod_descansos') === true,
+            gestion_social: gv(row, 'mod_gestion_social') === true   /* _BS_GESTION_SOCIAL_V1 (14-nov-2026): normalmente lo decide "Acceso a Módulos" del RR.LL.; aquí solo si la hoja tuviera la columna */
           }
         };
       }

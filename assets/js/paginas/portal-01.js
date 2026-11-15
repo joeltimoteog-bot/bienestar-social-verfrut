@@ -122,6 +122,7 @@
       { id: 'descansos', permiso: 'descansos', url: 'modulos/descansos.html', title: 'Descansos Médicos', desc: 'CITT, acumulado anual por trabajador y pase automático a Subsidios.', icon: '🏥', color: '#be185d' },
       { id: 'subsidios', permiso: 'subsidios', url: 'modulos/subsidios.html', title: 'Subsidios', desc: 'Gestión de subsidios RAPEL y VERFRUT (incapacidad, maternidad, etc.).', icon: '💰', color: 'var(--bs-mod-subsidios)' },
       { id: 'rendiciones', permiso: 'rendiciones', url: 'modulos/rendiciones.html', title: 'Rendiciones', desc: 'Rendiciones de gastos RAPEL y VERFRUT por categoría y control de depósito.', icon: '📑', color: '#059669' },
+      { id: 'gestion_social', permiso: 'gestion_social', url: 'modulos/gestion-social.html', title: 'Gestión Social', desc: 'Casos sociales del trabajador: detección, visita domiciliaria, derivación y seguimiento hasta el cierre. Guarda directo en Supabase.', icon: '🤝', color: '#7c3aed', nuevo: true },   /* _BS_GESTION_SOCIAL_V1 (14-nov-2026) */
       { id: 'panel', permiso: 'panel', url: 'panel.html', title: 'Panel / Dashboard', desc: 'Resumen consolidado de todos los modulos (KPIs y graficos).', icon: '📊', color: '#16a34a' },
       { id: 'estadisticas', adminOnly: true, permiso: 'estadisticas', url: 'modulos/estadisticas.html', title: 'Estadísticas Empresariales', desc: 'Indicadores y cumplimiento de todos los módulos. Solo gerencia.', icon: '📈', color: '#0a2463' },
       { id: 'auditoria', adminOnly: true, permiso: 'auditoria', url: 'modulos/auditoria.html', title: 'Auditoría', desc: 'Registro de quién hizo qué y cuándo en todos los módulos.', icon: '🕘', color: '#334155' }
@@ -257,12 +258,23 @@
     document.addEventListener('visibilitychange', function(){ if(!document.hidden && (Date.now()-_kpiUltimo) > 20*1000) refrescarKPIs(); });
     window.addEventListener('pageshow', function(e){ if(e && e.persisted) refrescarKPIs(); });
 
-    // ===== SINCRONIZAR PERMISOS DESDE LA HOJA USUARIOS =====
+    // ===== SINCRONIZAR PERMISOS: primero "Acceso a Módulos" del Sistema RR.LL. (Supabase); si el usuario no está
+    //       configurado allí, la hoja Usuarios como antes. _BS_GESTION_SOCIAL_V1 (14-nov-2026) =====
     (function(){
-      bsApi('bs_permisosUsuario', { usuario: user.usuario })
+      var pRL = (typeof window.bsPermisosRL === 'function') ? window.bsPermisosRL().catch(function(){ return null; }) : Promise.resolve(null);
+      pRL.then(function(rl){
+        if (rl && rl.ok && rl.fuente === 'rrll') {
+          user.permisos = Object.assign({}, rl.permisos || {}); user.permisos_fuente = 'rrll';
+          if (rl.esAdmin && !/admin/i.test(user.rol || '')) user.esAdminRL = true;
+          try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch(e) {}
+          renderModules(); cargarAtrasos();
+          return;   /* RR.LL. manda: la hoja Usuarios ya no pisa estos permisos */
+        }
+        return bsApi('bs_permisosUsuario', { usuario: user.usuario });
+      })
       .then(function(res){
         if (res && res.ok && res.permisos) {
-          user.permisos = res.permisos;
+          user.permisos = Object.assign({}, res.permisos, (user.permisos && user.permisos.gestion_social) ? { gestion_social: true } : {}); user.permisos_fuente = 'hoja';
           if (!user.rol && res.rol) user.rol = res.rol;
           if (!user.nombre && res.nombre) user.nombre = res.nombre;
           try { localStorage.setItem('bienestarSocialAuth', JSON.stringify(user)); } catch(e) {}

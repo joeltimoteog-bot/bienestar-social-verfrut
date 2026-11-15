@@ -19,7 +19,7 @@
   var EDGE = window.BS_EDGE_URL || 'https://exdjzbfinppzatjyimxn.supabase.co/functions/v1/api';
 
   /* módulos que ya guardan en Supabase (se agregan uno a uno conforme avanza el plan) */
-  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas', 'accidentes', 'subsidios', 'hostigamiento', 'descansos', 'rendiciones', 'sugerencias'];
+  window.BS_SUPABASE_MODULOS = window.BS_SUPABASE_MODULOS || ['quejas', 'accidentes', 'subsidios', 'hostigamiento', 'descansos', 'rendiciones', 'sugerencias', 'gestion_social'];   /* _BS_GESTION_SOCIAL_V1 (14-nov-2026): Gestión Social nace sin hoja de Google: solo Supabase */
 
   function hostSede(v) { return String(v || '').trim().toUpperCase().indexOf('OLM') >= 0 ? 'OLMOS' : 'PIURA'; }
   function hostClave(sede) { return hostSede(sede) === 'OLMOS' ? 'bs_hostigamiento_olmos' : 'bs_hostigamiento'; }
@@ -61,12 +61,17 @@
     var peso = { rojo: 0, ambar: 1, info: 2 }; al.sort(function (a, b) { return peso[a.nivel] - peso[b.nivel]; });
     return al;
   }
-  var CLAVE_DE_MODULO = { quejas: 'bs_quejas', accidentes: 'bs_accidentes_casos', subsidios: 'bs_subsidios', hostigamiento: 'bs_hostigamiento', descansos: 'bs_descansos', rendiciones: 'bs_rendiciones', sugerencias: 'bs_sugerencias' };
+  var CLAVE_DE_MODULO = { quejas: 'bs_quejas', accidentes: 'bs_accidentes_casos', subsidios: 'bs_subsidios', hostigamiento: 'bs_hostigamiento', descansos: 'bs_descansos', rendiciones: 'bs_rendiciones', sugerencias: 'bs_sugerencias', gestion_social: 'bs_gs_casos' };
 
   function token() { try { return (JSON.parse(localStorage.getItem('bienestarSocialAuth') || '{}') || {}).rl_token || ''; } catch (e) { return ''; } }
   function activo(modulo) { return (window.BS_SUPABASE_MODULOS || []).indexOf(modulo) >= 0; }
   function num(v) { var n = Number(v); return isNaN(n) ? 0 : n; }
   var CAE_A_GOOGLE = { caer: true };
+  /* _BS_GESTION_SOCIAL_V1: módulos que no tienen hoja de Google; cuando Supabase no responde se informa, no se cae a Google */
+  var SOLO_SUPABASE = ['gestion_social'];
+  function SIN_GOOGLE() { return { ok: false, success: false, items: [], total: 0, message: token() ? 'No se pudo conectar con Supabase. Revisa tu conexión e intenta de nuevo.' : 'Tu sesión no tiene credencial del Sistema RR.LL. Cierra sesión y vuelve a ingresar.' }; }
+  /* _BS_GESTION_SOCIAL_V1: permisos según "Acceso a Módulos" del Sistema RR.LL. (GET bs/permisos). null si no se pudo consultar. */
+  window.bsPermisosRL = async function () { var r = await edge('permisos', 'GET'); return (r === CAE_A_GOOGLE || !r || !r.ok) ? null : r; };
 
   async function edge(ruta, metodo, cuerpo, query) {
     var tk = token(); if (!tk) return CAE_A_GOOGLE;            /* sin sesión RR.LL. en este navegador: Google como siempre */
@@ -287,9 +292,16 @@
     },
     bs_actualizarSugerencia: async function (p) { var r = await guardar('bs_sugerencias', 'actualizar', { id: p.id, datos: p.datos || {} }); if (r !== CAE_A_GOOGLE && r.ok) r.message = 'Sugerencia actualizada'; return r; },
     bs_eliminarSugerencia: async function (p) { var r = await guardar('bs_sugerencias', 'eliminar', { id: p.id }); if (r !== CAE_A_GOOGLE && r.ok) r.message = 'Sugerencia eliminada'; return r; },
+    /* ---- GESTIÓN SOCIAL (_BS_GESTION_SOCIAL_V1, 14-nov-2026): casos sociales + seguimientos. SIN hoja de Google detrás:
+       si Supabase no responde se devuelve el error a la pantalla (nunca se cae a Google, que no conoce estas acciones). */
+    bs_listarGsCasos: async function () { var r = await edge('tabla', 'GET', null, 'clave=bs_gs_casos&anulados=1'); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (!r.ok) return r; var items = r.cargada === false ? [] : (r.items || []).slice().sort(function (a, b) { return num(b.id) - num(a.id); }); return { ok: true, items: items, total: items.length, fuente: 'supabase' }; },
+    bs_crearGsCaso: async function (p) { var r = await guardar('bs_gs_casos', 'crear', { datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Caso social registrado' + (r.codigo ? ' (' + r.codigo + ')' : '') + '.'; return r; },
+    bs_actualizarGsCaso: async function (p) { var r = await guardar('bs_gs_casos', 'actualizar', { id: p.id, datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Caso social actualizado.'; return r; },
+    bs_listarGsSeguimientos: async function (p) { var r = await edge('tabla', 'GET', null, 'clave=bs_gs_seguimientos'); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (!r.ok) return r; var id = String((p && p.id_caso) || ''), items = (r.cargada === false ? [] : (r.items || [])).filter(function (s) { return String(s.id_caso) === id; }).sort(function (a, b) { return num(a.numero_seguimiento) - num(b.numero_seguimiento); }); return { ok: true, items: items, total: items.length, fuente: 'supabase' }; },
+    bs_crearGsSeguimiento: async function (p) { var r = await guardar('bs_gs_seguimientos', 'seguimiento', { id: p.id_caso, datos: p.datos || {} }); if (r === CAE_A_GOOGLE) return SIN_GOOGLE(); if (r.ok) r.message = 'Seguimiento registrado.'; return r; },
     /* anular / restaurar son genéricos: solo se redirigen si el módulo del registro ya está en Supabase */
-    bs_anularRegistro: function (p) { var c = claveDe(p); return c && activo(p.modulo) ? guardar(c, 'anular', { id: p.id, motivo: p.motivo }) : CAE_A_GOOGLE; },
-    bs_restaurarRegistro: function (p) { var c = claveDe(p); return c && activo(p.modulo) ? guardar(c, 'restaurar', { id: p.id, motivo: p.motivo }) : CAE_A_GOOGLE; }
+    bs_anularRegistro: async function (p) { var c = claveDe(p); if (!(c && activo(p.modulo))) return CAE_A_GOOGLE; var r = await guardar(c, 'anular', { id: p.id, motivo: p.motivo }); return r === CAE_A_GOOGLE && SOLO_SUPABASE.indexOf(p.modulo) >= 0 ? SIN_GOOGLE() : r; },
+    bs_restaurarRegistro: async function (p) { var c = claveDe(p); if (!(c && activo(p.modulo))) return CAE_A_GOOGLE; var r = await guardar(c, 'restaurar', { id: p.id, motivo: p.motivo }); return r === CAE_A_GOOGLE && SOLO_SUPABASE.indexOf(p.modulo) >= 0 ? SIN_GOOGLE() : r; }
   };
   var MODULO_DE_ACCION = { bs_listarQuejas: 'quejas', bs_crearQueja: 'quejas', bs_actualizarQueja: 'quejas', bs_listarSeguimientosQueja: 'quejas', bs_crearSeguimientoQueja: 'quejas', bs_cierreMasivoQuejas: 'quejas', bs_listarBuzones: 'quejas',
     bs_listarAccidentes: 'accidentes', bs_crearAccidente: 'accidentes', bs_actualizarAccidente: 'accidentes', bs_listarSeguimientos: 'accidentes', bs_listarTodosSeguimientos: 'accidentes', bs_crearSeguimiento: 'accidentes', bs_importarAccidentes: 'accidentes',
@@ -297,7 +309,8 @@
     bs_listarHostigamiento: 'hostigamiento', bs_crearHostigamiento: 'hostigamiento', bs_actualizarHostigamiento: 'hostigamiento',
     bs_listarDescansos: 'descansos', bs_acumuladoDescansos: 'descansos', bs_dashboardDescansos: 'descansos', bs_crearDescanso: 'descansos', bs_actualizarDescanso: 'descansos', bs_generarSubsidioDesdeDM: 'descansos',
     bs_listarRendiciones: 'rendiciones', bs_crearRendicion: 'rendiciones', bs_actualizarRendicion: 'rendiciones', bs_eliminarRendicion: 'rendiciones',
-    bs_listarSugerencias: 'sugerencias', bs_crearSugerencia: 'sugerencias', bs_actualizarSugerencia: 'sugerencias', bs_eliminarSugerencia: 'sugerencias' };
+    bs_listarSugerencias: 'sugerencias', bs_crearSugerencia: 'sugerencias', bs_actualizarSugerencia: 'sugerencias', bs_eliminarSugerencia: 'sugerencias',
+    bs_listarGsCasos: 'gestion_social', bs_crearGsCaso: 'gestion_social', bs_actualizarGsCaso: 'gestion_social', bs_listarGsSeguimientos: 'gestion_social', bs_crearGsSeguimiento: 'gestion_social' };
 
   var orig = window.api;
   if (typeof orig !== 'function') return;
