@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   bs-sesion-rl.js — _BS_SESION_RL_V1 (15-nov-2026)
+   bs-sesion-rl.js — _BS_SESION_RL_V1 (15-nov-2026) · v3 (16-nov): el intento de renovación caduca a los 3 min
    PROBLEMA: al entrar a Bienestar desde el RR.LL., la sesion de Bienestar se pedia a Google Apps Script (bs_login),
    que tarda 3-8 s y a veces no responde; entonces el portal no encontraba sesion (o la encontraba vencida) y mandaba
    al login, aunque la persona ya habia ingresado al RR.LL. con sus permisos.
@@ -90,7 +90,9 @@
   }
 
   /* 4) 401 de Google con pase del RR.LL. vigente: renovar una vez y recargar, en vez de mandar al login */
-  var yaIntento = false; try { yaIntento = sessionStorage.getItem('_bsRenov401') === '1'; } catch (e) {}
+  /* el intento de renovacion se recuerda solo 3 minutos (antes quedaba para siempre en la pestaña y, si un intento viejo
+     habia fallado, cualquier 401 posterior mandaba al login aunque el pase del RR.LL. estuviera vigente) */
+  var yaIntento = false; try { var tI = Number(sessionStorage.getItem('_bsRenov401') || 0); yaIntento = tI > 0 && (Date.now() - tI) < 180000; if (!yaIntento) sessionStorage.removeItem('_bsRenov401'); } catch (e) {}
   function salirAlLogin() {   /* lo mismo que hace bs-mejoras.js cuando no esta cargado (p. ej. portal.html) */
     try { localStorage.removeItem(CLAVE); Object.keys(localStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) sessionStorage.removeItem(k); }); } catch (e) {}
     location.href = (location.pathname.indexOf('/modulos/') >= 0 ? '../' : '') + 'index.html';
@@ -99,11 +101,13 @@
     var orig = window.bsSesionInvalida;
     if (orig && orig._bsRl) return true;
     if (typeof orig !== 'function') orig = function (res) { if (res && res.code === 401) { salirAlLogin(); return true; } return false; };
+    var fallo = false;   /* la renovacion de ESTA carga ya fallo: el siguiente 401 si manda al login */
     var nuevo = function (res) {
-      if (res && res.code === 401 && !yaIntento && ((sesionBS() || {}).rl_token || rlToken())) {
-        yaIntento = true; try { sessionStorage.setItem('_bsRenov401', '1'); } catch (e) {}
-        try { console.warn('[_BS_SESION_RL_V1] Google dice sesion invalida; se renueva con el pase del RR.LL.'); } catch (e) {}
-        renovarGoogle(function (ok) { if (ok) { try { sessionStorage.removeItem('_bsRenov401'); } catch (e) {} location.reload(); } else { orig(res); } });
+      if (res && res.code === 401 && !fallo && !yaIntento && ((sesionBS() || {}).rl_token || rlToken())) {
+        /* varias consultas a Google fallan casi a la vez (alertas, atrasos, documentos…): TODAS esperan a la misma renovacion.
+           v3: antes solo la primera esperaba y la segunda mandaba al login 300 ms despues. */
+        if (!renovando && !esperando.length) { try { sessionStorage.setItem('_bsRenov401', String(Date.now())); } catch (e) {} try { console.warn('[_BS_SESION_RL_V1] Google dice sesion invalida; se renueva con el pase del RR.LL.'); } catch (e) {} }
+        renovarGoogle(function (ok) { if (ok) { try { sessionStorage.removeItem('_bsRenov401'); } catch (e) {} if (!nuevo._recargado) { nuevo._recargado = true; location.reload(); } } else { fallo = true; orig(res); } });
         return true;   /* la llamada actual se detiene; la pagina se recarga con token nuevo */
       }
       return orig(res);
