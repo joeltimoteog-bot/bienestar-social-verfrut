@@ -54,10 +54,13 @@
   }
 
   /* 3) token de Google en segundo plano (modulos antiguos); nunca bloquea */
-  var renovando = false;
+  var renovando = false, esperando = [];
+  function avisarFin(ok) { var L = esperando; esperando = []; L.forEach(function (f) { try { f(ok); } catch (e) {} }); }
   function renovarGoogle(alTerminar) {
     var a = sesionBS(); var t = (a && a.rl_token) || rlToken(); var u = (a && a.usuario) || (ru && ru.usuario);
-    if (!t || !u || renovando) { if (alTerminar) alTerminar(false); return; }
+    if (!t || !u) { if (alTerminar) alTerminar(false); return; }
+    if (alTerminar) esperando.push(alTerminar);
+    if (renovando) return;   /* ya hay una renovacion en curso: se avisa a todos cuando termine */
     renovando = true;
     var ctl = (typeof AbortController === 'function') ? new AbortController() : null;
     var reloj = setTimeout(function () { if (ctl) { try { ctl.abort(); } catch (e) {} } }, 20000);
@@ -73,10 +76,10 @@
           b.token = d.user.token; b.rl_token = t; b.loginAt = new Date().toISOString(); b.source = 'sistema-rl-verfrut';
           guardarBS(b);
           try { console.log('[_BS_SESION_RL_V1] token de Google renovado en segundo plano'); } catch (e) {}
-          if (alTerminar) alTerminar(true);
-        } else { try { console.warn('[_BS_SESION_RL_V1] Google no entrego token:', d && d.message); } catch (e) {} if (alTerminar) alTerminar(false); }
+          avisarFin(true);
+        } else { try { console.warn('[_BS_SESION_RL_V1] Google no entrego token:', d && d.message); } catch (e) {} avisarFin(false); }
       })
-      .catch(function (e) { clearTimeout(reloj); renovando = false; try { console.warn('[_BS_SESION_RL_V1] Google no respondio (se reintenta luego)', e && e.name); } catch (x) {} if (alTerminar) alTerminar(false); });
+      .catch(function (e) { clearTimeout(reloj); renovando = false; try { console.warn('[_BS_SESION_RL_V1] Google no respondio (se reintenta luego)', e && e.name); } catch (x) {} avisarFin(false); });
   }
   window.bsRenovarSesionRL = renovarGoogle;
 
@@ -88,9 +91,14 @@
 
   /* 4) 401 de Google con pase del RR.LL. vigente: renovar una vez y recargar, en vez de mandar al login */
   var yaIntento = false; try { yaIntento = sessionStorage.getItem('_bsRenov401') === '1'; } catch (e) {}
+  function salirAlLogin() {   /* lo mismo que hace bs-mejoras.js cuando no esta cargado (p. ej. portal.html) */
+    try { localStorage.removeItem(CLAVE); Object.keys(localStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) sessionStorage.removeItem(k); }); } catch (e) {}
+    location.href = (location.pathname.indexOf('/modulos/') >= 0 ? '../' : '') + 'index.html';
+  }
   function envolver() {
     var orig = window.bsSesionInvalida;
-    if (typeof orig !== 'function' || orig._bsRl) return !!(orig && orig._bsRl);
+    if (orig && orig._bsRl) return true;
+    if (typeof orig !== 'function') orig = function (res) { if (res && res.code === 401) { salirAlLogin(); return true; } return false; };
     var nuevo = function (res) {
       if (res && res.code === 401 && !yaIntento && ((sesionBS() || {}).rl_token || rlToken())) {
         yaIntento = true; try { sessionStorage.setItem('_bsRenov401', '1'); } catch (e) {}
@@ -102,5 +110,6 @@
     };
     nuevo._bsRl = true; window.bsSesionInvalida = nuevo; return true;
   }
-  var n = 0, iv = setInterval(function () { if (envolver() || ++n > 40) clearInterval(iv); }, 250); envolver();
+  envolver();   /* si bs-mejoras.js se carga despues y lo reemplaza, se vuelve a envolver */
+  var n = 0, iv = setInterval(function () { if (++n > 40) clearInterval(iv); envolver(); }, 250);
 })();

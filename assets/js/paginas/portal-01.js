@@ -2,7 +2,8 @@
     // ===== ENDPOINT BIENESTAR =====
     var BS_API_URL = 'https://script.google.com/macros/s/AKfycbyJIUtdpApEc35Jj4ZNP-3ONqGe64J1VhaRvkt87vVUNTgSagrOgOS0T99eIt0-w3Yi/exec';
     function _bsTok(){ try { var u = JSON.parse(localStorage.getItem('bienestarSocialAuth')||'null'); return (u && u.token) || ''; } catch(e){ return ''; } }
-    function _bs401(j){ if (j && j.code === 401) { try { localStorage.removeItem('bienestarSocialAuth'); Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); } catch(e){} location.href = 'index.html'; return true; } return false; }
+    function _bs401(j){ if (j && j.code === 401 && typeof window.bsSesionInvalida === 'function') return window.bsSesionInvalida(j);   /* _BS_SESION_RL_V1 (15-nov): con pase del RR.LL. se renueva el token en vez de mandar al login */
+      if (j && j.code === 401) { try { localStorage.removeItem('bienestarSocialAuth'); Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); } catch(e){} location.href = 'index.html'; return true; } return false; }
     function bsApi(action, payload){
       return fetch(BS_API_URL, {
         method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
