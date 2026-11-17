@@ -410,6 +410,23 @@
     }
 
     // ===== Sesión existente -> redirigir =====
+    /* _BS_AUTO_ENTRADA_V1 (17-nov-2026): si en esta pestaña ya hay sesion del RR.LL. (misma web), se entra al portal
+       sin pedir clave (bs-sesion-rl.js arma la sesion de Bienestar). No aplica si la persona cerro sesion en Bienestar,
+       y como seguro se intenta solo una vez por minuto (evita idas y vueltas si el pase del RR.LL. ya vencio). */
+    (function () {
+      try {
+        if (localStorage.getItem('bienestarSocialAuth')) return;
+        if (sessionStorage.getItem('bs_salio') === '1') return;
+        var tk = sessionStorage.getItem('rl_token') || '';
+        var u = null; try { u = JSON.parse(sessionStorage.getItem('user') || 'null'); } catch (e) {}
+        if (!u || !u.usuario) { try { var rs = JSON.parse(localStorage.getItem('rl_session') || 'null'); u = rs && rs.user; } catch (e) {} }
+        if (!tk || !u || !u.usuario) return;
+        var ult = Number(sessionStorage.getItem('bs_auto_t') || 0);
+        if (ult && (Date.now() - ult) < 60000) return;
+        sessionStorage.setItem('bs_auto_t', String(Date.now()));
+        location.replace('portal.html');
+      } catch (e) {}
+    })();
     const session = localStorage.getItem('bienestarSocialAuth');
     if (session) {
       try {

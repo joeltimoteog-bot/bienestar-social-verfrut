@@ -1,5 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    bs-sesion-rl.js — _BS_SESION_RL_V1 (15-nov-2026) · v3 (16-nov): el intento de renovación caduca a los 3 min
+   · v4 (17-nov, _BS_ESPERA_LLAVE_V1): las consultas a Google que salen SIN llave (o mientras se renueva) ESPERAN a que
+     llegue la llave y salen con ella. Antes salian sin llave, Google respondia "sesion invalida", se renovaba y la
+     pagina se RECARGABA (3-20 s) o, si Google tardaba, mandaba al login.
    PROBLEMA: al entrar a Bienestar desde el RR.LL., la sesion de Bienestar se pedia a Google Apps Script (bs_login),
    que tarda 3-8 s y a veces no responde; entonces el portal no encontraba sesion (o la encontraba vencida) y mandaba
    al login, aunque la persona ya habia ingresado al RR.LL. con sus permisos.
@@ -29,6 +32,7 @@
   function esAdmin(u) { return /admin|geren|coordinador|jef/i.test(String((u && u.rol) || '')) || String((u && u.usuario) || '').toLowerCase() === 'jtimoteo'; }
   function edadMs(s) { var t = Date.parse((s && s.loginAt) || ''); return t ? (Date.now() - t) : Infinity; }
 
+  try { sessionStorage.removeItem('bs_salio'); } catch (e) {}   /* _BS_AUTO_ENTRADA_V1: ya esta en el portal: la marca de 'cerro sesion' no aplica */
   /* 1) sesion provisional inmediata desde la sesion del RR.LL. (misma pestaña) */
   var tk = rlToken(), ru = rlUser(), s = sesionBS();
   var mismo = s && ru && String(s.usuario || '').toLowerCase() === String(ru.usuario || '').toLowerCase();
@@ -86,8 +90,35 @@
   var ahora = sesionBS();
   if (ahora && ahora.rl_token) {
     permisosSupabase();
-    if (!ahora.token || edadMs(ahora) > RENOVAR_MS) setTimeout(function () { renovarGoogle(); }, 300);
+    if (!ahora.token || edadMs(ahora) > RENOVAR_MS) renovarGoogle();   /* v4: de inmediato, asi las consultas esperan a esta renovacion */
   }
+
+  /* 3b) _BS_ESPERA_LLAVE_V1 (17-nov-2026): consulta a Google sin llave (o con renovacion en curso) -> esperar la llave */
+  (function () {
+    var fOrig = window.fetch;
+    if (typeof fOrig !== 'function' || fOrig._bsEspera) return;
+    var envuelto = function (input, init) {
+      try {
+        var u = typeof input === 'string' ? input : ((input && input.url) || '');
+        if (u.indexOf(GAS) === 0 && init && typeof init.body === 'string' && init.body.indexOf('"action"') >= 0) {
+          var b = JSON.parse(init.body);
+          var a = sesionBS() || {};
+          if (b && b.action && b.action !== 'bs_login' && (a.rl_token || rlToken()) && (renovando || (!b.token && !a.token))) {
+            var self = this;
+            return new Promise(function (listo) { renovarGoogle(function () { listo(); }); }).then(function () {
+              var t = (sesionBS() || {}).token;
+              var init2 = init;
+              if (t && b.token !== t) { b.token = t; init2 = Object.assign({}, init, { body: JSON.stringify(b) }); }
+              return fOrig.call(self, input, init2);
+            });
+          }
+        }
+      } catch (e) {}
+      return fOrig.apply(this, arguments);
+    };
+    envuelto._bsEspera = true;
+    window.fetch = envuelto;
+  })();
 
   /* 4) 401 de Google con pase del RR.LL. vigente: renovar una vez y recargar, en vez de mandar al login */
   /* el intento de renovacion se recuerda solo 3 minutos (antes quedaba para siempre en la pestaña y, si un intento viejo

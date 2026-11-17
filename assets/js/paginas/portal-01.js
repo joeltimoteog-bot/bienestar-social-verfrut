@@ -391,6 +391,7 @@
     // ===== LOGOUT =====
     async function logout() {
       if (await appConfirm('¿Cerrar sesión?')) {
+        try { sessionStorage.setItem('bs_salio', '1'); } catch(e){}   /* _BS_AUTO_ENTRADA_V1: no reingresar solo tras cerrar sesion */
         localStorage.removeItem('bienestarSocialAuth'); try { Object.keys(localStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); }); Object.keys(sessionStorage).forEach(function(k){ if (k.indexOf('bs_cache_') === 0) sessionStorage.removeItem(k); }); } catch(e){}
         window.location.href = 'index.html';
       }

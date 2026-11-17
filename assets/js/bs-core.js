@@ -48,6 +48,7 @@
   window.logout = async function logout() {
     var ok = window.appConfirm ? await appConfirm('¿Cerrar sesión?') : window.confirm('¿Cerrar sesión?');
     if (!ok) return;
+    try { sessionStorage.setItem('bs_salio', '1'); } catch (e) {}   /* _BS_AUTO_ENTRADA_V1: no reingresar solo tras cerrar sesion */
     try {
       localStorage.removeItem('bienestarSocialAuth');
       Object.keys(localStorage).forEach(function (k) { if (k.indexOf('bs_cache_') === 0) localStorage.removeItem(k); });
