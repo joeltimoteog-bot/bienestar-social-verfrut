@@ -106,7 +106,7 @@
     var jProx = JS && JS.h > 0 ? JS.h : num((horarioDe(hoy, C.horarios) || {}).lv_horas) || 9.6;
     R.jornadaProxima = r2(jProx); R.proximoLaborable = sig;
     R.diasDisponibles = Math.floor((R.saldo + 1e-9) / jProx);
-    var progFuturos = R.descansos.filter(function (x) { return x.fecha >= hoy && !/tomad/i.test(x.estado); }).sort(function (a, b) { return a.fecha < b.fecha ? -1 : 1; });
+    var progFuturos = R.descansos.filter(function (x) { return x.fecha >= hoy; })   /* v1.1: un descanso futuro ya registrado como tomado tambien cuenta como programado (antes disparaba 'sin_programar') */.sort(function (a, b) { return a.fecha < b.fecha ? -1 : 1; });
     R.proximo = progFuturos.length ? { fecha: progFuturos[0].fecha, horas: progFuturos[0].horas, estado: progFuturos[0].estado } : (R.proyeccion.length ? { fecha: R.proyeccion[0].fecha, horas: R.proyeccion[0].horas, estado: 'propuesto' } : null);
     /* alertas */
     var ant = cfg.anticipacionHabiles == null ? 3 : cfg.anticipacionHabiles, finAviso = cfg.avisoFinDias == null ? 30 : cfg.avisoFinDias;
@@ -115,7 +115,7 @@
       if (R.proximo) {
         var hab = habilesDesde(hoy, R.proximo.fecha, C);
         if (R.proximo.fecha === hoy) R.alertas.push({ n: 'rojo', t: 'HOY le corresponde descanso por lactancia (' + R.proximo.horas + ' h)' + (R.proximo.estado === 'propuesto' ? ' · falta programarlo' : ''), fecha: R.proximo.fecha, tipo: 'hoy' });
-        else if (hab <= ant) R.alertas.push({ n: 'ambar', t: 'Le corresponde descanso por lactancia el ' + R.proximo.fecha + ' (' + R.proximo.horas + ' h)' + (R.proximo.estado === 'propuesto' ? ' · falta programarlo' : ' · programado'), fecha: R.proximo.fecha, tipo: 'proximo' });
+        else if (hab <= ant) R.alertas.push({ n: 'ambar', t: 'Le corresponde descanso por lactancia el ' + R.proximo.fecha + ' (' + R.proximo.horas + ' h)' + (R.proximo.estado === 'propuesto' ? ' · falta programarlo' : /tomad/i.test(R.proximo.estado) ? ' · registrado como tomado' : ' · programado'), fecha: R.proximo.fecha, tipo: 'proximo' });
       }
       if (R.diasDisponibles >= 1 && !progFuturos.length && (!R.proyeccion.length || R.proyeccion[0].fecha > sig)) R.alertas.push({ n: 'ambar', t: 'Tiene ' + R.saldo + ' h acumuladas (' + R.diasDisponibles + ' día(s)) sin descanso programado', fecha: hoy, tipo: 'sin_programar' });
       if (R.diasRestantes != null && R.diasRestantes <= finAviso && R.saldo > 0) R.alertas.push({ n: R.diasRestantes <= 7 ? 'rojo' : 'ambar', t: 'La lactancia termina el ' + fin + ' (' + R.diasRestantes + ' días): quedan ' + R.saldo + ' h por programar', fecha: fin, tipo: 'fin' });
