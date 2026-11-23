@@ -3259,7 +3259,7 @@ function bs_emitirToken(u) {
   var data = {
     usuario: (u && u.usuario) || '',
     rol: (u && u.rol) || '',
-    permisos: (u && u.permisos) || {},
+    permisos: bs_permisosConSede_(u),   /* _BS_SEDE_GOOGLE_V1: la sede viaja dentro de los permisos de la sesion (_sede) */
     expira: expira
   };
   // Cache (rápido, máx 6 h) + hoja (respaldo hasta que expire)
@@ -3273,6 +3273,29 @@ function bs_emitirToken(u) {
   return token;
 }
  
+/* _BS_SEDE_GOOGLE_V1 (23-nov-2026, decision de Joel: "nadie de Olmos debe ver lo de Piura").
+   Las hojas de Google no conocen las sedes. Al iniciar sesion, el servidor del RR.LL. (auth/sso) dice la sede del usuario
+   (OLMOS / PIURA / TODO) y se guarda en la sesion de Google. A una sesion de OLMOS se le rechazan aqui todas las acciones
+   de datos (leer y guardar); lo suyo vive en Supabase. Siguen pasando: iniciar sesion, la llave de Supabase, los permisos,
+   la bitacora de accesos y los correos de aviso. Piura y quien ve las dos sedes: sin cambios. Si la sede no llega
+   (servidor sin responder), la sesion queda como antes. Apagar: propiedad del script BS_SEDE_GOOGLE = off. */
+var BS_SEDE_MSG_ = 'No cuenta con acceso a la información de la sede Piura.';
+var BS_SEDE_LIBRES_ = /^bs_(login|sbToken|permisosUsuario|registrarEvento|notificar)/;
+function bs_permisosConSede_(u) {
+  var p = {}, o = (u && u.permisos) || {};
+  for (var k in o) { if (k !== '_sede') p[k] = o[k]; }
+  var sd = String((u && u.sede) || '').toUpperCase();
+  if (sd === 'OLMOS' || sd === 'PIURA' || sd === 'TODO') p._sede = sd;
+  return p;
+}
+function bs_sedeCierra_(s, action) {
+  try {
+    if (!s || !s.permisos || s.permisos._sede !== 'OLMOS') return false;
+    if (BS_SEDE_LIBRES_.test(String(action || ''))) return false;
+    return PropertiesService.getScriptProperties().getProperty('BS_SEDE_GOOGLE') !== 'off';
+  } catch (e) { return true; }
+}
+
 /* _BS_SESION_MANDA_V1: permisos efectivos de la sesion (admin = todos los modulos) */
 var BS_MODULOS_TODOS_ = ['quejas', 'accidentes', 'hostigamiento', 'subsidios', 'rendiciones', 'panel', 'estadisticas', 'descansos', 'sugerencias', 'documentos'];
 function bs_permisosDeSesion_(s) {
@@ -3293,6 +3316,7 @@ function bs_validarAcceso(params) {
  
     var s = _bsBuscarToken_(String(token));
     if (!s || !s.expira || Date.now() > s.expira) return _bsNoAutorizado_();
+    if (bs_sedeCierra_(s, action)) return { ok: false, code: 403, otra_sede: true, message: BS_SEDE_MSG_ };   /* _BS_SEDE_GOOGLE_V1 */
  
     // Permiso por módulo (los admins pasan todo)
     var rol = String(s.rol || '').toLowerCase();

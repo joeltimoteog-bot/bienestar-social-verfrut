@@ -32,7 +32,7 @@ function bs_loginConRL_(usuario, rlToken) {
       if (!acc.activo || !acc.bs || !acc.bs.acceso) return { ok: false, message: 'Tu usuario no tiene acceso a Bienestar Social. Solicítalo al administrador.' };
       var fila = _bsFilaUsuario_(u) || {};
       return { ok: true, via: 'rrll', _accesosAplicados: true, user: { usuario: fila.usuario || u, nombre: fila.nombre || u.toUpperCase(), rol: acc.bs.admin ? 'admin' : 'usuario',
-        email: fila.email || '', permisos: acc.bs.permisos, loginAt: new Date().toISOString() } };
+        email: fila.email || '', permisos: acc.bs.permisos, sede: String(j.user.sede || ''), loginAt: new Date().toISOString() } };   /* _BS_SEDE_GOOGLE_V1 */
     }
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BS_CONFIG.HOJA_USUARIOS);
     if (!sheet) return { ok: false, message: 'Hoja Usuarios no existe' };
@@ -60,6 +60,7 @@ function bs_loginConRL_(usuario, rlToken) {
               estadisticas:  gv(row, 'mod_estadisticas') === true,
               descansos:     gv(row, 'mod_descansos') === true
             },
+            sede: String(j.user.sede || ''),   /* _BS_SEDE_GOOGLE_V1 */
             loginAt: new Date().toISOString()
           }
         };
@@ -96,6 +97,7 @@ function bs_aplicarAccesosRL_(result, params) {
     var r = UrlFetchApp.fetch(BS_RL_SSO_URL, { method: 'post', contentType: 'application/json', payload: JSON.stringify({ accion: 'sesion', token: tk }), muteHttpExceptions: true });
     if (r.getResponseCode() !== 200) return result;
     var j = JSON.parse(r.getContentText()), acc = j && j.success && j.user && j.user.accesos;
+    try { if (j && j.success && j.user && j.user.sede && String(j.user.usuario || '').toLowerCase().trim() === u) result.user.sede = String(j.user.sede); } catch (eSd) {}   /* _BS_SEDE_GOOGLE_V1 */
     if (!acc || !acc.definido || String(j.user.usuario || '').toLowerCase().trim() !== u) return result;
     if (!acc.activo || !acc.bs || !acc.bs.acceso) return { ok: false, message: 'Tu usuario no tiene acceso a Bienestar Social. Solicítalo al administrador.' };
     result.user.permisos = acc.bs.permisos;
