@@ -13,6 +13,8 @@
    COMO SABE LA SEDE: la dice el servidor (bs/permisos -> sede: OLMOS | PIURA | TODO), con la sesion del RR.LL.
      Se recuerda en la sesion de Bienestar (por usuario) y se vuelve a preguntar en cada pagina.
      Si el servidor no responde y no hay recuerdo: usuario cuya empresa es de Olmos -> cerrado; los demas, como antes.
+   · v2 (_BS_SEDE_ETIQUETA_V1, 23-nov, pedido de Joel): el encabezado dice "Sede Olmos" junto al usuario (y "Ambas sedes" a quien
+     ve las dos), y los textos fijos "RAPEL y VERFRUT" / "RAPEL / VERFRUT" de las tarjetas pasan a "sede Olmos" para el usuario de Olmos.
    LIMITE: es un cierre de PANTALLA. El cierre dentro de Google (Apps Script de Bienestar) es un cambio aparte.
    Se carga justo despues de modal-system.js, antes de todo lo demas.
    Apagar (no sirve para un usuario de Olmos): localStorage.bs_sede_pantalla = 'off'.
@@ -79,7 +81,7 @@
         if (!j || !j.success || typeof j.sede !== 'string' || !j.sede) return '';
         if (j.usuario && min(j.usuario) !== u) return '';
         sedeSesion = j.sede; recordar(j.sede, u);
-        if (j.sede === 'OLMOS') alSaberOlmos();
+        if (j.sede === 'OLMOS') alSaberOlmos(); else if (j.sede === 'TODO') alSaberTodo();
         return j.sede;
       })
       .catch(function () { consulta = null; falloEn = Date.now(); return ''; });
@@ -179,17 +181,61 @@
         EMPRESAS_OLMOS.forEach(function (e) { if (!ya[e]) { var op = document.createElement('option'); op.value = e; op.textContent = e; sel.appendChild(op); } });
         if (eraRV) { sel.selectedIndex = 0; try { sel.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {} }
       }
+      textos(); etiqueta('Sede Olmos', '#ffedd5', '#9a3412', '#fdba74');
+    } catch (e) {}
+  }
+  /* textos fijos de las tarjetas ("Gestión de subsidios RAPEL y VERFRUT…") */
+  function textos() {
+    try {
+      if (!document.body || typeof document.createTreeWalker !== 'function') return;
+      var w = document.createTreeWalker(document.body, 4 /* solo texto */, null, false), n, cambiar = [];
+      while ((n = w.nextNode())) {
+        var v = n.nodeValue; if (!v || v.indexOf('VERFRUT') < 0) continue;
+        var p = n.parentNode, tag = p && p.nodeName; if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA' || tag === 'OPTION') continue;
+        cambiar.push(n);
+      }
+      cambiar.forEach(function (x) {
+        var v = x.nodeValue, r = v.replace(/RAPEL\s+y\s+VERFRUT/g, 'de la sede Olmos').replace(/RAPEL\s*\/\s*VERFRUT/g, 'Sede Olmos');
+        if (r !== v) x.nodeValue = r;
+      });
+    } catch (e) {}
+  }
+  /* etiqueta de sede junto al nombre del usuario (id="userName" en todas las paginas) y junto a la fecha del portal */
+  function etiqueta(texto, fondo, color, borde) {
+    try {
+      ['userName', 'proFecha'].forEach(function (id) {
+        var el = document.getElementById(id); if (!el || !el.parentNode) return;
+        var cid = 'bsSedeEtq_' + id, c = document.getElementById(cid);
+        if (!c) {
+          c = document.createElement('span'); c.id = cid;
+          c.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;font:700 11px/1.4 system-ui,Segoe UI,Arial,sans-serif;letter-spacing:.3px;vertical-align:middle;white-space:nowrap;' +
+            'background:' + fondo + ';color:' + color + ';border:1px solid ' + borde + ';';
+          el.parentNode.insertBefore(c, el.nextSibling);
+        }
+        if (c.textContent !== texto) c.textContent = texto;
+      });
     } catch (e) {}
   }
   var olmosListo = false;
   function alSaberOlmos() {
     if (olmosListo) return; olmosListo = true;
     try { document.documentElement.setAttribute('data-bs-sede', 'OLMOS'); } catch (e) {}
-    var pasar = function () { adaptar(); [300, 1000, 2500, 5000].forEach(function (ms) { setTimeout(adaptar, ms); }); };
+    var pasar = function () {
+      adaptar(); [300, 1000, 2500, 5000].forEach(function (ms) { setTimeout(adaptar, ms); });
+      /* las tarjetas y listas se vuelven a dibujar (indicadores cada 3 min, formularios): se repasa tras cada cambio, con pausa */
+      try { var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(adaptar, 250); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pasar); else pasar();
+  }
+  var todoListo = false;
+  function alSaberTodo() {
+    if (todoListo || olmosListo) return; todoListo = true;
+    var poner = function () { etiqueta('Ambas sedes', '#e0f2fe', '#075985', '#bae6fd'); };
+    var pasar = function () { poner(); [300, 1000, 2500, 5000].forEach(function (ms) { setTimeout(poner, ms); }); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pasar); else pasar();
   }
 
   window.bsSede = function () { return sedeSesion || recuerdo() || pista() || ''; };
-  if (recuerdo() === 'OLMOS' || pista() === 'OLMOS') alSaberOlmos();
+  if (recuerdo() === 'OLMOS' || pista() === 'OLMOS') alSaberOlmos(); else if (recuerdo() === 'TODO') alSaberTodo();
   consultar();   /* pregunta al servidor en cada pagina; si aun no hay sesion, se pregunta con la primera consulta */
 })();
