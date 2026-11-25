@@ -82,6 +82,7 @@
         if (j.usuario && min(j.usuario) !== u) return '';
         sedeSesion = j.sede; recordar(j.sede, u);
         if (j.sede === 'OLMOS') alSaberOlmos(); else if (j.sede === 'TODO') alSaberTodo();
+        if (j.sede !== 'TODO') { try { if (sessionStorage.getItem('bs_sede_vista')) { sessionStorage.removeItem('bs_sede_vista'); } } catch (e) {} }   /* _BS_SEDE_VISTA_V1 */
         return j.sede;
       })
       .catch(function () { consulta = null; falloEn = Date.now(); return ''; });
@@ -127,9 +128,27 @@
     return '';
   }
 
+  /* _BS_SEDE_VISTA_V1 (24-nov-2026, maqueta aprobada por Joel): quien ve las dos sedes elige la sede al ingresar a Bienestar.
+     La eleccion vive en la pestaña (sessionStorage.bs_sede_vista = PIURA | OLMOS; vacio = Ambas) y viaja al servidor en la
+     cabecera x-rl-sede (la misma del Sistema RR.LL.): el servidor la obedece SOLO si el usuario de verdad ve las dos sedes.
+     El Panel y los indicadores del portal se piden siempre generales. Los modulos siguen saliendo segun "Acceso a Modulos". */
+  function vistaBS() { try { var v = String(sessionStorage.getItem('bs_sede_vista') || '').toUpperCase(); return (v === 'PIURA' || v === 'OLMOS') ? v : ''; } catch (e) { return ''; } }
+  function siempreGeneral(u) { try { return /\/api\/bs\/(dashboard|permisos)(\?|$)/.test(u) || /\/panel\.html$/i.test(location.pathname); } catch (e) { return false; } }
+  function conCabecera(init, v) {
+    var i2 = Object.assign({}, init || {}), h = i2.headers;
+    if (typeof Headers !== 'undefined' && h instanceof Headers) { h = new Headers(h); h.set('x-rl-sede', v); }
+    else if (Array.isArray(h)) { h = h.concat([['x-rl-sede', v]]); }
+    else { h = Object.assign({}, h || {}, { 'x-rl-sede': v }); }
+    i2.headers = h; return i2;
+  }
+
   var envuelto = function (input, init) {
     var u = '';
     try { u = typeof input === 'string' ? input : ((input && input.url) || ''); } catch (e) { u = ''; }
+    try {
+      var vv = vistaBS();
+      if (vv && typeof input === 'string' && u.indexOf('/functions/v1/api/') >= 0 && !siempreGeneral(u)) { init = conCabecera(init, vv); arguments[1] = init; if (arguments.length < 2) return envuelto.call(this, input, init); }
+    } catch (e) {}
     try {
       if (u.indexOf('script.google.com/macros/') >= 0) {
         var accion = accionDe(u, init);
@@ -227,11 +246,68 @@
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pasar); else pasar();
   }
+  /* cuadro "Seleccione la sede de trabajo": en el portal, una vez por ingreso (se recuerda por la sesion); tambien al tocar la etiqueta */
+  function preguntarSedeBS(aPedido) {
+    try {
+      var off = false; try { off = localStorage.getItem('bs_sede_pregunta') === 'off'; } catch (e0) {}
+      if (document.getElementById('bsSedePregOv')) return;
+      var m = String(tokenActual() || '').slice(-24);
+      if (!aPedido) { if (off || !m) return; var ya = ''; try { ya = sessionStorage.getItem('bs_sede_preg') || ''; } catch (e1) {} if (ya === m) return; }
+      var actual = vistaBS(), elegida = actual;
+      var OPC = [['PIURA', 'Sede Piura', 'RAPEL · VERFRUT'], ['OLMOS', 'Sede Olmos', 'Bomarea · Pirona · Mosqueta · Hefei · Lefkada'], ['', 'Ambas sedes', 'Vista general: Piura y Olmos']];
+      var ov = document.createElement('div'); ov.id = 'bsSedePregOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'bsSedePregT');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(15,27,51,.62);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,Segoe UI,Arial,sans-serif';
+      var card = document.createElement('div');
+      card.style.cssText = 'width:min(580px,100%);max-height:calc(100vh - 32px);overflow:auto;box-sizing:border-box;background:#fff;border:1px solid #D9DFEA;border-top:5px solid #C8102E;border-radius:10px;padding:32px 40px 26px;box-shadow:0 18px 48px rgba(15,27,51,.28);color:#0F1B33;text-align:left';
+      card.innerHTML =
+        '<div style="display:flex;align-items:center;gap:14px"><img src="/bienestar-social-verfrut/images/logo-unifrutti-hd.png" alt="Unifrutti" style="width:48px;height:48px;object-fit:contain;border:1px solid #E6EAF2;border-radius:8px;background:#fff" onerror="this.style.display=\'none\'">' +
+        '<div><div style="font-size:11px;letter-spacing:2.2px;font-weight:700;color:#C8102E;text-transform:uppercase">Bienestar Social</div><div style="font-size:12px;color:#5B6B86;margin-top:2px">Unifrutti Perú · Piura · Olmos</div></div></div>' +
+        '<h2 id="bsSedePregT" style="margin:22px 0 6px;font-size:24px;font-weight:700;letter-spacing:.2px;color:#0F1B33">Seleccione la sede de trabajo</h2>' +
+        '<p style="margin:0 0 18px;font-size:14px;line-height:1.5;color:#3D4A63">Su usuario tiene alcance general. Indique con qué sede desea trabajar en esta sesión.</p>' +
+        '<div id="bsSedePregOps" style="display:flex;flex-direction:column;gap:10px"></div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid #E6EAF2">' +
+        '<div style="font-size:12px;line-height:1.45;color:#5B6B86;max-width:300px">El Panel se muestra siempre de forma general. Podrá cambiar de sede tocando la etiqueta de sede junto a su nombre.</div>' +
+        '<button type="button" id="bsSedePregOk" style="min-height:46px;padding:0 30px;border:0;border-radius:8px;background:#0F1B33;color:#fff;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">Continuar</button></div>';
+      ov.appendChild(card);
+      var ops = card.querySelector('#bsSedePregOps');
+      function pintar() {
+        Array.prototype.forEach.call(ops.children, function (b) {
+          var on = b.getAttribute('data-v') === elegida;
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          b.style.background = on ? '#F3F6FC' : '#fff'; b.style.border = on ? '2px solid #0F1B33' : '1px solid #C9D1E0';
+          b.firstChild.style.border = on ? '6px solid #C8102E' : '2px solid #8A97AE';
+        });
+      }
+      OPC.forEach(function (o) {
+        var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-v', o[0]);
+        b.style.cssText = 'display:flex;align-items:center;gap:14px;width:100%;min-height:62px;text-align:left;padding:11px 16px;border-radius:8px;color:#0F1B33;cursor:pointer;font-family:inherit';
+        var aro = document.createElement('span'); aro.style.cssText = 'width:18px;height:18px;border-radius:50%;box-sizing:border-box;background:#fff;flex:0 0 auto';
+        var tx = document.createElement('span'); tx.style.cssText = 'display:flex;flex-direction:column;gap:2px';
+        var t1 = document.createElement('span'); t1.style.cssText = 'font-size:16px;font-weight:700'; t1.textContent = o[1];
+        var t2 = document.createElement('span'); t2.style.cssText = 'font-size:12.5px;color:#4A5872'; t2.textContent = o[2];
+        tx.appendChild(t1); tx.appendChild(t2); b.appendChild(aro); b.appendChild(tx);
+        b.addEventListener('click', function () { elegida = o[0]; pintar(); });
+        ops.appendChild(b);
+      });
+      pintar();
+      card.querySelector('#bsSedePregOk').addEventListener('click', function () {
+        try { if (m) sessionStorage.setItem('bs_sede_preg', m); } catch (e2) {}
+        if (elegida !== actual) { try { if (elegida) sessionStorage.setItem('bs_sede_vista', elegida); else sessionStorage.removeItem('bs_sede_vista'); } catch (e3) {} try { location.reload(); } catch (e4) {} return; }
+        ov.remove();
+      });
+      document.body.appendChild(ov);
+      try { card.querySelector('#bsSedePregOk').focus(); } catch (e5) {}
+    } catch (e) { try { console.warn('[_BS_SEDE_VISTA_V1]', e.message); } catch (e9) {} }
+  }
   var todoListo = false;
   function alSaberTodo() {
     if (todoListo || olmosListo) return; todoListo = true;
-    var poner = function () { etiqueta('Ambas sedes', '#e0f2fe', '#075985', '#bae6fd'); };
-    var pasar = function () { poner(); [300, 1000, 2500, 5000].forEach(function (ms) { setTimeout(poner, ms); }); };
+    var poner = function () {
+      var v = vistaBS();
+      if (v === 'OLMOS') etiqueta('Sede Olmos', '#ffedd5', '#9a3412', '#fdba74'); else if (v === 'PIURA') etiqueta('Sede Piura', '#e0f2fe', '#075985', '#bae6fd'); else etiqueta('Ambas sedes', '#e0f2fe', '#075985', '#bae6fd');
+      ['userName', 'proFecha'].forEach(function (id) { var c = document.getElementById('bsSedeEtq_' + id); if (c && !c._bsCambio) { c._bsCambio = true; c.style.cursor = 'pointer'; c.title = 'Cambiar de sede'; c.setAttribute('role', 'button'); c.tabIndex = 0; c.addEventListener('click', function () { preguntarSedeBS(true); }); c.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); preguntarSedeBS(true); } }); } });
+    };
+    var pasar = function () { poner(); [300, 1000, 2500, 5000].forEach(function (ms) { setTimeout(poner, ms); }); if (/\/portal\.html$/i.test(location.pathname)) preguntarSedeBS(false); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pasar); else pasar();
   }
 
