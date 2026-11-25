@@ -115,8 +115,8 @@
 
     // ===== MÓDULOS ===== (misma configuración; solo cambia la presentación)
     const MODULOS = [
-      { id: 'ficha', permiso: null, url: 'modulos/ficha.html', title: 'Ficha del Trabajador', desc: 'Todo el historial de un trabajador por DNI: contrato, accidentes, subsidios, casos y documentos.', icon: '👤', color: '#0033A0', siempre: true },
-      { id: 'sugerencias', permiso: null, url: 'modulos/sugerencias.html', title: 'Sugerencias de Mejora', desc: 'Propon mejoras del sistema y dale seguimiento.', icon: '💡', color: '#0a2463', confidencial: false, siempre: true },
+      { id: 'ficha', permiso: null, url: 'modulos/ficha.html', title: 'Ficha del Trabajador', desc: 'Todo el historial de un trabajador por DNI: contrato, accidentes, subsidios, casos y documentos.', icon: '👤', color: '#0033A0', siempre: true, cierra: 'ficha' },
+      { id: 'sugerencias', permiso: null, url: 'modulos/sugerencias.html', title: 'Sugerencias de Mejora', desc: 'Propon mejoras del sistema y dale seguimiento.', icon: '💡', color: '#0a2463', confidencial: false, siempre: true, cierra: 'sugerencias_acceso' },
       { id: 'quejas', permiso: 'quejas', url: 'modulos/quejas.html', title: 'Quejas y Sugerencias', desc: 'Registro y seguimiento de quejas, reclamos y sugerencias del personal.', icon: '📋', color: 'var(--bs-mod-quejas)' },
       { id: 'accidentes', permiso: 'accidentes', url: 'modulos/accidentes.html', title: 'Accidentes Laborales', desc: 'Reporte y seguimiento de accidentes laborales con seguimientos médicos.', icon: '🩺', color: 'var(--bs-mod-accidentes)' },
       { id: 'hostigamiento', permiso: 'hostigamiento', url: 'modulos/hostigamiento.html', title: 'Hostigamiento Sexual', desc: 'Denuncias por hostigamiento sexual. Acceso restringido (Ley 29733).', icon: '🔒', color: 'var(--bs-mod-hostigamiento)', confidencial: true },
@@ -142,8 +142,13 @@
     function modulosVisibles(){
       const ADMINS = ['jtimoteo','ovilela'];
       const isAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test((user && user.rol) || '');
-      return MODULOS.filter(function(m) { return !m.adminOnly || isAdmin || (m.permiso && user.permisos && user.permisos[m.permiso]); }).map(function(m){
-        return Object.assign({}, m, { tienePermiso: m.adminOnly ? true : (m.siempre === true || isAdmin || (user.permisos && user.permisos[m.permiso])) });
+      /* _BS_TODOS_MODULOS_V1 (24-nov-2026): Ficha y Sugerencias se cierran solo si "Acceso a Modulos" trae la casilla apagada (false explicito);
+         Expediente usa su casilla propia y, si aun no viene, la de Estadisticas como antes. */
+      var P0 = user.permisos || {};
+      function tp(m) { if (m.id === 'expediente' && P0.expediente !== undefined) return P0.expediente === true; return !!(m.permiso && P0[m.permiso]); }
+      function abierto(m) { return m.siempre === true && !(m.cierra && P0[m.cierra] === false); }
+      return MODULOS.filter(function(m) { return !m.adminOnly || isAdmin || tp(m); }).map(function(m){
+        return Object.assign({}, m, { tienePermiso: m.adminOnly ? true : (abierto(m) || isAdmin || (user.permisos && user.permisos[m.permiso])) });
       });
     }
 

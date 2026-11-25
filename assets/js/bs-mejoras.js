@@ -33,10 +33,14 @@
       'auditoria.html': 'auditoria' };  // sugerencias es libre para todas
     var pagina = (location.pathname.split('/').pop() || '').toLowerCase();
     var permiso = MAPA_PERMISO[pagina];
-    if (!permiso || !user) return;
+    /* _BS_TODOS_MODULOS_V1 (24-nov-2026): Ficha y Sugerencias siguen libres salvo que "Acceso a Modulos" traiga su casilla apagada (false explicito) */
+    var MAPA_CIERRA = { 'ficha.html': 'ficha', 'sugerencias.html': 'sugerencias_acceso' }, cierra = MAPA_CIERRA[pagina];
+    var etq = permiso || { ficha: 'Ficha del Trabajador', sugerencias_acceso: 'Sugerencias de Mejora' }[cierra] || '';
+    if ((!permiso && !cierra) || !user) return;
     var ADMINS = ['jtimoteo', 'ovilela', 'jchavez'];
     var esAdmin = ADMINS.indexOf(String(user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test(user.rol || '');
     if (esAdmin) return;
+    if (!permiso) { if (user.permisos && user.permisos[cierra] === false) bloquear(); return; }
     function tiene() { return !!(user.permisos && (user.permisos[permiso] === true || user.permisos['mod_' + permiso] === true)); }
     function bloquear() {
       var ov = document.createElement('div');
@@ -45,7 +49,7 @@
       ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:420px;text-align:center;padding:30px 26px;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
         '<div style="font-size:44px">🔐</div>' +
         '<div style="font-size:17px;font-weight:800;color:#0a2463;margin-top:8px">No tienes acceso a este módulo</div>' +
-        '<div style="font-size:13px;color:#475569;margin-top:8px;line-height:1.5">Tu cuenta no tiene habilitado el permiso de <b>' + esc(permiso.toUpperCase()) + '</b>. ' +
+        '<div style="font-size:13px;color:#475569;margin-top:8px;line-height:1.5">Tu cuenta no tiene habilitado el permiso de <b>' + esc(String(etq).toUpperCase()) + '</b>. ' +
         'Si lo necesitas para tu trabajo, comunícate con el creador del sistema: <b>Joel Timoteo</b>.</div>' +
         '<button style="margin-top:16px;background:#0a2463;color:#fff;border:none;border-radius:10px;padding:11px 22px;font-weight:800;font-size:13px;cursor:pointer" ' +
         'onclick="window.location.href=\'../portal.html\'">← Volver al portal</button></div>';
