@@ -10,7 +10,7 @@
       if (!user || !user.usuario) throw new Error();
     } catch(e) { window.location.href = '../index.html'; }
     const ADMINS = ['jtimoteo','ovilela'];
-    const esAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test(user.rol || '');
+    const esAdmin = ADMINS.indexOf((user.usuario || '').toLowerCase()) >= 0 || /admin|geren/i.test(user.rol || '') || !!(user.permisos && user.permisos.auditoria === true);   /* _BS_AUDITORIA_ACCESO_V1 (24-nov-2026): tambien quien tenga 'Bienestar: Auditoria' en Acceso a Modulos */
     if (!esAdmin) {
       appAlert('Solo administradores pueden ver la auditoría.');
       window.location.href = '../portal.html';
