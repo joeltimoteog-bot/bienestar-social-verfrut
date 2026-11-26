@@ -253,6 +253,12 @@
       if (document.getElementById('bsSedePregOv')) return;
       var m = String(tokenActual() || '').slice(-24);
       if (!aPedido) { if (off || !m) return; var ya = ''; try { ya = sessionStorage.getItem('bs_sede_preg') || ''; } catch (e1) {} if (ya === m) return; }
+      /* _BS_SEDE_ORDEN_V1 (26-nov-2026): primero se confirma la identidad ("Hay una sesion activa de...") y recien despues sale la
+         eleccion de sede; antes salian los dos cuadros uno encima del otro */
+      if (!aPedido) {
+        var idOk = ''; try { idOk = sessionStorage.getItem('_bsIdentOk') || ''; } catch (e6) {}
+        if (document.getElementById('_bsIdentOv') || (idOk !== '1' && document.readyState === 'loading')) { setTimeout(function () { preguntarSedeBS(false); }, 400); return; }
+      }
       var actual = vistaBS(), elegida = actual;
       var OPC = [['PIURA', 'Sede Piura', 'RAPEL · VERFRUT'], ['OLMOS', 'Sede Olmos', 'Bomarea · Pirona · Mosqueta · Hefei · Lefkada'], ['', 'Ambas sedes', 'Vista general: Piura y Olmos']];
       var ov = document.createElement('div'); ov.id = 'bsSedePregOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'bsSedePregT');
